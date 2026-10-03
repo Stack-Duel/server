@@ -8,4 +8,5 @@
   <Project Path="StackDuel.Infrastructure.Tests/StackDuel.Infrastructure.Tests.csproj" Id="ca1d3d0e-1740-4ac9-8c3b-1a8427ea1581" />
   <Project Path="StackDuel.Infrastructure/StackDuel.Infrastructure.csproj" Id="9f920174-8451-4c94-a491-3ad54d18dd94" />
   <Project Path="StackDuel.IntegrationTests/StackDuel.IntegrationTests.csproj" Id="c3d110a6-5670-4fd9-8604-676968b66851" />
+  <Project Path="StackDuel.Seeder/StackDuel.Seeder.csproj" Id="a72d0fdc-d889-42c0-b4e0-5fbf65be6c5b" />
 </Solution>

@@ -1,7 +1,6 @@
-﻿namespace StackDuel.Application
-{
-    public class Class1
-    {
+﻿namespace StackDuel.Application;
 
-    }
+public class Class1
+{
+
 }
