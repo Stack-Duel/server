@@ -14,16 +14,22 @@ cp .env.example .env
 
 After this you will need to get these values and put it in your `.env` file:
 
-| Variable              | What it needs                            | How to get it                                                                                   |
-| ---------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `CLERK_SECRET_KEY`    | Your Clerk instance's secret key          | Clerk Dashboard → your app → API Keys → Secret key (use a **development** instance key, not live) |
-| `CLERK_TEST_USER_ID`  | The Clerk user ID to authenticate as      | Clerk Dashboard → Users → pick/create a test user → copy their User ID (`user_xxx`)                |
-| `STAGING_BASE_URL`    | Hostname of the deployed staging API      | From your staging deployment once it exists                                                        |
-| `PRODUCTION_BASE_URL` | Hostname of the deployed production API   | From your production deployment once it exists                                                     |
+| Variable                   | What it needs                     | How to get it                                                                      |
+| --------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------- |
+| `CLERK_AUTHORIZATION_URL`  | The OAuth Application's authorize URL | Generated when you create the OAuth Application below (copy from the create response/Dashboard) |
+| `CLERK_TOKEN_URL`          | The OAuth Application's token URL     | Same place as above                                                                |
+| `CLERK_CLIENT_ID`          | The OAuth Application's client ID     | Same place as above                                                                |
+| `CLERK_SCOPE`              | Scopes to request                     | `profile email` (default), or whatever scopes you configured on the application   |
+| `STAGING_BASE_URL`         | Hostname of the deployed staging API  | From your staging deployment once it exists                                       |
+| `PRODUCTION_BASE_URL`      | Hostname of the deployed production API | From your production deployment once it exists                                   |
 
-Auth works differently than a standard OAuth2 flow because Clerk doesn't expose a `/oauth/token`-style exchange for first-party apps — it's SDK/session driven instead. To get a bearer token into Bruno, run the two requests in the **Auth** folder before anything else:
+Auth happens via Clerk's **OAuth Applications** feature (Clerk acting as its own OAuth2/OIDC provider) using the Authorization Code flow with PKCE. Bruno opens Clerk's real hosted login in a popup, you log in there, and it hands the token back. No stored credentials, no pre-picked test user.
 
-1. **`1 - Create Session`** — calls Clerk's Backend API (`POST /sessions`) to create a session directly for `CLERK_TEST_USER_ID`. This endpoint is explicitly testing-only (Clerk disables it on production instances), which is exactly what we want here.
-2. **`2 - Create Session Token`** — exchanges that session for a JWT (`POST /sessions/{id}/tokens`), minted with a 1 hour lifetime so it doesn't expire mid-testing-session like Clerk's default ~60s session tokens do.
+**One-time Clerk setup:**
 
-Both requests auth with `CLERK_SECRET_KEY` and store their results (`session_id`, then `access_token`) as environment variables via post-response scripts. Every other request in the collection inherits `access_token` automatically as its bearer token — run the two Auth requests once per session, then everything else just works.
+1. In your Clerk Dashboard, create a new **OAuth Application** (Configure → OAuth Applications, confirm it's available on your plan first).
+2. Set it as a **public client** with **PKCE required**. This removes the need for a client secret, same reasoning as Auth0's Native app type.
+3. Add `https://oauth.usebruno.com/callback` to **Redirect URIs**. This is Bruno's built-in callback relay, no local server needed.
+4. Copy the resulting `authorize_url`, `token_fetch_url`, and `client_id` into `.env`.
+
+Note: OAuth Applications is designed for third-party "Sign in with StackDuel" use cases (other apps authenticating against your Clerk instance), not first-party testing. Using it here for Bruno is a repurposing of the same mechanism, not its primary intended use.
