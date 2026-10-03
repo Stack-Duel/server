@@ -1,7 +1,6 @@
-﻿namespace StackDuel.Infrastructure
-{
-    public class Class1
-    {
+﻿namespace StackDuel.Infrastructure;
 
-    }
+public class Class1
+{
+
 }

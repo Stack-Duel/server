@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Local secrets (keep .env.example tracked)
+.env
+!.env.example
+
 # User-specific files
 *.suo
 *.user

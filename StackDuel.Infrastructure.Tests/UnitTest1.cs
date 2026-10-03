@@ -1,11 +1,10 @@
-﻿namespace StackDuel.Infrastructure.Tests
-{
-    public class UnitTest1
-    {
-        [Fact]
-        public void Test1()
-        {
+﻿namespace StackDuel.Infrastructure.Tests;
 
-        }
+public class UnitTest1
+{
+    [Fact]
+    public void Test1()
+    {
+
     }
 }
