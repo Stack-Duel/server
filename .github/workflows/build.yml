@@ -1,0 +1,40 @@
+name: Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        required: false
+        type: string
+        default: "10.0.x"
+      verify:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore StackDuel.slnx
+
+      - name: Verify formatting
+        if: ${{ inputs.verify }}
+        run: dotnet format StackDuel.slnx --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build StackDuel.slnx --configuration Release --no-restore
+
+      - name: Run tests
+        if: ${{ inputs.verify }}
+        run: dotnet test StackDuel.slnx --configuration Release --no-build --verbosity normal
