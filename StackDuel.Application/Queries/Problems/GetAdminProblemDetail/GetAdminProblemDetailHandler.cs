@@ -1,3 +1,4 @@
+using Ardalis.Result;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
@@ -5,7 +6,6 @@ using StackDuel.Application.Tracks;
 using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Problems.GetAdminProblemDetail;
 

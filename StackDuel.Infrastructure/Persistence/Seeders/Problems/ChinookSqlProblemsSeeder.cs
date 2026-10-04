@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Languages.ValueObjects;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
-using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders.Problems;

@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Jobs.Users;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Infrastructure.Jobs.Users;
 

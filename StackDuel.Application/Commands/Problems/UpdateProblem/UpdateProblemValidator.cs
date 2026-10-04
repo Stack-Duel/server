@@ -1,5 +1,5 @@
-using StackDuel.Domain.Problems.ValueObjects;
 using FluentValidation;
+using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Commands.Problems.UpdateProblem;
 

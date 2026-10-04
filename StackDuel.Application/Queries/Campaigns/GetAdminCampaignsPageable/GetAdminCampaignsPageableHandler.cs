@@ -1,8 +1,8 @@
+using Ardalis.Result;
 using StackDuel.Application.Campaigns;
 using StackDuel.Application.Campaigns.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Domain.Campaigns.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Campaigns.GetAdminCampaignsPageable;
 

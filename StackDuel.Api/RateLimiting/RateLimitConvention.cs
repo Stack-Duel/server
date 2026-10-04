@@ -1,6 +1,6 @@
-﻿using StackDuel.Api.Core;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
+﻿using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.RateLimiting;
+using StackDuel.Api.Core;
 
 namespace StackDuel.Api.RateLimiting;
 

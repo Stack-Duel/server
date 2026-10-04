@@ -1,10 +1,10 @@
+using Ardalis.Result;
+using FluentValidation;
+using MediatR;
 using StackDuel.Application.Commands.Games.JoinGame;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
-using FluentValidation;
-using MediatR;
 
 namespace StackDuel.Application.Commands.Games.JoinGameByCode;
 

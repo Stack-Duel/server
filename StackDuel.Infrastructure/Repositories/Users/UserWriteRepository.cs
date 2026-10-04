@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Authorization.Rbac.Entities;
 using StackDuel.Domain.Authorization.Rbac.ValueObjects;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.ValueObjects;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Users;
 

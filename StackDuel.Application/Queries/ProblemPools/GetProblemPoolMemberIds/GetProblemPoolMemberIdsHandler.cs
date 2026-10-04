@@ -1,6 +1,6 @@
+using Ardalis.Result;
 using StackDuel.Application.Problems;
 using StackDuel.Domain.Problems.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.ProblemPools.GetProblemPoolMemberIds;
 

@@ -1,6 +1,6 @@
-using StackDuel.Application.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using StackDuel.Application.Services.Users;
 using System.Security.Claims;
 
 namespace StackDuel.Api.Hubs;

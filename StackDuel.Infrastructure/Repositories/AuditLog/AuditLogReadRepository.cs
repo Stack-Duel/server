@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Audit;
 using StackDuel.Application.Audit.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.AuditLog;
 

@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
@@ -8,8 +10,6 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
-using Moq;
 using GetAdminProblemDetailHandler = StackDuel.Application.Queries.Problems.GetAdminProblemDetail.GetAdminProblemDetailHandler;
 using GetAdminProblemDetailQuery = StackDuel.Application.Queries.Problems.GetAdminProblemDetail.GetAdminProblemDetailQuery;
 

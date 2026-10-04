@@ -1,6 +1,6 @@
-using StackDuel.Application.Queries.FeatureFlags.GetAllFeatureFlagsForViewer;
 using MediatR;
 using Microsoft.Extensions.Caching.Memory;
+using StackDuel.Application.Queries.FeatureFlags.GetAllFeatureFlagsForViewer;
 
 namespace StackDuel.Application.Services.FeatureFlags;
 

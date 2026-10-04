@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Leaderboards;
 using StackDuel.Application.Pagination;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Leaderboards;
 

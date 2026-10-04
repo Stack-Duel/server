@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.ValueObjects;
 using StackDuel.Domain.Users.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Feedback;
 

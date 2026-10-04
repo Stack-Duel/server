@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Problems;
 

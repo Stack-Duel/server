@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.DailyChallenges.UpdateDailyChallenge;
 using StackDuel.Application.DailyChallenges.Dtos;
 using StackDuel.Application.Queries.DailyChallenges.GetTodaysDailyChallenge;
 using StackDuel.Application.Queries.DailyChallenges.GetUpcomingDailyChallenges;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.DailyChallenges;
 

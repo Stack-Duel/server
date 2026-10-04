@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Authorization.Rbac.Entities;
 using StackDuel.Domain.Authorization.Rbac.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders;
 

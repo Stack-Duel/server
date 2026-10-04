@@ -1,7 +1,7 @@
-﻿using StackDuel.Application.Users;
+﻿using Ardalis.Result;
+using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Authorization;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Permissions.GetUserAccessContext;
 

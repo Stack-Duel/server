@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
-using Ardalis.Result;
-using Moq;
 using SetProblemReactionCommand = StackDuel.Application.Commands.Problems.SetProblemReaction.SetProblemReactionCommand;
 using SetProblemReactionHandler = StackDuel.Application.Commands.Problems.SetProblemReaction.SetProblemReactionHandler;
 using SetProblemReactionValidator = StackDuel.Application.Commands.Problems.SetProblemReaction.SetProblemReactionValidator;

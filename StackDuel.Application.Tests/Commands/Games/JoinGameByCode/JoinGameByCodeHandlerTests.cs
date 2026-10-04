@@ -1,8 +1,8 @@
-using StackDuel.Application.Games;
-using StackDuel.Domain.Games.Entities;
 using Ardalis.Result;
 using MediatR;
 using Moq;
+using StackDuel.Application.Games;
+using StackDuel.Domain.Games.Entities;
 using JoinGameByCodeCommand = StackDuel.Application.Commands.Games.JoinGameByCode.JoinGameByCodeCommand;
 using JoinGameByCodeHandler = StackDuel.Application.Commands.Games.JoinGameByCode.JoinGameByCodeHandler;
 using JoinGameByCodeValidator = StackDuel.Application.Commands.Games.JoinGameByCode.JoinGameByCodeValidator;

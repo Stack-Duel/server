@@ -1,3 +1,7 @@
+using Ardalis.Result;
+using Ardalis.Result.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
 using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
@@ -10,10 +14,6 @@ using StackDuel.Application.Services.Problems;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
-using Ardalis.Result;
-using Ardalis.Result.AspNetCore;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace StackDuel.Api.Controllers;
 

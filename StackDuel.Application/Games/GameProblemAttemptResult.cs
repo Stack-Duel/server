@@ -1,6 +1,6 @@
+using Ardalis.Result;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Games;
 

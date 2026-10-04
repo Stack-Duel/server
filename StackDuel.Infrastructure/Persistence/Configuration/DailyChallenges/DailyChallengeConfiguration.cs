@@ -1,7 +1,7 @@
-using StackDuel.Domain.DailyChallenges.Entities;
-using StackDuel.Domain.Problems.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.DailyChallenges.Entities;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.DailyChallenges;
 

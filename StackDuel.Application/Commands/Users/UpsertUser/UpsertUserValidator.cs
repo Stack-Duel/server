@@ -1,5 +1,5 @@
-﻿using StackDuel.Domain.Users.ValueObjects;
-using FluentValidation;
+﻿using FluentValidation;
+using StackDuel.Domain.Users.ValueObjects;
 
 namespace StackDuel.Application.Commands.Users.UpsertUser;
 

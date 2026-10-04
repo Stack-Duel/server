@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.FeatureFlags.CreateFeatureFlag;
 using StackDuel.Application.Commands.FeatureFlags.RemoveFeatureFlagGroupOverride;
 using StackDuel.Application.Commands.FeatureFlags.RemoveFeatureFlagUserOverride;
@@ -9,8 +11,6 @@ using StackDuel.Application.FeatureFlags.Dtos;
 using StackDuel.Application.Queries.FeatureFlags.GetFeatureFlagByKey;
 using StackDuel.Application.Queries.FeatureFlags.GetFeatureFlags;
 using StackDuel.Domain.Authorization.Rbac.Enums;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.FeatureFlags;
 

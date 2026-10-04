@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Tracks;
@@ -6,8 +8,6 @@ using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
-using Moq;
 using GetMyActiveGamesHandler = StackDuel.Application.Queries.Games.GetMyActiveGames.GetMyActiveGamesHandler;
 using GetMyActiveGamesQuery = StackDuel.Application.Queries.Games.GetMyActiveGames.GetMyActiveGamesQuery;
 

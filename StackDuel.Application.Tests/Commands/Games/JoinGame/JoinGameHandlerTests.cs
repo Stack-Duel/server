@@ -1,11 +1,11 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.SeedWork;
-using Ardalis.Result;
-using Moq;
 using JoinGameCommand = StackDuel.Application.Commands.Games.JoinGame.JoinGameCommand;
 using JoinGameHandler = StackDuel.Application.Commands.Games.JoinGame.JoinGameHandler;
 using JoinGameValidator = StackDuel.Application.Commands.Games.JoinGame.JoinGameValidator;

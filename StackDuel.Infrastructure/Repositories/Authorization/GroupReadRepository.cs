@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Groups;
 using StackDuel.Application.Groups.Dtos;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Authorization;
 

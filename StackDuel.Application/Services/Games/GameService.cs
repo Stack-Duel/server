@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.Games.CloseLobby;
 using StackDuel.Application.Commands.Games.CompleteProblem;
 using StackDuel.Application.Commands.Games.CreateGame;
@@ -23,8 +25,6 @@ using StackDuel.Application.Queries.Games.GetOpenGames;
 using StackDuel.Application.Queries.Tracks.GetTracks;
 using StackDuel.Application.Tracks.Dtos;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Games;
 

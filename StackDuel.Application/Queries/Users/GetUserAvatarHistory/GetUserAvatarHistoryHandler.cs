@@ -1,8 +1,8 @@
+using Ardalis.Result;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Users.GetUserAvatarHistory;
 

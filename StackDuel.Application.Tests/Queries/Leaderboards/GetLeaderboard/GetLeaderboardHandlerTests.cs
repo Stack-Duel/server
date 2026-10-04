@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Leaderboards;
 using StackDuel.Application.Leaderboards.Dtos;
@@ -5,8 +7,6 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 using GetLeaderboardHandler = StackDuel.Application.Queries.Leaderboards.GetLeaderboard.GetLeaderboardHandler;
 using GetLeaderboardQuery = StackDuel.Application.Queries.Leaderboards.GetLeaderboard.GetLeaderboardQuery;
 

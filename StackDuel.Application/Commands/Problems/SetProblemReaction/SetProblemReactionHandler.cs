@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Problems.SetProblemReaction;
 

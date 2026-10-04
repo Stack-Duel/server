@@ -1,6 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.ExecutionPipelines;
 

@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.ProblemPools.AddProblemsToPool;
 using StackDuel.Application.Commands.ProblemPools.AddProblemToPool;
 using StackDuel.Application.Commands.ProblemPools.CreateProblemPool;
@@ -9,8 +11,6 @@ using StackDuel.Application.Queries.ProblemPools.GetOrderedProblemPoolMembers;
 using StackDuel.Application.Queries.ProblemPools.GetProblemPoolMemberIds;
 using StackDuel.Application.Queries.ProblemPools.GetProblemPoolMembersPaged;
 using StackDuel.Application.Queries.ProblemPools.GetProblemPools;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Problems;
 

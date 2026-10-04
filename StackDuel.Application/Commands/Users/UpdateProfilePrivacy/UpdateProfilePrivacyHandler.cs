@@ -1,7 +1,7 @@
-using StackDuel.Domain.Users;
-using StackDuel.Domain.Users.Entities;
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Domain.Users;
+using StackDuel.Domain.Users.Entities;
 
 namespace StackDuel.Application.Commands.Users.UpdateProfilePrivacy;
 

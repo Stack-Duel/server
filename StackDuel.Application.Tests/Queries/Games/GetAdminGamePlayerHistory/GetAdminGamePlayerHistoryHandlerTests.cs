@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Problems;
@@ -7,8 +9,6 @@ using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Submissions.Enums;
-using Ardalis.Result;
-using Moq;
 using GetAdminGamePlayerHistoryHandler = StackDuel.Application.Queries.Games.GetAdminGamePlayerHistory.GetAdminGamePlayerHistoryHandler;
 using GetAdminGamePlayerHistoryQuery = StackDuel.Application.Queries.Games.GetAdminGamePlayerHistory.GetAdminGamePlayerHistoryQuery;
 

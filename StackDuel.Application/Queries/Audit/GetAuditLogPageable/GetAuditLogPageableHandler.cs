@@ -1,7 +1,7 @@
+using Ardalis.Result;
 using StackDuel.Application.Audit;
 using StackDuel.Application.Audit.Dtos;
 using StackDuel.Application.Pagination;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Audit.GetAuditLogPageable;
 

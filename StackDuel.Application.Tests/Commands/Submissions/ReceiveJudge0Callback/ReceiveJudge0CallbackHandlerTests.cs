@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
-using Ardalis.Result;
-using Moq;
 using ReceiveJudge0CallbackCommand = StackDuel.Application.Commands.Submissions.ReceiveJudge0Callback.ReceiveJudge0CallbackCommand;
 using ReceiveJudge0CallbackHandler = StackDuel.Application.Commands.Submissions.ReceiveJudge0Callback.ReceiveJudge0CallbackHandler;
 

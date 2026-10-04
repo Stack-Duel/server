@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 using GetDuelHeadToHeadRecordHandler = StackDuel.Application.Queries.Games.GetDuelHeadToHeadRecord.GetDuelHeadToHeadRecordHandler;
 using GetDuelHeadToHeadRecordQuery = StackDuel.Application.Queries.Games.GetDuelHeadToHeadRecord.GetDuelHeadToHeadRecordQuery;
 

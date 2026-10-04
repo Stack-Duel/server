@@ -1,5 +1,5 @@
-using StackDuel.IntegrationTests.Infrastructure;
 using Npgsql;
+using StackDuel.IntegrationTests.Infrastructure;
 
 namespace StackDuel.IntegrationTests;
 

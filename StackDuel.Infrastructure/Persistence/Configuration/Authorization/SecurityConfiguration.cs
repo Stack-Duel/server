@@ -1,9 +1,9 @@
-﻿using StackDuel.Domain.Authorization.Rbac.Enums;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Authorization.Rbac.Enums;
 using StackDuel.Domain.Authorization.Rbac.ValueObjects;
 using StackDuel.Domain.Authorization.Security.Entities;
 using StackDuel.Domain.Authorization.Security.ValueObjects;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Authorization;
 

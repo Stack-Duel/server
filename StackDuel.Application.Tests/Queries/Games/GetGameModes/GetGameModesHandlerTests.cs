@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 using GetGameModesHandler = StackDuel.Application.Queries.Games.GetGameModes.GetGameModesHandler;
 using GetGameModesQuery = StackDuel.Application.Queries.Games.GetGameModes.GetGameModesQuery;
 

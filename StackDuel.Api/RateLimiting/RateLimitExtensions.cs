@@ -1,5 +1,5 @@
-﻿using StackDuel.Api.Core;
-using Microsoft.AspNetCore.RateLimiting;
+﻿using Microsoft.AspNetCore.RateLimiting;
+using StackDuel.Api.Core;
 using System.Reflection;
 using System.Threading.RateLimiting;
 

@@ -1,3 +1,5 @@
+using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
 using StackDuel.Application.Behaviors;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
@@ -22,8 +24,6 @@ using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Factories;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
-using FluentValidation;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace StackDuel.Application;
 

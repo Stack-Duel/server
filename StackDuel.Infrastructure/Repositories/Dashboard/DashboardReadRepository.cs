@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Dashboard;
 using StackDuel.Application.Dashboard.Dtos;
 using StackDuel.Domain.Feedback.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Dashboard;
 

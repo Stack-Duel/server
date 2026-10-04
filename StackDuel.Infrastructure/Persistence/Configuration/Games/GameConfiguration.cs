@@ -1,11 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.ValueObjects;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Tracks.Entities;
 using StackDuel.Domain.Users.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Games;
 

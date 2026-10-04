@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.ExecutionPipelines.Enums;
 using StackDuel.Domain.SubmissionJobs;
@@ -6,8 +8,6 @@ using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.ValueObjects;
 using StackDuel.Domain.TestSuites;
-using Ardalis.Result;
-using Moq;
 using GetSubmissionStatusHandler = StackDuel.Application.Queries.Submissions.GetSubmissionStatus.GetSubmissionStatusHandler;
 using GetSubmissionStatusQuery = StackDuel.Application.Queries.Submissions.GetSubmissionStatus.GetSubmissionStatusQuery;
 

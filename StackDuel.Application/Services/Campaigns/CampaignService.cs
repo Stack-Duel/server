@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Campaigns.Dtos;
 using StackDuel.Application.Commands.Campaigns.AddCampaignModule;
 using StackDuel.Application.Commands.Campaigns.AddCampaignUnit;
@@ -20,8 +22,6 @@ using StackDuel.Application.Queries.Campaigns.GetMyCampaignProgress;
 using StackDuel.Application.Queries.Campaigns.GetMyEnrollments;
 using StackDuel.Application.Queries.Campaigns.GetMyLearningStats;
 using StackDuel.Domain.Campaigns.Enums;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Campaigns;
 

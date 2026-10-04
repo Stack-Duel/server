@@ -1,8 +1,8 @@
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Images;
 using StackDuel.Application.Services.Users;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 
 namespace StackDuel.Infrastructure.Storage;
 

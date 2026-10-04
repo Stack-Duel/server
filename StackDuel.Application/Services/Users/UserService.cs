@@ -1,3 +1,6 @@
+using Ardalis.Result;
+using MediatR;
+using Microsoft.Extensions.Caching.Memory;
 using StackDuel.Application.Commands.Users.SelectUserAvatar;
 using StackDuel.Application.Commands.Users.UpdateProfilePrivacy;
 using StackDuel.Application.Commands.Users.UpdateUserGroups;
@@ -13,9 +16,6 @@ using StackDuel.Application.Queries.Users.GetUserGameStats;
 using StackDuel.Application.Queries.Users.GetUserProfileByUsername;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Application.Users.Dtos.Admin;
-using Ardalis.Result;
-using MediatR;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace StackDuel.Application.Services.Users;
 

@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
@@ -6,8 +8,6 @@ using StackDuel.Domain.Submissions;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.ValueObjects;
-using Ardalis.Result;
-using Moq;
 using CompleteProblemCommand = StackDuel.Application.Commands.Games.CompleteProblem.CompleteProblemCommand;
 using CompleteProblemHandler = StackDuel.Application.Commands.Games.CompleteProblem.CompleteProblemHandler;
 using CompleteProblemResultDto = StackDuel.Application.Commands.Games.CompleteProblem.CompleteProblemResultDto;

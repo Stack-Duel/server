@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Leaderboards.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Queries.Leaderboards.GetLeaderboard;
 using StackDuel.Application.Queries.Leaderboards.GetMyLeaderboardEntry;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Leaderboards;
 

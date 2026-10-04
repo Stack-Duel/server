@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Problems;
@@ -6,8 +8,6 @@ using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.ProblemValidation;
 using StackDuel.Domain.ProblemValidation.Entities;
 using StackDuel.Domain.TestSuites.Enums;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Problems.SubmitProblemForValidation;
 

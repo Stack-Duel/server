@@ -1,3 +1,4 @@
+using Ardalis.Result;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Application.DailyChallenges.Dtos;
 using StackDuel.Application.Problems;
@@ -5,7 +6,6 @@ using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.DailyChallenges.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.DailyChallenges.GetUpcomingDailyChallenges;
 

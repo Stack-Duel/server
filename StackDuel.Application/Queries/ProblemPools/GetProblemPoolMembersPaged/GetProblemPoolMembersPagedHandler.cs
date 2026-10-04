@@ -1,10 +1,10 @@
+using Ardalis.Result;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
-using Ardalis.Result;
 using DifficultyTier = StackDuel.Domain.Problems.Enums.DifficultyTier;
 
 namespace StackDuel.Application.Queries.ProblemPools.GetProblemPoolMembersPaged;

@@ -1,9 +1,9 @@
+using Ardalis.Result;
 using StackDuel.Application.Games;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Users.GetUserProfileByUsername;
 

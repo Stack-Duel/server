@@ -1,5 +1,5 @@
-using StackDuel.Application.Messaging;
 using Azure.Messaging.ServiceBus;
+using StackDuel.Application.Messaging;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Messaging;

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.ExecutionAssets;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Application.Languages;
@@ -14,7 +15,6 @@ using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
 using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.ExecutionEngine.StepHandlers;

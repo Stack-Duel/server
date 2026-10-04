@@ -1,7 +1,7 @@
-using StackDuel.Application.Audit;
-using StackDuel.Domain.Audit.Entities;
 using Ardalis.Result;
 using MediatR;
+using StackDuel.Application.Audit;
+using StackDuel.Domain.Audit.Entities;
 using System.Text.Json;
 
 namespace StackDuel.Application.Behaviors;

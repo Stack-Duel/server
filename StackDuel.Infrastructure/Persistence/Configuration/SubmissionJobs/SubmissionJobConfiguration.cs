@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.ExecutionPipelines.Entities;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.SubmissionJobs.Entities;
 using StackDuel.Domain.Submissions.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.SubmissionJobs;
 

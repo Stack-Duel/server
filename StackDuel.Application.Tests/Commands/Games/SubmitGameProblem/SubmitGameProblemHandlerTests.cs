@@ -1,12 +1,12 @@
+using Ardalis.Result;
+using MediatR;
+using Moq;
 using StackDuel.Application.Commands.Submissions.CreateSubmission;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
-using MediatR;
-using Moq;
 using SubmitGameProblemCommand = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemCommand;
 using SubmitGameProblemHandler = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemHandler;
 using SubmitGameProblemValidator = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemValidator;

@@ -1,5 +1,5 @@
-using StackDuel.Domain.SeedWork;
 using MediatR;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Events;
 

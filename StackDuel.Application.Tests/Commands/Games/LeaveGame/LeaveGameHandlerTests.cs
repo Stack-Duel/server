@@ -1,11 +1,11 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.SeedWork;
-using Ardalis.Result;
-using Moq;
 using LeaveGameCommand = StackDuel.Application.Commands.Games.LeaveGame.LeaveGameCommand;
 using LeaveGameHandler = StackDuel.Application.Commands.Games.LeaveGame.LeaveGameHandler;
 using LeaveGameValidator = StackDuel.Application.Commands.Games.LeaveGame.LeaveGameValidator;

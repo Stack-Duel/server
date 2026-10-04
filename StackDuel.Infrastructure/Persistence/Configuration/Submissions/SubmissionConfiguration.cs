@@ -1,10 +1,10 @@
-﻿using StackDuel.Domain.Games.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.ValueObjects;
 using StackDuel.Domain.Users.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Submissions;

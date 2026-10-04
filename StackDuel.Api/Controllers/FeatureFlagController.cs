@@ -1,3 +1,7 @@
+using Ardalis.Result;
+using Ardalis.Result.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
 using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
@@ -5,10 +9,6 @@ using StackDuel.Api.Requests.FeatureFlags;
 using StackDuel.Application;
 using StackDuel.Application.FeatureFlags.Dtos;
 using StackDuel.Application.Services.FeatureFlags;
-using Ardalis.Result;
-using Ardalis.Result.AspNetCore;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace StackDuel.Api.Controllers;
 

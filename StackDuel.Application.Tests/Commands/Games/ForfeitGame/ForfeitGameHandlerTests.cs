@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 using ForfeitGameCommand = StackDuel.Application.Commands.Games.ForfeitGame.ForfeitGameCommand;
 using ForfeitGameHandler = StackDuel.Application.Commands.Games.ForfeitGame.ForfeitGameHandler;
 using ForfeitGameValidator = StackDuel.Application.Commands.Games.ForfeitGame.ForfeitGameValidator;

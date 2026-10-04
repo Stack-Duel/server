@@ -1,6 +1,6 @@
-using StackDuel.Domain.Tracks.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Tracks.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Tracks;
 

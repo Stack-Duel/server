@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 using SkipProblemCommand = StackDuel.Application.Commands.Games.SkipProblem.SkipProblemCommand;
 using SkipProblemHandler = StackDuel.Application.Commands.Games.SkipProblem.SkipProblemHandler;
 using SkipProblemResultDto = StackDuel.Application.Commands.Games.SkipProblem.SkipProblemResultDto;

@@ -1,6 +1,6 @@
-using StackDuel.Application.TestCaseGeneration;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using StackDuel.Application.TestCaseGeneration;
 
 namespace StackDuel.Infrastructure.Jobs.TestCaseGeneration;
 

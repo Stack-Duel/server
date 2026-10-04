@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Services.Users;
 using StackDuel.Application.Users.Dtos;
@@ -5,8 +7,6 @@ using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
-using Ardalis.Result;
-using Moq;
 using UpsertUserCommand = StackDuel.Application.Commands.Users.UpsertUser.UpsertUserCommand;
 using UpsertUserHandler = StackDuel.Application.Commands.Users.UpsertUser.UpsertUserHandler;
 using UpsertUserValidator = StackDuel.Application.Commands.Users.UpsertUser.UpsertUserValidator;

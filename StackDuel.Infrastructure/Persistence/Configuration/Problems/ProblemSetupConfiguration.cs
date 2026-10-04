@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.ExecutionAssets.Entities;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.Languages.Entities;
@@ -5,8 +7,6 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestSuites.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Problems;

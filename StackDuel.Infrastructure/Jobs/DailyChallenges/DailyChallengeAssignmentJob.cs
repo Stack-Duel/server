@@ -1,6 +1,6 @@
-using StackDuel.Application.Jobs.DailyChallenges;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using StackDuel.Application.Jobs.DailyChallenges;
 
 namespace StackDuel.Infrastructure.Jobs.DailyChallenges;
 

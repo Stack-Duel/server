@@ -1,5 +1,5 @@
-using StackDuel.Application.Messaging;
 using RabbitMQ.Client;
+using StackDuel.Application.Messaging;
 using System.Text;
 using System.Text.Json;
 

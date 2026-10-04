@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.ExecutionPipelines;
@@ -8,8 +10,6 @@ using StackDuel.Domain.Submissions;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.ValueObjects;
-using Ardalis.Result;
-using Moq;
 using GetAdminSubmissionDetailHandler = StackDuel.Application.Queries.Submissions.GetAdminSubmissionDetail.GetAdminSubmissionDetailHandler;
 using GetAdminSubmissionDetailQuery = StackDuel.Application.Queries.Submissions.GetAdminSubmissionDetail.GetAdminSubmissionDetailQuery;
 

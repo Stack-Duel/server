@@ -1,7 +1,7 @@
-using StackDuel.Application.Configuration;
-using StackDuel.Application.LanguageServer;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using StackDuel.Application.Configuration;
+using StackDuel.Application.LanguageServer;
 
 namespace StackDuel.Infrastructure.LanguageServer;
 

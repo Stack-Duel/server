@@ -1,6 +1,6 @@
-using StackDuel.Application;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using StackDuel.Application;
 
 namespace StackDuel.Api.Attributes;
 

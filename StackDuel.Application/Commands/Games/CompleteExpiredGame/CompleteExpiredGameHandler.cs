@@ -1,11 +1,11 @@
-﻿using StackDuel.Application.Events;
+﻿using Ardalis.Result;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
-using FluentValidation;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Application.Commands.Games.CompleteExpiredGame;
 

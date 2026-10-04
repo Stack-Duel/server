@@ -1,6 +1,6 @@
+using Ardalis.Result;
 using StackDuel.Application.Problems.RequiredLanguages;
 using StackDuel.Application.Problems.RequiredLanguages.Dtos;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Problems.GetRequiredProblemLanguages;
 

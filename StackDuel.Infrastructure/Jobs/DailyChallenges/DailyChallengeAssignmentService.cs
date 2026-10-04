@@ -1,8 +1,8 @@
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Application.Jobs.DailyChallenges;
 using StackDuel.Application.Problems;
 using StackDuel.Domain.DailyChallenges.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Infrastructure.Jobs.DailyChallenges;
 

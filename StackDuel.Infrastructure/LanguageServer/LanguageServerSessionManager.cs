@@ -1,6 +1,6 @@
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.LanguageServer;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 

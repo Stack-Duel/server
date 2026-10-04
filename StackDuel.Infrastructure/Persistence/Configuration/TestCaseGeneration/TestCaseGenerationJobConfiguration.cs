@@ -1,7 +1,7 @@
-using StackDuel.Domain.TestCaseGeneration.Entities;
-using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.TestCaseGeneration.Entities;
+using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.TestCaseGeneration;

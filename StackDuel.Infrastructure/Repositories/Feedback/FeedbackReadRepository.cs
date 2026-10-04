@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Feedback;
 using StackDuel.Application.Feedback.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Feedback;
 

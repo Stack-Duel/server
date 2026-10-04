@@ -1,7 +1,7 @@
-﻿using StackDuel.Application.Notifications;
-using StackDuel.Domain.Games.Events;
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
+using StackDuel.Application.Notifications;
+using StackDuel.Domain.Games.Events;
 
 namespace StackDuel.Application.Events.Games;
 

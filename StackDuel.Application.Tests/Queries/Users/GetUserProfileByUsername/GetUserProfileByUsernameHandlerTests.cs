@@ -1,10 +1,10 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 using GetUserProfileByUsernameHandler = StackDuel.Application.Queries.Users.GetUserProfileByUsername.GetUserProfileByUsernameHandler;
 using GetUserProfileByUsernameQuery = StackDuel.Application.Queries.Users.GetUserProfileByUsername.GetUserProfileByUsernameQuery;
 

@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.TestCaseGeneration;
 using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestCaseGeneration.Enums;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders.Problems;
 

@@ -1,5 +1,5 @@
-using StackDuel.Application.LanguageServer;
 using Microsoft.Extensions.Logging;
+using StackDuel.Application.LanguageServer;
 using System.Diagnostics;
 using System.Text;
 

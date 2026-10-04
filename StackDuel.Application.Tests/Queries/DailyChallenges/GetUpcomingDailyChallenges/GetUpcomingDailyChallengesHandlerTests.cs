@@ -1,9 +1,9 @@
+using Moq;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.DailyChallenges.Entities;
 using StackDuel.Domain.Problems.Enums;
-using Moq;
 using GetUpcomingDailyChallengesHandler = StackDuel.Application.Queries.DailyChallenges.GetUpcomingDailyChallenges.GetUpcomingDailyChallengesHandler;
 using GetUpcomingDailyChallengesQuery = StackDuel.Application.Queries.DailyChallenges.GetUpcomingDailyChallenges.GetUpcomingDailyChallengesQuery;
 

@@ -1,5 +1,5 @@
-using StackDuel.Application.Notifications;
 using Microsoft.AspNetCore.SignalR;
+using StackDuel.Application.Notifications;
 
 namespace StackDuel.Api.Hubs;
 

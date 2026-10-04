@@ -1,6 +1,6 @@
-using StackDuel.Infrastructure.Persistence.Read.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Infrastructure.Persistence.Read.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Read.Configuration;
 

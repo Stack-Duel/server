@@ -1,4 +1,7 @@
-﻿using StackDuel.Application.Events;
+﻿using Ardalis.Result;
+using FluentValidation;
+using MediatR;
+using StackDuel.Application.Events;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.SubmissionJobs;
@@ -8,9 +11,6 @@ using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.Factories;
 using StackDuel.Domain.Submissions.ValueObjects;
 using StackDuel.Domain.TestSuites;
-using Ardalis.Result;
-using FluentValidation;
-using MediatR;
 using System.Linq;
 
 namespace StackDuel.Application.Commands.Submissions.CreateSubmission;

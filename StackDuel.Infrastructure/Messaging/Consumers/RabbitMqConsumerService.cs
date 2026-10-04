@@ -1,3 +1,9 @@
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using StackDuel.Application.Commands.Games.CompleteExpiredGame;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Messaging;
@@ -6,12 +12,6 @@ using StackDuel.Infrastructure.Jobs.ProblemValidation;
 using StackDuel.Infrastructure.Jobs.Submissions;
 using StackDuel.Infrastructure.Jobs.TestCaseGeneration;
 using StackDuel.Infrastructure.Messaging;
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
 

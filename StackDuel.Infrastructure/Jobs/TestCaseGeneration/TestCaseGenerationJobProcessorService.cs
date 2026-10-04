@@ -1,11 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
 using StackDuel.Application.TestCaseGeneration;
 using StackDuel.Domain.TestCaseGeneration;
 using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestCaseGeneration.Enums;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Infrastructure.Jobs.TestCaseGeneration;
 

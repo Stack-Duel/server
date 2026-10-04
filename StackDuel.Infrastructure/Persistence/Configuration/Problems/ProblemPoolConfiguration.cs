@@ -1,6 +1,6 @@
-using StackDuel.Domain.Problems.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Problems;
 

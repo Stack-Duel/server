@@ -1,6 +1,6 @@
+using Microsoft.AspNetCore.WebUtilities;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.ExecutionEngine;
-using Microsoft.AspNetCore.WebUtilities;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;

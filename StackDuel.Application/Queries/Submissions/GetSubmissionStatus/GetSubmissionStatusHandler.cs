@@ -1,9 +1,9 @@
+using Ardalis.Result;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.Submissions;
 using StackDuel.Domain.TestSuites;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Submissions.GetSubmissionStatus;
 

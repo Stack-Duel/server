@@ -1,8 +1,8 @@
+using Ardalis.Result;
 using StackDuel.Application.Games;
 using StackDuel.Application.Leaderboards;
 using StackDuel.Application.Leaderboards.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Leaderboards.GetMyLeaderboardEntry;
 

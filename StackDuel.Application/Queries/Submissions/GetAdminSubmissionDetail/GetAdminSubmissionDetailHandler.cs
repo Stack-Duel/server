@@ -1,3 +1,4 @@
+using Ardalis.Result;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.ExecutionPipelines;
@@ -5,7 +6,6 @@ using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.SubmissionJobs.Entities;
 using StackDuel.Domain.SubmissionJobs.Enums;
 using StackDuel.Domain.Submissions;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Submissions.GetAdminSubmissionDetail;
 

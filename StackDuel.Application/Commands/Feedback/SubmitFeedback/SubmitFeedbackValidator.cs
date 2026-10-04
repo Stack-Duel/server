@@ -1,6 +1,6 @@
+using FluentValidation;
 using StackDuel.Domain.Feedback.Enums;
 using StackDuel.Domain.Feedback.ValueObjects;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Feedback.SubmitFeedback;
 

@@ -1,9 +1,9 @@
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Domain.Feedback;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.Enums;
 using StackDuel.Domain.Feedback.Factories;
-using Moq;
 using SubmitFeedbackCommand = StackDuel.Application.Commands.Feedback.SubmitFeedback.SubmitFeedbackCommand;
 using SubmitFeedbackHandler = StackDuel.Application.Commands.Feedback.SubmitFeedback.SubmitFeedbackHandler;
 using SubmitFeedbackValidator = StackDuel.Application.Commands.Feedback.SubmitFeedback.SubmitFeedbackValidator;

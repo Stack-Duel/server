@@ -1,3 +1,4 @@
+using Ardalis.Result;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
@@ -7,7 +8,6 @@ using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Games.GetGameState;
 

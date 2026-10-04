@@ -1,4 +1,6 @@
-﻿using StackDuel.Application.Events;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using StackDuel.Application.Events;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Domain.ExecutionPipelines.Enums;
 using StackDuel.Domain.SubmissionJobs;
@@ -8,8 +10,6 @@ using StackDuel.Domain.Submissions.Exceptions;
 using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

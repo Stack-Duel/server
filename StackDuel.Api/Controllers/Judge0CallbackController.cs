@@ -1,10 +1,10 @@
-using StackDuel.Api.RateLimiting;
-using StackDuel.Application.Services.Submissions;
 using Ardalis.Result.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using StackDuel.Api.RateLimiting;
+using StackDuel.Application.Services.Submissions;
 
 namespace StackDuel.Api.Controllers;
 

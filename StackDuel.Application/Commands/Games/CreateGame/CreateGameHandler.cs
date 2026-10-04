@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Games;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Tracks;
@@ -5,8 +7,6 @@ using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Games.CreateGame;
 

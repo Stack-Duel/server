@@ -1,7 +1,7 @@
-using StackDuel.Domain.FeatureFlags;
-using StackDuel.Domain.FeatureFlags.Entities;
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Domain.FeatureFlags;
+using StackDuel.Domain.FeatureFlags.Entities;
 
 namespace StackDuel.Application.Commands.FeatureFlags.UpdateFeatureFlagDefault;
 

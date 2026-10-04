@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
-using Ardalis.Result;
-using Moq;
 using GetOrderedProblemPoolMembersHandler = StackDuel.Application.Queries.ProblemPools.GetOrderedProblemPoolMembers.GetOrderedProblemPoolMembersHandler;
 using GetOrderedProblemPoolMembersQuery = StackDuel.Application.Queries.ProblemPools.GetOrderedProblemPoolMembers.GetOrderedProblemPoolMembersQuery;
 

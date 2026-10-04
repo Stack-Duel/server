@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
 using StackDuel.Domain.Users.ValueObjects;
-using Ardalis.Result;
-using Moq;
 using SelectUserAvatarCommand = StackDuel.Application.Commands.Users.SelectUserAvatar.SelectUserAvatarCommand;
 using SelectUserAvatarHandler = StackDuel.Application.Commands.Users.SelectUserAvatar.SelectUserAvatarHandler;
 using SelectUserAvatarValidator = StackDuel.Application.Commands.Users.SelectUserAvatar.SelectUserAvatarValidator;

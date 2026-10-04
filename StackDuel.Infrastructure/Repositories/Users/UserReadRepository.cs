@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Groups.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Application.Users.Dtos.Admin;
 using StackDuel.Infrastructure.Persistence.Read;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Users;
 

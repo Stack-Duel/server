@@ -1,7 +1,7 @@
-﻿using StackDuel.Application.Notifications;
+﻿using Microsoft.AspNetCore.SignalR;
+using StackDuel.Application.Notifications;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Submissions.Enums;
-using Microsoft.AspNetCore.SignalR;
 
 namespace StackDuel.Api.Hubs;
 

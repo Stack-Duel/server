@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Problems;
@@ -11,8 +13,6 @@ using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestCaseGeneration.Enums;
 using StackDuel.Infrastructure.Persistence;
 using StackDuel.Infrastructure.ProblemValidation;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Infrastructure.Jobs.ProblemValidation;
 

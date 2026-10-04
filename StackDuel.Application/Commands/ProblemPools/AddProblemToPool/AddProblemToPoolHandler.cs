@@ -1,7 +1,7 @@
-using StackDuel.Application.Problems;
-using StackDuel.Domain.Problems.Entities;
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Application.Problems;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Application.Commands.ProblemPools.AddProblemToPool;
 

@@ -1,6 +1,6 @@
+using Ardalis.Result;
 using StackDuel.Application.Groups;
 using StackDuel.Application.Groups.Dtos;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Groups.GetGroups;
 

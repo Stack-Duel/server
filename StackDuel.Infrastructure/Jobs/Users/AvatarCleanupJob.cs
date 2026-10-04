@@ -1,6 +1,6 @@
-using StackDuel.Application.Jobs.Users;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using StackDuel.Application.Jobs.Users;
 
 namespace StackDuel.Infrastructure.Jobs.Users;
 

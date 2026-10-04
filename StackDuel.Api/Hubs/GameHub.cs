@@ -1,12 +1,12 @@
-﻿using StackDuel.Application.Games.Dtos;
+﻿using Ardalis.Result;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Notifications;
 using StackDuel.Application.Queries.Games.GetGameState;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.Games;
-using Ardalis.Result;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
 namespace StackDuel.Api.Hubs;

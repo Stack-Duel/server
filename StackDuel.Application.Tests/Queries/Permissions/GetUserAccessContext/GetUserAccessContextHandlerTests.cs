@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Authorization;
-using Ardalis.Result;
-using Moq;
 using GetUserAccessContextHandler = StackDuel.Application.Queries.Permissions.GetUserAccessContext.GetUserAccessContextHandler;
 using GetUserAccessContextQuery = StackDuel.Application.Queries.Permissions.GetUserAccessContext.GetUserAccessContextQuery;
 

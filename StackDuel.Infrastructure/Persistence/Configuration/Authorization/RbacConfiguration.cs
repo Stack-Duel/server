@@ -1,7 +1,7 @@
-﻿using StackDuel.Domain.Authorization.Rbac.Entities;
-using StackDuel.Domain.Authorization.Rbac.ValueObjects;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Authorization.Rbac.Entities;
+using StackDuel.Domain.Authorization.Rbac.ValueObjects;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Authorization;
 

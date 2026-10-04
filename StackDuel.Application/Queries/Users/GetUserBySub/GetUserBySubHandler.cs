@@ -1,6 +1,6 @@
-﻿using StackDuel.Application.Users;
+﻿using Ardalis.Result;
+using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Users.GetUserBySub;
 

@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.Submissions.CreateSubmission;
 using StackDuel.Application.Commands.Submissions.ReceiveJudge0Callback;
 using StackDuel.Application.Pagination;
@@ -7,8 +9,6 @@ using StackDuel.Application.Queries.Submissions.GetSubmissionsByProblemSlug;
 using StackDuel.Application.Queries.Submissions.GetSubmissionStatus;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Submissions;
 

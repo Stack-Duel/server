@@ -1,7 +1,7 @@
-using StackDuel.Application.Groups;
-using StackDuel.Application.Groups.Dtos;
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Groups;
+using StackDuel.Application.Groups.Dtos;
 using GetGroupsHandler = StackDuel.Application.Queries.Groups.GetGroups.GetGroupsHandler;
 using GetGroupsQuery = StackDuel.Application.Queries.Groups.GetGroups.GetGroupsQuery;
 

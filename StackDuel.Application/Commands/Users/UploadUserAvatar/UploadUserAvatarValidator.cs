@@ -1,5 +1,5 @@
-using StackDuel.Application.Images;
 using FluentValidation;
+using StackDuel.Application.Images;
 
 namespace StackDuel.Application.Commands.Users.UploadUserAvatar;
 

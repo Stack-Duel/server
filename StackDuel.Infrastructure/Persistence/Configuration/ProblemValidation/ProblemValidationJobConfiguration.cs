@@ -1,6 +1,6 @@
-using StackDuel.Domain.ProblemValidation.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.ProblemValidation.Entities;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.ProblemValidation;

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Events;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Application.Messaging;
@@ -6,8 +8,6 @@ using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.SubmissionJobs.Enums;
 using StackDuel.Domain.Submissions;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Infrastructure.Jobs.Submissions;
 

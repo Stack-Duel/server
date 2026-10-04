@@ -1,7 +1,7 @@
-using StackDuel.Domain.ExecutionPipelines.Entities;
-using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.ExecutionPipelines.Entities;
+using StackDuel.Infrastructure.ExecutionEngine.Assert;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Execution;
 

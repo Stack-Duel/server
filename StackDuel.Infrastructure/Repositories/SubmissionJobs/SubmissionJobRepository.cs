@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.SubmissionJobs.Entities;
 using StackDuel.Domain.SubmissionJobs.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.SubmissionJobs;
 

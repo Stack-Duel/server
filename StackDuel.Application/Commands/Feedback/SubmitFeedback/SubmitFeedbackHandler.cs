@@ -1,11 +1,11 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Events;
 using StackDuel.Domain.Feedback;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.Factories;
 using StackDuel.Domain.Feedback.ValueObjects;
 using StackDuel.Domain.SeedWork;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Feedback.SubmitFeedback;
 

@@ -1,7 +1,7 @@
-using StackDuel.Application.Groups.Dtos;
-using StackDuel.Application.Queries.Groups.GetGroups;
 using Ardalis.Result;
 using MediatR;
+using StackDuel.Application.Groups.Dtos;
+using StackDuel.Application.Queries.Groups.GetGroups;
 
 namespace StackDuel.Application.Services.Groups;
 

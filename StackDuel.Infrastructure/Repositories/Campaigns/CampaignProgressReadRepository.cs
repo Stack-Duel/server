@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Campaigns;
 using StackDuel.Domain.Campaigns.Entities;
 using StackDuel.Domain.Campaigns.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Campaigns;
 

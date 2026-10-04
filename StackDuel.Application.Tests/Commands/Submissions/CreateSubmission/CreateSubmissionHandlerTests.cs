@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.ExecutionPipelines;
@@ -9,8 +11,6 @@ using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.Factories;
 using StackDuel.Domain.TestSuites;
-using Ardalis.Result;
-using Moq;
 using CreateSubmissionCommand = StackDuel.Application.Commands.Submissions.CreateSubmission.CreateSubmissionCommand;
 using CreateSubmissionHandler = StackDuel.Application.Commands.Submissions.CreateSubmission.CreateSubmissionHandler;
 using CreateSubmissionValidator = StackDuel.Application.Commands.Submissions.CreateSubmission.CreateSubmissionValidator;

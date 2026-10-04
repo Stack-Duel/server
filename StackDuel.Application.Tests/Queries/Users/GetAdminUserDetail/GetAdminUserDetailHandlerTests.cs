@@ -1,7 +1,7 @@
-using StackDuel.Application.Users;
-using StackDuel.Application.Users.Dtos.Admin;
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Users;
+using StackDuel.Application.Users.Dtos.Admin;
 using GetAdminUserDetailHandler = StackDuel.Application.Queries.Users.GetAdminUserDetail.GetAdminUserDetailHandler;
 using GetAdminUserDetailQuery = StackDuel.Application.Queries.Users.GetAdminUserDetail.GetAdminUserDetailQuery;
 

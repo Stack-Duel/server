@@ -1,9 +1,9 @@
+using Ardalis.Result;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Tracks;
 using StackDuel.Application.Tracks.Dtos;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Tracks.GetTracks;
 

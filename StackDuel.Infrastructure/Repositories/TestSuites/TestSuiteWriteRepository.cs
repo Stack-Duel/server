@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.TestCaseGeneration;
 using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestSuites;
@@ -5,7 +6,6 @@ using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
 using StackDuel.Domain.TestSuites.ValueObjects;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.TestSuites;
 

@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Games;
 

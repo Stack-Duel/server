@@ -1,7 +1,7 @@
-using StackDuel.Domain.Feedback;
-using StackDuel.Domain.Feedback.Entities;
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Domain.Feedback;
+using StackDuel.Domain.Feedback.Entities;
 
 namespace StackDuel.Application.Commands.Feedback.UpdateFeedbackStatus;
 

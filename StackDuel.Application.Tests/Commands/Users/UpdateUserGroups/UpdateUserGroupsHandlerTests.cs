@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Events;
 using StackDuel.Application.Groups;
 using StackDuel.Application.Groups.Dtos;
@@ -8,8 +10,6 @@ using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Events;
 using StackDuel.Domain.Users.Factories;
-using Ardalis.Result;
-using Moq;
 using UpdateUserGroupsCommand = StackDuel.Application.Commands.Users.UpdateUserGroups.UpdateUserGroupsCommand;
 using UpdateUserGroupsHandler = StackDuel.Application.Commands.Users.UpdateUserGroups.UpdateUserGroupsHandler;
 using UpdateUserGroupsValidator = StackDuel.Application.Commands.Users.UpdateUserGroups.UpdateUserGroupsValidator;

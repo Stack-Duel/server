@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
-using Ardalis.Result;
-using Moq;
 using UpdateProfilePrivacyCommand = StackDuel.Application.Commands.Users.UpdateProfilePrivacy.UpdateProfilePrivacyCommand;
 using UpdateProfilePrivacyHandler = StackDuel.Application.Commands.Users.UpdateProfilePrivacy.UpdateProfilePrivacyHandler;
 using UpdateProfilePrivacyValidator = StackDuel.Application.Commands.Users.UpdateProfilePrivacy.UpdateProfilePrivacyValidator;

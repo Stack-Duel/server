@@ -1,7 +1,7 @@
+using Bogus;
 using StackDuel.Application.TestCaseGeneration;
 using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
-using Bogus;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.TestCaseGeneration;

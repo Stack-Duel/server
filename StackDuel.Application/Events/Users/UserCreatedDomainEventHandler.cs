@@ -1,7 +1,7 @@
+using MediatR;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Events;
-using MediatR;
 
 namespace StackDuel.Application.Events.Users;
 

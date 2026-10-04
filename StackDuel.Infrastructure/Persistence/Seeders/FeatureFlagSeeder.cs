@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.FeatureFlags;
 using StackDuel.Domain.FeatureFlags.Entities;
 using StackDuel.Domain.FeatureFlags.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders;
 

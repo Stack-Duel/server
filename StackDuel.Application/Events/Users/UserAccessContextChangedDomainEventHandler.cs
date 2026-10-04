@@ -1,6 +1,6 @@
+using MediatR;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.Users.Events;
-using MediatR;
 
 namespace StackDuel.Application.Events.Users;
 

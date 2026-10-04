@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Campaigns;
 using StackDuel.Domain.Campaigns;
 using StackDuel.Domain.Campaigns.Entities;
 using StackDuel.Domain.Campaigns.Enums;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Campaigns.EnrollInCampaign;
 

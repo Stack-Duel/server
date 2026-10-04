@@ -1,7 +1,7 @@
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Problems;
 using StackDuel.Domain.Problems.ValueObjects;
-using Moq;
 
 namespace StackDuel.Application.Tests.Games;
 

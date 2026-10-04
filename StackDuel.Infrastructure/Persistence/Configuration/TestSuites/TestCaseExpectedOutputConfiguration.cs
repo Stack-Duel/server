@@ -1,6 +1,6 @@
-using StackDuel.Domain.TestSuites.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.TestSuites.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.TestSuites;
 

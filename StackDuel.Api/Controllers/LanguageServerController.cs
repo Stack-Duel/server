@@ -1,11 +1,11 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.LanguageServer;
 using StackDuel.Api.Responses.LanguageServer;
 using StackDuel.Application;
 using StackDuel.Application.LanguageServer;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace StackDuel.Api.Controllers;
 

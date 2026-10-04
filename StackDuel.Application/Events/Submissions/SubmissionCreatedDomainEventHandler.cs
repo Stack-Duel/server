@@ -1,7 +1,7 @@
+using MediatR;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Submissions.Events;
-using MediatR;
 
 namespace StackDuel.Application.Events.Submissions;
 

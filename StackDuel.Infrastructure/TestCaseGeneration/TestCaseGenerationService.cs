@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Application.Languages;
 using StackDuel.Application.TestCaseGeneration;
@@ -8,7 +9,6 @@ using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
 using StackDuel.Infrastructure.ExecutionEngine;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.TestCaseGeneration;
 

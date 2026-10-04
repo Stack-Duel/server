@@ -1,6 +1,6 @@
-﻿using StackDuel.Domain.Submissions.Enums;
+﻿using FluentValidation;
+using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.ValueObjects;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Submissions.CreateSubmission;
 

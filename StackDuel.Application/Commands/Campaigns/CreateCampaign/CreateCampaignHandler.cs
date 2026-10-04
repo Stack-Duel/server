@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Campaigns;
 using StackDuel.Domain.Campaigns;
 using StackDuel.Domain.Campaigns.Entities;
-using Ardalis.Result;
-using FluentValidation;
 using System.Text;
 
 namespace StackDuel.Application.Commands.Campaigns.CreateCampaign;

@@ -1,7 +1,7 @@
+using Ardalis.Result;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos.Admin;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Users.GetAdminUsersPageable;
 

@@ -1,9 +1,9 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Authorization.Rbac.Entities;
 using StackDuel.Domain.Authorization.Rbac.ValueObjects;
 using StackDuel.Domain.FeatureFlags.Entities;
 using StackDuel.Domain.FeatureFlags.ValueObjects;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.FeatureFlags;
 

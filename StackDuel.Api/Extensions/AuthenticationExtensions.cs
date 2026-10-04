@@ -1,8 +1,8 @@
-using StackDuel.Api.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using StackDuel.Api.Settings;
 
 namespace StackDuel.Api.Extensions;
 

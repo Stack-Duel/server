@@ -1,6 +1,6 @@
-using StackDuel.Application.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackDuel.Application.Settings;
 
 namespace StackDuel.Infrastructure.Settings;
 

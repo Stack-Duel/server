@@ -1,7 +1,7 @@
-using StackDuel.Domain.Users.Entities;
-using StackDuel.Domain.Users.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Users.Entities;
+using StackDuel.Domain.Users.ValueObjects;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Users;
 

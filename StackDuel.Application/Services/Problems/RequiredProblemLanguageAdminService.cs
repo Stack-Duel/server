@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.Problems.RequiredLanguages.AddRequiredProblemLanguage;
 using StackDuel.Application.Commands.Problems.RequiredLanguages.RemoveRequiredProblemLanguage;
 using StackDuel.Application.Problems.RequiredLanguages.Dtos;
 using StackDuel.Application.Queries.Problems.GetRequiredProblemLanguages;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Problems;
 

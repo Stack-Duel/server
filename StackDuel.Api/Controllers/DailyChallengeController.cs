@@ -1,3 +1,8 @@
+using Ardalis.Result;
+using Ardalis.Result.AspNetCore;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
 using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
@@ -5,11 +10,6 @@ using StackDuel.Api.Requests.DailyChallenge;
 using StackDuel.Application;
 using StackDuel.Application.DailyChallenges.Dtos;
 using StackDuel.Application.Services.DailyChallenges;
-using Ardalis.Result;
-using Ardalis.Result.AspNetCore;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace StackDuel.Api.Controllers;
 

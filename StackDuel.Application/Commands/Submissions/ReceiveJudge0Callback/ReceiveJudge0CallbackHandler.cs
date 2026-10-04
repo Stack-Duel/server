@@ -1,8 +1,8 @@
+using Ardalis.Result;
 using StackDuel.Application.Commands;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
-using Ardalis.Result;
 using System.Security.Cryptography;
 using System.Text;
 

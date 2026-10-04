@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using MediatR;
 using StackDuel.Application.Commands.Feedback.SubmitFeedback;
 using StackDuel.Application.Commands.Feedback.UpdateFeedbackStatus;
 using StackDuel.Application.Feedback.Dtos;
@@ -5,8 +7,6 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Queries.Feedback.GetAdminFeedbackDetail;
 using StackDuel.Application.Queries.Feedback.GetAdminFeedbackPageable;
 using StackDuel.Domain.Feedback.Enums;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Feedback;
 

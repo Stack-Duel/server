@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
-using Ardalis.Result;
-using Moq;
 using GetAdminSubmissionsPageableHandler = StackDuel.Application.Queries.Submissions.GetAdminSubmissionsPageable.GetAdminSubmissionsPageableHandler;
 using GetAdminSubmissionsPageableQuery = StackDuel.Application.Queries.Submissions.GetAdminSubmissionsPageable.GetAdminSubmissionsPageableQuery;
 

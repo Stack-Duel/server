@@ -1,5 +1,5 @@
-using StackDuel.Domain.Authorization.Rbac.Enums;
 using Npgsql;
+using StackDuel.Domain.Authorization.Rbac.Enums;
 
 namespace StackDuel.IntegrationTests.Infrastructure;
 

@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Domain.DailyChallenges.Entities;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace StackDuel.Infrastructure.Repositories.DailyChallenges;
 

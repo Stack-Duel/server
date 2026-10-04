@@ -1,9 +1,9 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Languages.Dtos;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Languages.ValueObjects;
-using Ardalis.Result;
-using Moq;
 using GetLanguagesHandler = StackDuel.Application.Queries.Languages.GetLanguages.GetLanguagesHandler;
 using GetLanguagesQuery = StackDuel.Application.Queries.Languages.GetLanguages.GetLanguagesQuery;
 

@@ -1,7 +1,7 @@
+using Ardalis.Result;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Submissions.GetAdminSubmissionsPageable;
 

@@ -1,6 +1,6 @@
+using MediatR;
 using StackDuel.Application.Commands;
 using StackDuel.Application.Games;
-using MediatR;
 
 namespace StackDuel.Application.Commands.Games.CreateGame;
 

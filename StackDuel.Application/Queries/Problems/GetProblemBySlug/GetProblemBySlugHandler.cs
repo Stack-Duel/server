@@ -1,7 +1,7 @@
-﻿using StackDuel.Application.Languages;
+﻿using Ardalis.Result;
+using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Problems.GetProblemBySlug;
 

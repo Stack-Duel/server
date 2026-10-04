@@ -1,12 +1,12 @@
-﻿using StackDuel.Application.Events;
+﻿using Ardalis.Result;
+using FluentValidation;
+using StackDuel.Application.Events;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
 using StackDuel.Domain.Users.ValueObjects;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Users.UpsertUser;
 

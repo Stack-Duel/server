@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Events;
 using StackDuel.Application.Groups;
 using StackDuel.Application.Groups.Dtos;
@@ -5,8 +7,6 @@ using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Events;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Users.UpdateUserGroups;
 

@@ -1,8 +1,8 @@
-﻿using StackDuel.Api.Attributes;
+﻿using Microsoft.ApplicationInsights.DataContracts;
+using StackDuel.Api.Attributes;
 using StackDuel.Application;
 using StackDuel.Application.Services.FeatureFlags;
 using StackDuel.Application.Services.Users;
-using Microsoft.ApplicationInsights.DataContracts;
 using System.Security.Claims;
 
 namespace StackDuel.Api.Middleware;

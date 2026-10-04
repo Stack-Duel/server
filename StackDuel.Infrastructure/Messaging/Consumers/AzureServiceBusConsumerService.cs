@@ -1,3 +1,8 @@
+using Azure.Messaging.ServiceBus;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Commands.Games.CompleteExpiredGame;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Messaging;
@@ -5,11 +10,6 @@ using StackDuel.Application.Messaging.Messages;
 using StackDuel.Infrastructure.Jobs.ProblemValidation;
 using StackDuel.Infrastructure.Jobs.Submissions;
 using StackDuel.Infrastructure.Jobs.TestCaseGeneration;
-using Azure.Messaging.ServiceBus;
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Messaging.Consumers;

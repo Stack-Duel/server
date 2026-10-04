@@ -1,9 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Campaigns;
 using StackDuel.Domain.Campaigns;
 using StackDuel.Domain.Campaigns.Entities;
 using StackDuel.Domain.Campaigns.Enums;
 using StackDuel.Domain.Problems.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders.Campaigns;
 

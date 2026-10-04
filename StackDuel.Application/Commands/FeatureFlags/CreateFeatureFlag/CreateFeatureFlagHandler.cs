@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Domain.FeatureFlags;
 using StackDuel.Domain.FeatureFlags.Entities;
 using StackDuel.Domain.FeatureFlags.ValueObjects;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.FeatureFlags.CreateFeatureFlag;
 

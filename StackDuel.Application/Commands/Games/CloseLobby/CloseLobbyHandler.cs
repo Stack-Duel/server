@@ -1,10 +1,10 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Games.CloseLobby;
 

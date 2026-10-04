@@ -1,7 +1,7 @@
-using StackDuel.Application.Problems;
-using StackDuel.Domain.Problems.Entities;
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Problems;
+using StackDuel.Domain.Problems.Entities;
 using ReorderProblemPoolCommand = StackDuel.Application.Commands.ProblemPools.ReorderProblemPool.ReorderProblemPoolCommand;
 using ReorderProblemPoolHandler = StackDuel.Application.Commands.ProblemPools.ReorderProblemPool.ReorderProblemPoolHandler;
 using ReorderProblemPoolValidator = StackDuel.Application.Commands.ProblemPools.ReorderProblemPool.ReorderProblemPoolValidator;

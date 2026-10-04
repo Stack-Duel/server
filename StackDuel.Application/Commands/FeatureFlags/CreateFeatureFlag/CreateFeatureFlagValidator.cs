@@ -1,5 +1,5 @@
-using StackDuel.Domain.FeatureFlags.ValueObjects;
 using FluentValidation;
+using StackDuel.Domain.FeatureFlags.ValueObjects;
 
 namespace StackDuel.Application.Commands.FeatureFlags.CreateFeatureFlag;
 

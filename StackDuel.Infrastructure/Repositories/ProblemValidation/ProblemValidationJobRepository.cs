@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.ProblemValidation;
 using StackDuel.Domain.ProblemValidation.Entities;
 using StackDuel.Domain.ProblemValidation.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.ProblemValidation;
 

@@ -1,6 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.ExecutionPipelines.Enums;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders;
 

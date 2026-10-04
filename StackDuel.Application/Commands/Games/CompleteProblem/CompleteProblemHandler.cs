@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
@@ -6,8 +8,6 @@ using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Submissions;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Enums;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Games.CompleteProblem;
 

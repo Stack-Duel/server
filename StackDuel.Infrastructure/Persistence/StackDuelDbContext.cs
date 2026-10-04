@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Achievements.Entities;
 using StackDuel.Domain.Audit.Entities;
 using StackDuel.Domain.Authorization.Rbac.Entities;
@@ -23,7 +24,6 @@ using StackDuel.Domain.Tracks.Entities;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Persistence;
 

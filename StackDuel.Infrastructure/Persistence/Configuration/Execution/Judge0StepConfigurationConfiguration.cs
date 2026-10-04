@@ -1,7 +1,7 @@
-using StackDuel.Domain.ExecutionPipelines.Entities;
-using StackDuel.Infrastructure.ExecutionEngine.Judge0;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.ExecutionPipelines.Entities;
+using StackDuel.Infrastructure.ExecutionEngine.Judge0;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Execution;
 

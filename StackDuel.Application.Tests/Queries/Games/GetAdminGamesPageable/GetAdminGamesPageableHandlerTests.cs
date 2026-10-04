@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Pagination;
@@ -5,8 +7,6 @@ using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Ardalis.Result;
-using Moq;
 using GetAdminGamesPageableHandler = StackDuel.Application.Queries.Games.GetAdminGamesPageable.GetAdminGamesPageableHandler;
 using GetAdminGamesPageableQuery = StackDuel.Application.Queries.Games.GetAdminGamesPageable.GetAdminGamesPageableQuery;
 

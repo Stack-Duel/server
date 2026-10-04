@@ -1,8 +1,8 @@
-﻿using StackDuel.Application.Commands.Games.CompleteExpiredGame;
+﻿using MediatR;
+using Microsoft.Extensions.Logging;
+using StackDuel.Application.Commands.Games.CompleteExpiredGame;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games.Entities;
-using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Infrastructure.Jobs.Games;
 

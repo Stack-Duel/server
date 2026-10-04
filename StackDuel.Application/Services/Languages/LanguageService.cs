@@ -1,7 +1,7 @@
-using StackDuel.Application.Languages.Dtos;
-using StackDuel.Application.Queries.Languages.GetLanguages;
 using Ardalis.Result;
 using MediatR;
+using StackDuel.Application.Languages.Dtos;
+using StackDuel.Application.Queries.Languages.GetLanguages;
 
 namespace StackDuel.Application.Services.Languages;
 

@@ -1,4 +1,6 @@
-﻿using StackDuel.Application.Commands.Problems.AddProblemSetup;
+﻿using Ardalis.Result;
+using MediatR;
+using StackDuel.Application.Commands.Problems.AddProblemSetup;
 using StackDuel.Application.Commands.Problems.CreateProblemDraft;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemReaction;
@@ -17,8 +19,6 @@ using StackDuel.Application.Queries.Problems.GetProblemSetup;
 using StackDuel.Application.Queries.Problems.GetProblemsPageable;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
-using Ardalis.Result;
-using MediatR;
 
 namespace StackDuel.Application.Services.Problems;
 

@@ -1,5 +1,5 @@
-using StackDuel.Application.Games;
 using FluentValidation.Results;
+using StackDuel.Application.Games;
 using CreateGameCommand = StackDuel.Application.Commands.Games.CreateGame.CreateGameCommand;
 using CreateGameValidator = StackDuel.Application.Commands.Games.CreateGame.CreateGameValidator;
 

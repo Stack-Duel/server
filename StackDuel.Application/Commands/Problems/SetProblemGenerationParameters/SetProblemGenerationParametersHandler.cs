@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 

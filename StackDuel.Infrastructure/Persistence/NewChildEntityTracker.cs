@@ -1,5 +1,5 @@
-using StackDuel.Domain.SeedWork;
 using Microsoft.EntityFrameworkCore;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Infrastructure.Persistence;
 

@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Application.Problems;
 using StackDuel.Domain.DailyChallenges.Entities;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.DailyChallenges.UpdateDailyChallenge;
 

@@ -1,11 +1,11 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Submissions;
 using StackDuel.Domain.DailyChallenges.Entities;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
-using Ardalis.Result;
-using Moq;
 using GetTodaysDailyChallengeHandler = StackDuel.Application.Queries.DailyChallenges.GetTodaysDailyChallenge.GetTodaysDailyChallengeHandler;
 using GetTodaysDailyChallengeQuery = StackDuel.Application.Queries.DailyChallenges.GetTodaysDailyChallenge.GetTodaysDailyChallengeQuery;
 

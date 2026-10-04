@@ -1,10 +1,10 @@
+using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Images;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.ValueObjects;
-using Ardalis.Result;
-using FluentValidation;
 
 namespace StackDuel.Application.Commands.Users.UploadUserAvatar;
 

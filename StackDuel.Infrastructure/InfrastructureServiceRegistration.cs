@@ -1,3 +1,11 @@
+using Azure.Messaging.ServiceBus;
+using Azure.Storage.Blobs;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Quartz;
+using RabbitMQ.Client;
 using StackDuel.Application.Audit;
 using StackDuel.Application.Campaigns;
 using StackDuel.Application.Configuration;
@@ -80,14 +88,6 @@ using StackDuel.Infrastructure.Repositories.Users;
 using StackDuel.Infrastructure.Settings;
 using StackDuel.Infrastructure.Storage;
 using StackDuel.Infrastructure.TestCaseGeneration;
-using Azure.Messaging.ServiceBus;
-using Azure.Storage.Blobs;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Quartz;
-using RabbitMQ.Client;
 
 namespace StackDuel.Infrastructure;
 

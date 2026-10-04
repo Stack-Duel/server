@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Authorization;
 using StackDuel.Domain.Authorization.Rbac.Enums;
 using StackDuel.Infrastructure.Persistence.Read;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Authorization;
 

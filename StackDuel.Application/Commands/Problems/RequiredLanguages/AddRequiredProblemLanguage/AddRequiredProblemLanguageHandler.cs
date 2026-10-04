@@ -1,7 +1,7 @@
-using StackDuel.Domain.Problems.RequiredLanguages;
-using StackDuel.Domain.Problems.RequiredLanguages.Entities;
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Domain.Problems.RequiredLanguages;
+using StackDuel.Domain.Problems.RequiredLanguages.Entities;
 
 namespace StackDuel.Application.Commands.Problems.RequiredLanguages.AddRequiredProblemLanguage;
 

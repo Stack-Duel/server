@@ -1,7 +1,7 @@
-using StackDuel.Domain.Achievements.Entities;
-using StackDuel.Domain.Achievements.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Achievements.Entities;
+using StackDuel.Domain.Achievements.ValueObjects;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Achievements;
 

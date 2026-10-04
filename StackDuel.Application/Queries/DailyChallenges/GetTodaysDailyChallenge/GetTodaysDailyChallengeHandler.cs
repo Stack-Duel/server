@@ -1,10 +1,10 @@
+using Ardalis.Result;
 using StackDuel.Application.DailyChallenges;
 using StackDuel.Application.DailyChallenges.Dtos;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Submissions;
 using StackDuel.Domain.DailyChallenges.Entities;
 using StackDuel.Domain.Problems.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.DailyChallenges.GetTodaysDailyChallenge;
 

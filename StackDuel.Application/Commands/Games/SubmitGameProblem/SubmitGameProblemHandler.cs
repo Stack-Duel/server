@@ -1,12 +1,12 @@
+using Ardalis.Result;
+using FluentValidation;
+using MediatR;
 using StackDuel.Application.Commands.Submissions.CreateSubmission;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Submissions.Enums;
-using Ardalis.Result;
-using FluentValidation;
-using MediatR;
 
 namespace StackDuel.Application.Commands.Games.SubmitGameProblem;
 

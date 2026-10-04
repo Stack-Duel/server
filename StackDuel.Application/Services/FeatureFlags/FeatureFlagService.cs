@@ -1,5 +1,5 @@
-using StackDuel.Application.Queries.FeatureFlags.GetFeatureFlagEnabled;
 using MediatR;
+using StackDuel.Application.Queries.FeatureFlags.GetFeatureFlagEnabled;
 
 namespace StackDuel.Application.Services.FeatureFlags;
 

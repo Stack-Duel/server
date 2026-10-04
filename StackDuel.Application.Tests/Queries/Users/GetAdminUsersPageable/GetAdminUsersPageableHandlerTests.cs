@@ -1,8 +1,8 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos.Admin;
-using Ardalis.Result;
-using Moq;
 using GetAdminUsersPageableHandler = StackDuel.Application.Queries.Users.GetAdminUsersPageable.GetAdminUsersPageableHandler;
 using GetAdminUsersPageableQuery = StackDuel.Application.Queries.Users.GetAdminUsersPageable.GetAdminUsersPageableQuery;
 

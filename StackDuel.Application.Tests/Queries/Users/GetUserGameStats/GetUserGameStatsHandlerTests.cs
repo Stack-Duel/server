@@ -1,10 +1,10 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Queries.Users.GetUserGameStats;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games.Entities;
-using Ardalis.Result;
-using Moq;
 
 namespace StackDuel.Application.Tests.Queries.Users.GetUserGameStats;
 

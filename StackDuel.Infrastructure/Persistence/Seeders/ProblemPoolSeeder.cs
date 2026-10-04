@@ -1,6 +1,6 @@
-using StackDuel.Domain.Problems.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders;
 

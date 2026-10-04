@@ -1,7 +1,7 @@
+using Ardalis.Result;
 using StackDuel.Application.Feedback;
 using StackDuel.Application.Feedback.Dtos;
 using StackDuel.Application.Pagination;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Feedback.GetAdminFeedbackPageable;
 

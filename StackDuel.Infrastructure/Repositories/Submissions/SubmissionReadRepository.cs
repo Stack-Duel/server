@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
@@ -6,7 +7,6 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Submissions;
 

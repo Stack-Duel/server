@@ -1,8 +1,8 @@
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
-using Microsoft.Extensions.Logging;
 
 namespace StackDuel.Application.Games;
 

@@ -1,7 +1,7 @@
+using Ardalis.Result;
 using StackDuel.Application.Campaigns;
 using StackDuel.Application.Campaigns.Dtos;
 using StackDuel.Domain.Campaigns.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Campaigns.GetCampaignBySlug;
 

@@ -1,5 +1,5 @@
-using StackDuel.Domain.Tracks.Entities;
 using Microsoft.EntityFrameworkCore;
+using StackDuel.Domain.Tracks.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Seeders;
 

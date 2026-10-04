@@ -1,6 +1,6 @@
+using Ardalis.Result;
 using StackDuel.Application.FeatureFlags;
 using StackDuel.Application.FeatureFlags.Dtos;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.FeatureFlags.GetFeatureFlags;
 

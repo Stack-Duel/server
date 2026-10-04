@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using StackDuel.Application.Audit;
 using StackDuel.Domain.Audit.Entities;
 using StackDuel.Domain.Authorization.Rbac;
@@ -5,8 +7,6 @@ using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.ValueObjects;
 using StackDuel.Infrastructure;
 using StackDuel.Infrastructure.Persistence.Seeders;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 bool seedStatic = args.Contains("--static") || args.Contains("--all");
 bool seedDemo = args.Contains("--demo") || args.Contains("--all");

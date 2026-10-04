@@ -1,7 +1,7 @@
-using StackDuel.Application.Dashboard.Dtos;
-using StackDuel.Application.Queries.Dashboard.GetAdminDashboardStats;
 using Ardalis.Result;
 using MediatR;
+using StackDuel.Application.Dashboard.Dtos;
+using StackDuel.Application.Queries.Dashboard.GetAdminDashboardStats;
 
 namespace StackDuel.Application.Services.Dashboard;
 

@@ -1,7 +1,7 @@
-using StackDuel.Domain.ExecutionAssets.Entities;
-using StackDuel.Domain.ExecutionAssets.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.ExecutionAssets.Entities;
+using StackDuel.Domain.ExecutionAssets.ValueObjects;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.ExecutionAssets;
 

@@ -1,6 +1,6 @@
-using StackDuel.Domain.Audit.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StackDuel.Domain.Audit.Entities;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Audit;
 

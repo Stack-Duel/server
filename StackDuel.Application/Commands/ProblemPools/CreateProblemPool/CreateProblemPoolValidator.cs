@@ -1,5 +1,5 @@
-using StackDuel.Domain.Problems.Entities;
 using FluentValidation;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Application.Commands.ProblemPools.CreateProblemPool;
 

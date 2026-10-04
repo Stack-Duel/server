@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
@@ -5,7 +6,6 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace StackDuel.Infrastructure.Repositories.Problems;
 

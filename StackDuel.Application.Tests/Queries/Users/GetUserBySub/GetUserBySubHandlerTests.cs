@@ -1,7 +1,7 @@
-using StackDuel.Application.Users;
-using StackDuel.Application.Users.Dtos;
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Users;
+using StackDuel.Application.Users.Dtos;
 using GetUserBySubHandler = StackDuel.Application.Queries.Users.GetUserBySub.GetUserBySubHandler;
 using GetUserBySubQuery = StackDuel.Application.Queries.Users.GetUserBySub.GetUserBySubQuery;
 

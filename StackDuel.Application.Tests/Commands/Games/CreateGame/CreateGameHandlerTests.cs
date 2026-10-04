@@ -1,3 +1,5 @@
+using Ardalis.Result;
+using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Tracks;
@@ -7,8 +9,6 @@ using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Languages.ValueObjects;
 using StackDuel.Domain.Tracks.Entities;
-using Ardalis.Result;
-using Moq;
 using CreateGameCommand = StackDuel.Application.Commands.Games.CreateGame.CreateGameCommand;
 using CreateGameHandler = StackDuel.Application.Commands.Games.CreateGame.CreateGameHandler;
 using CreateGameValidator = StackDuel.Application.Commands.Games.CreateGame.CreateGameValidator;
