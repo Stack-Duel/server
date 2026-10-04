@@ -1,187 +1,243 @@
-using StackDuel.Domain.User.Exceptions;
-using StackDuel.Domain.User.ValueObjects;
-using DomainUser = StackDuel.Domain.User.Entities.User;
+using StackDuel.Domain.Users.Exceptions;
+using StackDuel.Domain.Users.ValueObjects;
+using UserEntity = StackDuel.Domain.Users.Entities.User;
 
 namespace StackDuel.Domain.Tests.User.Entities;
 
 public class UserTests
 {
-    private static Username ValidUsername(string value = "valid_user") => new(value);
+    private static readonly Username ValidUsername = new("alice");
+    private const string ValidSub = "auth0|abc123";
 
-    private static UserSub ValidSub(string value = "auth0|123456") => new(value);
-
-    [Fact]
-    public void Constructor_SetsUsernameAndSub()
+    [Test]
+    public void ChangeUsername_DoesNotAffectOtherProperties()
     {
-        var username = ValidUsername();
-        var sub = ValidSub();
+        var user = new UserEntity(ValidUsername, ValidSub);
+        var originalId = user.Id;
+        string originalSub = user.Sub;
 
-        var sut = new DomainUser(username, sub);
+        user.ChangeUsername(new Username("bob"));
 
-        Assert.Equal(username, sut.Username);
-        Assert.Equal(sub, sut.Sub);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(user.Id, Is.EqualTo(originalId));
+            Assert.That(user.Sub, Is.EqualTo(originalSub));
+        }
     }
 
-    [Fact]
-    public void Constructor_WithoutOptionalArguments_LeavesTenantAndImageUrlNull()
+    [Test]
+    public void ChangeUsername_FirstChange_Succeeds()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
+        var user = new UserEntity(ValidUsername, ValidSub);
+        var newUsername = new Username("bob");
 
-        Assert.Null(sut.Tenant);
-        Assert.Null(sut.ImageUrl);
+        user.ChangeUsername(newUsername);
+
+        Assert.That(user.Username, Is.EqualTo(newUsername));
     }
 
-    [Fact]
-    public void Constructor_WithTenant_SetsTenant()
+    [Test]
+    public void ChangeUsername_SetsUsernameLastChangedAt()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub(), tenant: "acme");
-
-        Assert.Equal("acme", sut.Tenant);
-    }
-
-    [Fact]
-    public void Constructor_WithImageUrl_SetsImageUrl()
-    {
-        var sut = new DomainUser(ValidUsername(), ValidSub(), imageUrl: "https://example.com/avatar.png");
-
-        Assert.NotNull(sut.ImageUrl);
-        Assert.Equal("https://example.com/avatar.png", sut.ImageUrl!.Value);
-    }
-
-    [Fact]
-    public void Constructor_SetsCreatedAtToUtcNow()
-    {
+        var user = new UserEntity(ValidUsername, ValidSub);
         var before = DateTime.UtcNow;
 
-        var sut = new DomainUser(ValidUsername(), ValidSub());
+        user.ChangeUsername(new Username("bob"));
 
-        var after = DateTime.UtcNow;
-        Assert.InRange(sut.CreatedAt, before, after);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(user.UsernameLastChangedAt, Is.Not.Null);
+            Assert.That(user.UsernameLastChangedAt, Is.GreaterThanOrEqualTo(before));
+        }
     }
 
-    [Fact]
-    public void Constructor_NullUsername_ThrowsInvalidUsernameException()
+    [Test]
+    public void ChangeUsername_ValidUsername_UpdatesUsername()
     {
-        Assert.Throws<InvalidUsernameException>(() => new DomainUser(null!, ValidSub()));
+        var user = new UserEntity(ValidUsername, ValidSub);
+        var newUsername = new Username("bob");
+
+        user.ChangeUsername(newUsername);
+
+        Assert.That(user.Username, Is.EqualTo(newUsername));
     }
 
-    [Fact]
-    public void Constructor_NullSub_ThrowsInvalidUserSubException()
-    {
-        Assert.Throws<InvalidUserSubException>(() => new DomainUser(ValidUsername(), null!));
-    }
-
-    [Fact]
-    public void ChangeUsername_FirstTime_UpdatesUsernameAndTimestamp()
-    {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        var newUsername = new Username("new_username");
-
-        sut.ChangeUsername(newUsername);
-
-        Assert.Equal(newUsername, sut.Username);
-        Assert.NotNull(sut.UsernameLastChangedAt);
-    }
-
-    [Fact]
+    [Test]
     public void ChangeUsername_WithinCooldown_ThrowsUsernameCooldownException()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        sut.ChangeUsername(new Username("first_change"));
+        var user = new UserEntity(ValidUsername, ValidSub);
+        user.ChangeUsername(new Username("bob"));
 
-        Assert.Throws<UsernameCooldownException>(() => sut.ChangeUsername(new Username("second_change")));
+        Assert.Throws<UsernameCooldownException>(() => user.ChangeUsername(new Username("charlie")));
     }
 
-    [Fact]
-    public void ChangeUsername_WithinCooldown_DoesNotChangeUsername()
+    [Test]
+    public void Constructor_BioIsNullByDefault()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        var firstChange = new Username("first_change");
-        sut.ChangeUsername(firstChange);
+        var user = new UserEntity(ValidUsername, ValidSub);
+        Assert.That(user.Bio, Is.Null);
+    }
 
-        try
+    [Test]
+    public void Constructor_EmptyOrWhitespaceSub_ThrowsInvalidUserSubException([Values("", " ", "   ")] string sub)
+    {
+        Assert.Throws<InvalidUserSubException>(() => new UserEntity(ValidUsername, sub));
+    }
+
+    [Test]
+    public void Constructor_GeneratesNonEmptyId()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        Assert.That(user.Id, Is.Not.EqualTo(Guid.Empty));
+    }
+
+    [Test]
+    public void Constructor_GeneratesUniqueIds()
+    {
+        var user1 = new UserEntity(ValidUsername, ValidSub);
+        var user2 = new UserEntity(ValidUsername, ValidSub);
+
+        Assert.That(user1.Id, Is.Not.EqualTo(user2.Id));
+    }
+
+    [Test]
+    public void Constructor_ImageUrlIsNullByDefault()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        Assert.That(user.ImageUrl, Is.Null);
+    }
+
+    [Test]
+    public void Constructor_NullUsername_ThrowsInvalidUsernameException()
+    {
+        Assert.Throws<InvalidUsernameException>(() => new UserEntity(null!, ValidSub));
+    }
+
+    [Test]
+    public void Constructor_SetsSubCorrectly()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        Assert.That(user.Sub, Is.EqualTo(ValidSub));
+    }
+
+    [Test]
+    public void Constructor_SubWithSpecialCharacters_Succeeds()
+    {
+        var user = new UserEntity(ValidUsername, "google-oauth2|abc.123-xyz");
+        Assert.That(user.Sub, Is.EqualTo("google-oauth2|abc.123-xyz"));
+    }
+
+    [Test]
+    public void Constructor_ValidArguments_CreatesUser()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+
+        using (Assert.EnterMultipleScope())
         {
-            sut.ChangeUsername(new Username("second_change"));
+            Assert.That(user.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(user.Sub, Is.EqualTo(ValidSub));
+            Assert.That(user.Username, Is.EqualTo(ValidUsername));
         }
-        catch (UsernameCooldownException) { }
-
-        Assert.Equal(firstChange, sut.Username);
     }
 
-    [Fact]
-    public void UpdateBio_SetsBio()
+    [Test]
+    public void Equals_DifferentInstances_AreNotEqual()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        var bio = new Bio("Hello world");
+        var user1 = new UserEntity(ValidUsername, ValidSub);
+        var user2 = new UserEntity(ValidUsername, ValidSub);
 
-        sut.UpdateBio(bio);
-
-        Assert.Equal(bio, sut.Bio);
+        Assert.That(user1, Is.Not.EqualTo(user2));
     }
 
-    [Fact]
+    [Test]
+    public void Equals_Null_IsNotEqual()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        Assert.That(user.Equals(null), Is.False);
+    }
+
+    [Test]
+    public void Equals_SameInstance_IsEqual()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        Assert.That(user.Equals(user), Is.True);
+    }
+
+    [Test]
+    public void GetHashCode_DifferentUsers_ReturnDifferentHashes()
+    {
+        var user1 = new UserEntity(ValidUsername, ValidSub);
+        var user2 = new UserEntity(ValidUsername, ValidSub);
+
+        Assert.That(user1.GetHashCode(), Is.Not.EqualTo(user2.GetHashCode()));
+    }
+
+    [Test]
+    public void GetHashCode_SameUser_ReturnsSameHash()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        int hash1 = user.GetHashCode();
+        int hash2 = user.GetHashCode();
+        Assert.That(hash1, Is.EqualTo(hash2));
+    }
+
+    [Test]
+    public void UpdateBio_DoesNotAffectOtherProperties()
+    {
+        var user = new UserEntity(ValidUsername, ValidSub);
+        var originalId = user.Id;
+        string originalSub = user.Sub;
+
+        user.UpdateBio(new Bio("Some bio."));
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(user.Id, Is.EqualTo(originalId));
+            Assert.That(user.Sub, Is.EqualTo(originalSub));
+        }
+    }
+
+    [Test]
     public void UpdateBio_Null_ClearsBio()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        sut.UpdateBio(new Bio("Hello world"));
+        var user = new UserEntity(ValidUsername, ValidSub);
+        user.UpdateBio(new Bio("Some bio."));
 
-        sut.UpdateBio(null);
+        user.UpdateBio(null);
 
-        Assert.Null(sut.Bio);
+        Assert.That(user.Bio, Is.Null);
     }
 
-    [Fact]
-    public void UpdateImageUrl_SetsImageUrl()
+    [Test]
+    public void UpdateBio_ValidBio_SetsBio()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        var imageUrl = new ImageUrl("https://example.com/avatar.png");
+        var user = new UserEntity(ValidUsername, ValidSub);
+        var bio = new Bio("I love competitive programming.");
 
-        sut.UpdateImageUrl(imageUrl);
+        user.UpdateBio(bio);
 
-        Assert.Equal(imageUrl, sut.ImageUrl);
+        Assert.That(user.Bio, Is.EqualTo(bio));
     }
 
-    [Fact]
+    [Test]
     public void UpdateImageUrl_Null_ClearsImageUrl()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub(), imageUrl: "https://example.com/avatar.png");
+        var user = new UserEntity(ValidUsername, ValidSub);
+        user.UpdateImageUrl(new ImageUrl("https://example.com/avatar.png"));
 
-        sut.UpdateImageUrl(null);
+        user.UpdateImageUrl(null);
 
-        Assert.Null(sut.ImageUrl);
+        Assert.That(user.ImageUrl, Is.Null);
     }
 
-    [Fact]
-    public void CompleteSetup_SetsSetupCompletedAt()
+    [Test]
+    public void UpdateImageUrl_ValidUrl_SetsImageUrl()
     {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
+        var user = new UserEntity(ValidUsername, ValidSub);
+        var imageUrl = new ImageUrl("https://example.com/avatar.png");
 
-        sut.CompleteSetup();
+        user.UpdateImageUrl(imageUrl);
 
-        Assert.NotNull(sut.SetupCompletedAt);
-    }
-
-    [Fact]
-    public void CompleteSetup_CalledTwice_DoesNotChangeOriginalTimestamp()
-    {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-        sut.CompleteSetup();
-        var firstCompletedAt = sut.SetupCompletedAt;
-
-        sut.CompleteSetup();
-
-        Assert.Equal(firstCompletedAt, sut.SetupCompletedAt);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void SetPrivate_SetsIsPrivate(bool isPrivate)
-    {
-        var sut = new DomainUser(ValidUsername(), ValidSub());
-
-        sut.SetPrivate(isPrivate);
-
-        Assert.Equal(isPrivate, sut.IsPrivate);
+        Assert.That(user.ImageUrl, Is.EqualTo(imageUrl));
     }
 }

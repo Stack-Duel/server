@@ -1,3 +1,4 @@
+﻿using StackDuel.Application.Queries;
 using StackDuel.Application.Users.Dtos;
 
 namespace StackDuel.Application.Queries.Users.GetUserBySub;

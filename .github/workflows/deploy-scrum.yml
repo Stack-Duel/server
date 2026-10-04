@@ -1,0 +1,88 @@
+name: Deploy Scrum
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: "app-awapi-scrum-centralus-03"
+  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      upload-artifact: true
+
+  migrate:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: Scrum
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Run migrations
+        run: dotnet ef database update --context StackDuelDbContext --project StackDuel.Infrastructure --startup-project StackDuel.Api
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+          ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}
+
+  seed:
+    runs-on: ubuntu-latest
+    needs: migrate
+    environment: Scrum
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run static seed
+        run: dotnet run --project StackDuel.Seeder -- --static
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+          ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: seed
+    if: ${{ always() && needs.seed.result == 'success' }}
+    environment:
+      name: Scrum
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

@@ -1,21 +1,25 @@
 using StackDuel.Api;
+using StackDuel.Api.Middleware;
+using StackDuel.Application;
+using StackDuel.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApi(builder.Configuration);
-builder.Services.AddOpenApi();
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseApiCors();
+app.UseGlobalExceptionHandler();
 
-app.UseHttpsRedirection();
+await app.UseApi();
 
-app.UseAuthorization();
+app.MapGet("/api/v1/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+    .AllowAnonymous()
+    .ExcludeFromDescription();
 
-app.MapControllers();
+app.MapGet("/", () => Results.Ok()).AllowAnonymous().ExcludeFromDescription();
 
-await app.RunAsync();
+app.Run();

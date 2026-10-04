@@ -1,21 +1,19 @@
-using Ardalis.Result;
+﻿using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
-using StackDuel.Domain.User;
-using StackDuel.Domain.User.ValueObjects;
+using Ardalis.Result;
 
 namespace StackDuel.Application.Queries.Users.GetUserBySub;
 
-internal sealed class GetUserBySubHandler(IUserRepository userRepository) : IQueryHandler<GetUserBySubQuery, UserDto>
+internal sealed class GetUserBySubHandler(IUserReadRepository userReadRepository)
+    : IQueryHandler<GetUserBySubQuery, UserDto>
 {
-    public async ValueTask<Result<UserDto>> Handle(GetUserBySubQuery query, CancellationToken cancellationToken)
+    public async Task<Result<UserDto>> Handle(GetUserBySubQuery request, CancellationToken cancellationToken)
     {
-        var user = await userRepository.FindBySubAsync(new UserSub(query.Sub), cancellationToken);
+        var user = await userReadRepository.FindBySubAsync(request.Sub, cancellationToken);
 
         if (user is null)
             return Result.NotFound();
 
-        return Result.Success(
-            new UserDto(user.Id, user.Username.Value, user.Sub.Value, user.ImageUrl?.Value, user.Bio?.Value, user.Tenant)
-        );
+        return Result.Success(user);
     }
 }

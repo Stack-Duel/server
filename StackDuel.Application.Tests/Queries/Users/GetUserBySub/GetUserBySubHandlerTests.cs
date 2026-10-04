@@ -1,48 +1,56 @@
+using StackDuel.Application.Users;
+using StackDuel.Application.Users.Dtos;
 using Ardalis.Result;
-using NSubstitute;
-using StackDuel.Application.Queries.Users.GetUserBySub;
-using StackDuel.Domain.User;
-using StackDuel.Domain.User.Entities;
-using StackDuel.Domain.User.ValueObjects;
+using Moq;
+using GetUserBySubHandler = StackDuel.Application.Queries.Users.GetUserBySub.GetUserBySubHandler;
+using GetUserBySubQuery = StackDuel.Application.Queries.Users.GetUserBySub.GetUserBySubQuery;
 
 namespace StackDuel.Application.Tests.Queries.Users.GetUserBySub;
 
 public class GetUserBySubHandlerTests
 {
-    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
-    private readonly GetUserBySubHandler _sut;
+    private Mock<IUserReadRepository> _userReadRepository = null!;
+    private GetUserBySubHandler _handler = null!;
 
-    public GetUserBySubHandlerTests()
+    [SetUp]
+    public void SetUp()
     {
-        _sut = new GetUserBySubHandler(_userRepository);
+        _userReadRepository = new Mock<IUserReadRepository>();
+        _handler = new GetUserBySubHandler(_userReadRepository.Object);
     }
 
-    [Fact]
-    public async Task Handle_UserFound_ReturnsSuccessWithMappedDto()
-    {
-        var user = new User(new Username("valid_user"), new UserSub("auth0|123"), tenant: "acme");
-        _userRepository
-            .FindBySubAsync(Arg.Is<UserSub>(s => s.Value == "auth0|123"), Arg.Any<CancellationToken>())
-            .Returns(user);
-
-        var result = await _sut.Handle(new GetUserBySubQuery("auth0|123"), CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(user.Id, result.Value.Id);
-        Assert.Equal(user.Username.Value, result.Value.Username);
-        Assert.Equal(user.Sub.Value, result.Value.Sub);
-        Assert.Equal(user.Tenant, result.Value.Tenant);
-    }
-
-    [Fact]
+    [Test]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
-        _userRepository
-            .FindBySubAsync(Arg.Any<UserSub>(), Arg.Any<CancellationToken>())
-            .Returns((User?)null);
+        _userReadRepository
+            .Setup(x => x.FindBySubAsync("auth0|missing", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserDto?)null);
 
-        var result = await _sut.Handle(new GetUserBySubQuery("auth0|123"), CancellationToken.None);
+        Result<UserDto> result = await _handler.Handle(new GetUserBySubQuery("auth0|missing"), CancellationToken.None);
 
-        Assert.Equal(ResultStatus.NotFound, result.Status);
+        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+    }
+
+    [Test]
+    public async Task Handle_UserFound_ReturnsUser()
+    {
+        var user = new UserDto(
+            Guid.NewGuid(),
+            "auth0|abc",
+            "alice",
+            null,
+            null,
+            false,
+            null,
+            DateTime.UtcNow,
+            null,
+            []
+        );
+        _userReadRepository.Setup(x => x.FindBySubAsync("auth0|abc", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+
+        Result<UserDto> result = await _handler.Handle(new GetUserBySubQuery("auth0|abc"), CancellationToken.None);
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value, Is.SameAs(user));
     }
 }

@@ -1,6 +1,5 @@
-using Ardalis.Result;
+﻿using Ardalis.Result;
 using FluentValidation;
-using FluentValidation.Results;
 
 namespace StackDuel.Application.Commands;
 
@@ -8,53 +7,72 @@ public abstract class AbstractCommandHandler<TCommand, TResult>(IValidator<TComm
     : ICommandHandler<TCommand, TResult>
     where TCommand : ICommand<TResult>
 {
-    public async ValueTask<Result<TResult>> Handle(TCommand command, CancellationToken cancellationToken)
+    private readonly IValidator<TCommand>? _validator = validator;
+
+    public async Task<Result<TResult>> Handle(TCommand request, CancellationToken cancellationToken)
     {
-        if (validator is not null)
+        if (_validator is not null)
         {
-            var validationResult = await validator.ValidateAsync(command, cancellationToken);
+            var validationResult = await _validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
-                return Result<TResult>.Invalid(ValidationErrorMapper.Map(validationResult));
+            {
+                var errors = validationResult
+                    .Errors.Select(e =>
+                    {
+                        string identifier = e.FormattedMessagePlaceholderValues.TryGetValue(
+                            "PropertyName",
+                            out object? displayName
+                        )
+                            ? displayName?.ToString() ?? e.PropertyName
+                            : e.PropertyName;
+
+                        return new ValidationError(identifier, e.ErrorMessage);
+                    })
+                    .ToList();
+
+                return Result<TResult>.Invalid(errors);
+            }
         }
 
-        return await HandleValidated(command, cancellationToken);
+        return await HandleValidated(request, cancellationToken);
     }
 
-    protected abstract ValueTask<Result<TResult>> HandleValidated(TCommand command, CancellationToken cancellationToken);
+    protected abstract Task<Result<TResult>> HandleValidated(TCommand request, CancellationToken cancellationToken);
 }
 
-public abstract class AbstractCommandHandler<TCommand>(IValidator<TCommand>? validator = null) : ICommandHandler<TCommand>
+public abstract class AbstractCommandHandler<TCommand>(IValidator<TCommand>? validator = null)
+    : ICommandHandler<TCommand>
     where TCommand : ICommand
 {
-    public async ValueTask<Result> Handle(TCommand command, CancellationToken cancellationToken)
+    private readonly IValidator<TCommand>? _validator = validator;
+
+    public async Task<Result> Handle(TCommand request, CancellationToken cancellationToken)
     {
-        if (validator is not null)
+        if (_validator is not null)
         {
-            var validationResult = await validator.ValidateAsync(command, cancellationToken);
+            var validationResult = await _validator.ValidateAsync(request, cancellationToken);
             if (!validationResult.IsValid)
-                return Result.Invalid(ValidationErrorMapper.Map(validationResult));
+            {
+                var errors = validationResult
+                    .Errors.Select(e =>
+                    {
+                        string identifier = e.FormattedMessagePlaceholderValues.TryGetValue(
+                            "PropertyName",
+                            out object? displayName
+                        )
+                            ? displayName?.ToString() ?? e.PropertyName
+                            : e.PropertyName;
+
+                        return new ValidationError(identifier, e.ErrorMessage);
+                    })
+                    .ToList();
+
+                return Result.Invalid(errors);
+            }
         }
 
-        return await HandleValidated(command, cancellationToken);
+        return await HandleValidated(request, cancellationToken);
     }
 
-    protected abstract ValueTask<Result> HandleValidated(TCommand command, CancellationToken cancellationToken);
-}
-
-internal static class ValidationErrorMapper
-{
-    public static List<ValidationError> Map(ValidationResult validationResult) =>
-        validationResult
-            .Errors.Select(e =>
-            {
-                string identifier = e.FormattedMessagePlaceholderValues.TryGetValue(
-                    "PropertyName",
-                    out object? displayName
-                )
-                    ? displayName?.ToString() ?? e.PropertyName
-                    : e.PropertyName;
-
-                return new ValidationError(identifier, e.ErrorMessage);
-            })
-            .ToList();
+    protected abstract Task<Result> HandleValidated(TCommand request, CancellationToken cancellationToken);
 }

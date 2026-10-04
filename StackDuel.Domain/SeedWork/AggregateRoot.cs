@@ -1,4 +1,4 @@
-namespace StackDuel.Domain.SeedWork;
+﻿namespace StackDuel.Domain.SeedWork;
 
 public abstract class AggregateRoot : Entity
 {

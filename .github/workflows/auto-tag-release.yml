@@ -1,0 +1,77 @@
+name: Auto Tag Release Branch
+
+on:
+  create
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-tag-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: github.ref_type == 'branch' && startsWith(github.ref, 'refs/heads/release/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: Production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Extract and validate version from branch name
+        id: validate
+        shell: bash
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if ! [[ "${BRANCH}" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Branch name does not match release/vX.Y.Z: ${BRANCH}"
+            exit 1
+          fi
+
+          TAG="${BRANCH#release/}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if tag already exists
+        shell: bash
+        env:
+          TAG: ${{ steps.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          git fetch --tags
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Tag already exists: ${TAG}"
+            exit 1
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        shell: bash
+        env:
+          TAG: ${{ steps.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b
+        with:
+          tag_name: ${{ steps.validate.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true

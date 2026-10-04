@@ -1,6 +1,8 @@
-using Ardalis.Result;
+﻿using Ardalis.Result;
+using MediatR;
 
 namespace StackDuel.Application.Queries;
 
-public interface IQueryHandler<TQuery, TResponse> : Mediator.IQueryHandler<TQuery, Result<TResponse>>
-    where TQuery : IQuery<TResponse>;
+public interface IQueryHandler<in TQuery, TResponse> : IRequestHandler<TQuery, Result<TResponse>>
+    where TQuery : IQuery<TResponse>
+{ }

@@ -10,7 +10,7 @@ public class LayerBoundaryTests
 {
     private static readonly Assembly DomainAssembly = typeof(Entity).Assembly;
     private static readonly Assembly ApplicationAssembly = typeof(ICommand).Assembly;
-    private static readonly Assembly InfrastructureAssembly = typeof(Class1).Assembly;
+    private static readonly Assembly InfrastructureAssembly = typeof(InfrastructureServiceRegistration).Assembly;
 
     [Fact]
     public void Domain_Should_Not_Depend_On_Application()
