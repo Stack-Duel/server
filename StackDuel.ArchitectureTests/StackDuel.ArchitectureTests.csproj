@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\StackDuel.Api\StackDuel.Api.csproj" />
     <ProjectReference Include="..\StackDuel.Application\StackDuel.Application.csproj" />
     <ProjectReference Include="..\StackDuel.Domain\StackDuel.Domain.csproj" />
