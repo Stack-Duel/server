@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="StackDuel.Api.Tests/StackDuel.Api.Tests.csproj" Id="6d4873eb-faef-4f47-9e35-2899ef124beb" />
   <Project Path="StackDuel.Api/StackDuel.Api.csproj" Id="af540612-ab1e-4f2c-98ed-f6960bade56b" />
+  <Project Path="StackDuel.ArchitectureTests/StackDuel.ArchitectureTests.csproj" />
   <Project Path="StackDuel.Application.Tests/StackDuel.Application.Tests.csproj" Id="93ecf63e-addf-43d7-864a-c434f4c3e368" />
   <Project Path="StackDuel.Application/StackDuel.Application.csproj" Id="92566194-da63-4263-b866-462e3ddf76be" />
   <Project Path="StackDuel.Domain.Tests/StackDuel.Domain.Tests.csproj" Id="d6fc29b0-dfff-4e97-a78a-023880cb2da2" />
