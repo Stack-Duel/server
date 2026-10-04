@@ -5,7 +5,11 @@ namespace StackDuel.Domain.Problems.ValueObjects;
 
 public sealed record Tag
 {
-    private static readonly Regex ValidTagPattern = new(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled);
+    private static readonly Regex ValidTagPattern = new(
+        @"^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1)
+    );
 
     public Tag(string value)
     {

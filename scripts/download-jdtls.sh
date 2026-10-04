@@ -12,7 +12,7 @@ else
   echo "Downloading jdtls to $TARGET_DIR..."
   mkdir -p "$TARGET_DIR"
   ARCHIVE="$(mktemp)"
-  curl -sL -o "$ARCHIVE" "$DOWNLOAD_URL"
+  curl -sL --proto '=https' --tlsv1.2 -o "$ARCHIVE" "$DOWNLOAD_URL"
   tar -xzf "$ARCHIVE" -C "$TARGET_DIR"
   rm -f "$ARCHIVE"
   echo "jdtls extracted."

@@ -76,7 +76,7 @@ internal sealed partial class JavaCodeTemplateStrategy : ICodeTemplateStrategy
             if (importedTypes.Contains(fullyQualifiedName))
                 continue;
 
-            if (Regex.IsMatch(sourceCode, $@"\b{Regex.Escape(className)}\b"))
+            if (Regex.IsMatch(sourceCode, $@"\b{Regex.Escape(className)}\b", RegexOptions.None, TimeSpan.FromSeconds(1)))
                 missingImports.Add(fullyQualifiedName);
         }
 
