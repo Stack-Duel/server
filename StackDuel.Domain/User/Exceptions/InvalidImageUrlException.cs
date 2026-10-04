@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.User.Exceptions;
 
-internal class InvalidImageUrlException
-{
-}
+public sealed class InvalidImageUrlException(string reason) : DomainException($"Image URL is invalid: {reason}");

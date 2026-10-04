@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Stack Duel",
+  "classifications": ["StackDuel", "CQRS", "Service"],
+  "identity": "StackDuel.Templates.Service",
+  "name": "StackDuel Application Service",
+  "shortName": "stackduel-service",
+  "tags": { "language": "C#", "type": "item" },
+  "sourceName": "Sample",
+  "symbols": {
+    "namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__NAMESPACE__",
+      "defaultValue": "StackDuel.Application",
+      "description": "Namespace for the generated service interface/implementation."
+    }
+  }
+}

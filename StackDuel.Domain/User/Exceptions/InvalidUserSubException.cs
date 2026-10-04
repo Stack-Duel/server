@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.User.Exceptions;
 
-internal class InvalidUserSubException
-{
-}
+public sealed class InvalidUserSubException() : DomainException("User sub is required.");

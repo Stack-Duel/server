@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.User.Exceptions;
 
-internal class InvalidBioException
-{
-}
+public sealed class InvalidBioException(string reason) : DomainException($"Bio is invalid: {reason}");

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.User.Exceptions;
 
-internal class InvalidUsernameException
-{
-}
+public sealed class InvalidUsernameException(string reason) : DomainException($"Username is invalid: {reason}");

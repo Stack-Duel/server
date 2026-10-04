@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Stack Duel",
+  "classifications": ["StackDuel", "CQRS", "Feature Slice"],
+  "identity": "StackDuel.Templates.FeatureSlice",
+  "name": "StackDuel CQRS Feature Slice (Repository + Command + Query + Service)",
+  "shortName": "stackduel-feature-slice",
+  "tags": { "language": "C#", "type": "item" },
+  "sourceName": "Sample",
+  "symbols": {
+    "aggregateNs": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__AGGREGATE_NS__",
+      "isRequired": true,
+      "description": "Fully qualified namespace of the existing aggregate root entity (e.g. StackDuel.Domain.Order.Entities). The entity itself must already exist; this scaffolds the CQRS slice around it."
+    },
+    "rootNamespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__ROOT_NS__",
+      "defaultValue": "StackDuel",
+      "description": "Root namespace prefix for every generated namespace."
+    }
+  },
+  "primaryOutputs": [
+    { "path": "StackDuel.Domain/Sample/ISampleRepository.cs" },
+    { "path": "StackDuel.Application/Commands/Sample/CreateSample/CreateSampleCommand.cs" },
+    { "path": "StackDuel.Application/Queries/Sample/GetSampleById/GetSampleByIdQuery.cs" },
+    { "path": "StackDuel.Application/Sample/ISampleService.cs" }
+  ]
+}
