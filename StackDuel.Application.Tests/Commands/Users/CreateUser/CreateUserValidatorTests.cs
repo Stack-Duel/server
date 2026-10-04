@@ -63,7 +63,7 @@ public class CreateUserValidatorTests
     [Fact]
     public void Validate_ImageUrlExceedsMaxLength_HasError()
     {
-        var tooLongUrl = "https://example.com/" + new string('a', ImageUrl.MaxLength);
+        string tooLongUrl = "https://example.com/" + new string('a', ImageUrl.MaxLength);
         var command = new CreateUserCommand("valid_user", "auth0|123", ImageUrl: tooLongUrl);
 
         var result = _sut.Validate(command);

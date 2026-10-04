@@ -1,6 +1,6 @@
-using DomainUser = StackDuel.Domain.User.Entities.User;
 using StackDuel.Domain.User.Exceptions;
 using StackDuel.Domain.User.ValueObjects;
+using DomainUser = StackDuel.Domain.User.Entities.User;
 
 namespace StackDuel.Domain.Tests.User.Entities;
 
