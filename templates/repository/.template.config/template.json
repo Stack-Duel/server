@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Stack Duel",
+  "classifications": ["StackDuel", "CQRS", "Repository"],
+  "identity": "StackDuel.Templates.Repository",
+  "name": "StackDuel Repository Interface",
+  "shortName": "stackduel-repository",
+  "tags": { "language": "C#", "type": "item" },
+  "sourceName": "Sample",
+  "symbols": {
+    "aggregate": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__AGGREGATE__",
+      "isRequired": true,
+      "description": "The aggregate root type this repository persists (e.g. Order)."
+    },
+    "aggregateNs": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__AGGREGATE_NS__",
+      "isRequired": true,
+      "description": "Fully qualified namespace of the aggregate root (e.g. StackDuel.Domain.Order.Entities)."
+    },
+    "namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__NAMESPACE__",
+      "defaultValue": "StackDuel.Domain",
+      "description": "Namespace for the generated repository interface."
+    }
+  }
+}

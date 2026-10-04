@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace StackDuel.Domain.SeedWork;
 
-internal interface IRepository
+public interface IRepository<T>
+    where T : AggregateRoot
 {
+    Task AddAsync(T entity, CancellationToken cancellationToken = default);
+    Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
+    Task<T?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

@@ -3,10 +3,6 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# Local secrets (keep .env.example tracked)
-.env
-!.env.example
-
 # User-specific files
 *.suo
 *.user
@@ -240,8 +236,8 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
-!Algowars.Infrastructure/ExecutionEngine/CodeTemplates/Assets/React/node_modules/
-!Algowars.Infrastructure/ExecutionEngine/CodeTemplates/Assets/React/node_modules/**
+!StackDuel.Infrastructure/ExecutionEngine/CodeTemplates/Assets/React/node_modules/
+!StackDuel.Infrastructure/ExecutionEngine/CodeTemplates/Assets/React/node_modules/**
 
 # Typescript v1 declaration files
 typings/

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace StackDuel.Domain.SeedWork;
 
-internal interface IAggregateFactory
+public interface IAggregateFactory<TAggregate, TParams>
+    where TAggregate : AggregateRoot
 {
+    TAggregate Create(TParams parameters);
 }

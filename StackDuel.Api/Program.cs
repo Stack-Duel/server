@@ -1,23 +1,25 @@
+using StackDuel.Api;
+using StackDuel.Api.Middleware;
+using StackDuel.Application;
+using StackDuel.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddApi(builder.Configuration);
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseApiCors();
+app.UseGlobalExceptionHandler();
 
-app.UseHttpsRedirection();
+await app.UseApi();
 
-app.UseAuthorization();
+app.MapGet("/api/v1/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+    .AllowAnonymous()
+    .ExcludeFromDescription();
 
-app.MapControllers();
+app.MapGet("/", () => Results.Ok()).AllowAnonymous().ExcludeFromDescription();
 
 app.Run();

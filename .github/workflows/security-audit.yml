@@ -1,0 +1,47 @@
+name: Security Audit
+
+on:
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nuget-audit:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore solution dependencies
+        run: |
+          dotnet restore StackDuel.slnx
+          dotnet restore StackDuel.Seeder/StackDuel.Seeder.csproj
+
+      - name: Audit solution dependencies
+        shell: pwsh
+        run: |
+          $solutionOutput = dotnet list StackDuel.slnx package --vulnerable --include-transitive
+
+          $solutionOutput | Write-Host
+
+          if (($solutionOutput -join "`n") -match 'has the following vulnerable packages') {
+            throw 'Vulnerable packages found.'
+          }

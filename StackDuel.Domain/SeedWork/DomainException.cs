@@ -1,9 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace StackDuel.Domain.SeedWork;
 
-namespace StackDuel.Domain.SeedWork;
-
-internal class DomainException
-{
-}
+public abstract class DomainException(string message) : Exception(message) { }

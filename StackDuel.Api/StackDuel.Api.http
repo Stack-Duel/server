@@ -1,4 +1,4 @@
-@StackDuel.Api_HostAddress = http://localhost:5197
+@StackDuel.Api_HostAddress = http://localhost:5041
 
 GET {{StackDuel.Api_HostAddress}}/weatherforecast/
 Accept: application/json

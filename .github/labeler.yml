@@ -1,0 +1,39 @@
+# Labels applied based on which paths changed in the PR.
+
+area/infrastructure:
+  - changed-files:
+    - any-glob-to-any-file: 'StackDuel.Infrastructure/**'
+
+area/domain:
+  - changed-files:
+    - any-glob-to-any-file: 'StackDuel.Domain/**'
+
+area/api:
+  - changed-files:
+    - any-glob-to-any-file: 'StackDuel.Api/**'
+
+area/application:
+  - changed-files:
+    - any-glob-to-any-file: 'StackDuel.Application/**'
+
+area/tests:
+  - changed-files:
+    - any-glob-to-any-file: '**/*.Tests/**'
+    - any-glob-to-any-file: '**/*.Test/**'
+
+area/seeder:
+  - changed-files:
+    - any-glob-to-any-file: 'StackDuel.Seeder/**'
+
+ci/cd:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+    - any-glob-to-any-file: '**/Dockerfile*'
+    - any-glob-to-any-file: '**/*.yml'
+
+configuration:
+  - changed-files:
+    - any-glob-to-any-file: '**/*.json'
+    - any-glob-to-any-file: '**/*.config'
+    - any-glob-to-any-file: '.editorconfig'
+    - any-glob-to-any-file: '.gitattributes'
