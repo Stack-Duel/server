@@ -4,7 +4,7 @@ using StackDuel.Application.Commands.Games.CompleteExpiredGame;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games.Entities;
 
-namespace StackDuel.Infrastructure.Jobs.Games;
+namespace StackDuel.Application.Jobs.Games;
 
 /// <summary>
 /// Backstop for the GameTimeExpiredMessage path. Finds Running games that are past their

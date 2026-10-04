@@ -51,6 +51,7 @@ using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
 using StackDuel.Infrastructure.ExecutionEngine.StepHandlers;
 using StackDuel.Infrastructure.Jobs.DailyChallenges;
+using StackDuel.Application.Jobs.Games;
 using StackDuel.Infrastructure.Jobs.Games;
 using StackDuel.Infrastructure.Jobs.ProblemValidation;
 using StackDuel.Infrastructure.Jobs.Submissions;

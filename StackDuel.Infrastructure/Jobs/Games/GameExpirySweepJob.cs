@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Quartz;
+using StackDuel.Application.Jobs.Games;
 
 namespace StackDuel.Infrastructure.Jobs.Games;
 
