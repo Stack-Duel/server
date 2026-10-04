@@ -62,6 +62,7 @@ internal sealed class TestCaseGenerationService(
             .Include(tc => tc.Inputs.OrderBy(i => i.Position))
             .Include(tc => tc.ExpectedOutputs)
             .Where(tc => curatedTestCaseIds.Contains(tc.Id) && tc.Source == TestCaseSource.Authored)
+            .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
         if (curatedTestCases.Count > 0)

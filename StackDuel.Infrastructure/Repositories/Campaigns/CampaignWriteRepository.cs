@@ -19,6 +19,7 @@ internal sealed class CampaignWriteRepository(StackDuelDbContext context) : ICam
                 .ThenInclude(m => m.Units)
                     .ThenInclude(u => u.Problems)
             .Include(c => c.Prerequisites)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     public async Task SaveChangesAsync(Campaign entity, CancellationToken cancellationToken = default)

@@ -5,10 +5,11 @@ namespace StackDuel.Domain.Languages.ValueObjects;
 
 public sealed record LanguageSlug
 {
-    private static readonly Regex ValidSlugPattern = new(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled);
-    private static readonly Regex InvalidSlugCharactersPattern = new(@"[^a-z0-9\s-]", RegexOptions.Compiled);
-    private static readonly Regex MultipleWhitespacePattern = new(@"\s+", RegexOptions.Compiled);
-    private static readonly Regex MultipleHyphensPattern = new(@"-+", RegexOptions.Compiled);
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+    private static readonly Regex ValidSlugPattern = new(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled, RegexTimeout);
+    private static readonly Regex InvalidSlugCharactersPattern = new(@"[^a-z0-9\s-]", RegexOptions.Compiled, RegexTimeout);
+    private static readonly Regex MultipleWhitespacePattern = new(@"\s+", RegexOptions.Compiled, RegexTimeout);
+    private static readonly Regex MultipleHyphensPattern = new(@"-+", RegexOptions.Compiled, RegexTimeout);
 
     public LanguageSlug(string value)
     {

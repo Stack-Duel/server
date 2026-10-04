@@ -15,12 +15,12 @@ Before treating any task that touches files under `server/` (not `server/.claude
 
    Do not use `dotnet csharpier format`/`dotnet csharpier check` — this repo's CI enforces `dotnet format`/`.editorconfig`, not CSharpier.
 
-2. **Build** — `dotnet build Server.slnx`
+2. **Build** — `dotnet build StackDuel.slnx`
    Must succeed with no new errors. Don't introduce new warnings either, unless they're pre-existing and unrelated to the change.
 
 3. **Test** — run whatever covers the change:
    - Targeted: `dotnet test <Project> --filter "FullyQualifiedName~<Area>"` for a fast pass scoped to what changed.
-   - Full: `dotnet test Server.slnx` when the change is broad, touches shared/domain code, or the blast radius is unclear.
+   - Full: `dotnet test StackDuel.slnx` when the change is broad, touches shared/domain code, or the blast radius is unclear.
 
 Format first, then build, then test — a format pass can shift line numbers, so verify build/test against the formatted code, not before it.
 

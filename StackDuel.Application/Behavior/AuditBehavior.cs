@@ -18,7 +18,7 @@ internal sealed class AuditBehavior<TRequest, TResponse>(
         CancellationToken cancellationToken
     )
     {
-        TResponse response = await next();
+        TResponse response = await next(cancellationToken);
 
         if (request is IAuditableCommand auditable && response is IResult result && result.Status == ResultStatus.Ok)
         {

@@ -37,6 +37,7 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
                 .ThenInclude(s => s.TestSuites)
                     .ThenInclude(ts => ts.TestCases)
                         .ThenInclude(tc => tc.ExpectedOutputs)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
     public async Task<Problem?> FindBySlugAsync(Slug slug, CancellationToken cancellationToken = default) =>
@@ -50,6 +51,7 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
                 .ThenInclude(s => s.TestSuites)
                     .ThenInclude(ts => ts.TestCases)
                         .ThenInclude(tc => tc.ExpectedOutputs)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Slug.Value == slug.Value, cancellationToken);
 
     public async Task<Problem?> FindBySetupIdAsync(Guid setupId, CancellationToken cancellationToken = default) =>
@@ -64,6 +66,7 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
                     .ThenInclude(ts => ts.TestCases)
                         .ThenInclude(tc => tc.ExpectedOutputs)
             .Where(p => p.Setups.Any(s => s.Id == setupId))
+            .AsSplitQuery()
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyCollection<ProblemTag>> FindOrCreateTagsAsync(

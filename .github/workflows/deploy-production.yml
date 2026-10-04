@@ -37,19 +37,22 @@ jobs:
           path: ./migrations-bundle
 
       - name: Azure login
-        uses: azure/login@v2
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Open DB firewall for this runner
+        env:
+          AZURE_POSTGRES_RESOURCE_GROUP: ${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}
+          AZURE_POSTGRES_SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
           RUNNER_IP=$(curl -s https://api.ipify.org)
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
           az postgres flexible-server firewall-rule create \
-            --resource-group "${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}" \
-            --server-name "${{ secrets.AZURE_POSTGRES_SERVER_NAME }}" \
+            --resource-group "$AZURE_POSTGRES_RESOURCE_GROUP" \
+            --server-name "$AZURE_POSTGRES_SERVER_NAME" \
             --name "gh-migrate-${{ github.run_id }}" \
             --start-ip-address "$RUNNER_IP" \
             --end-ip-address "$RUNNER_IP"
@@ -64,10 +67,13 @@ jobs:
 
       - name: Close DB firewall for this runner
         if: always()
+        env:
+          AZURE_POSTGRES_RESOURCE_GROUP: ${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}
+          AZURE_POSTGRES_SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
           az postgres flexible-server firewall-rule delete \
-            --resource-group "${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}" \
-            --server-name "${{ secrets.AZURE_POSTGRES_SERVER_NAME }}" \
+            --resource-group "$AZURE_POSTGRES_RESOURCE_GROUP" \
+            --server-name "$AZURE_POSTGRES_SERVER_NAME" \
             --name "gh-migrate-${{ github.run_id }}" \
             --yes
 
@@ -92,19 +98,22 @@ jobs:
           path: ./seeder-publish
 
       - name: Azure login
-        uses: azure/login@v2
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Open DB firewall for this runner
+        env:
+          AZURE_POSTGRES_RESOURCE_GROUP: ${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}
+          AZURE_POSTGRES_SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
           RUNNER_IP=$(curl -s https://api.ipify.org)
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
           az postgres flexible-server firewall-rule create \
-            --resource-group "${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}" \
-            --server-name "${{ secrets.AZURE_POSTGRES_SERVER_NAME }}" \
+            --resource-group "$AZURE_POSTGRES_RESOURCE_GROUP" \
+            --server-name "$AZURE_POSTGRES_SERVER_NAME" \
             --name "gh-seed-${{ github.run_id }}" \
             --start-ip-address "$RUNNER_IP" \
             --end-ip-address "$RUNNER_IP"
@@ -117,10 +126,13 @@ jobs:
 
       - name: Close DB firewall for this runner
         if: always()
+        env:
+          AZURE_POSTGRES_RESOURCE_GROUP: ${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}
+          AZURE_POSTGRES_SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
           az postgres flexible-server firewall-rule delete \
-            --resource-group "${{ secrets.AZURE_POSTGRES_RESOURCE_GROUP }}" \
-            --server-name "${{ secrets.AZURE_POSTGRES_SERVER_NAME }}" \
+            --resource-group "$AZURE_POSTGRES_RESOURCE_GROUP" \
+            --server-name "$AZURE_POSTGRES_SERVER_NAME" \
             --name "gh-seed-${{ github.run_id }}" \
             --yes
 
@@ -139,7 +151,7 @@ jobs:
           path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

@@ -15,6 +15,7 @@ internal sealed class FeatureFlagWriteRepository(StackDuelDbContext context) : I
         return await context
             .FeatureFlags.Include(f => f.UserOverrides)
             .Include(f => f.GroupOverrides)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(f => f.Id == flagId, cancellationToken);
     }
 
@@ -25,6 +26,7 @@ internal sealed class FeatureFlagWriteRepository(StackDuelDbContext context) : I
         return await context
             .FeatureFlags.Include(f => f.UserOverrides)
             .Include(f => f.GroupOverrides)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(f => f.Key == flagKey, cancellationToken);
     }
 

@@ -107,7 +107,7 @@ Authentication is swapped for a test scheme that trusts an `X-Test-Sub` header i
 #### Running everything
 
 ```
-dotnet test Server.slnx
+dotnet test StackDuel.slnx
 ```
 
 runs both unit and integration tests together — Docker must be running for the integration project to pass.

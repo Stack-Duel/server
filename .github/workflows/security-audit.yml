@@ -32,13 +32,13 @@ jobs:
 
       - name: Restore solution dependencies
         run: |
-          dotnet restore Server.slnx
+          dotnet restore StackDuel.slnx
           dotnet restore StackDuel.Seeder/StackDuel.Seeder.csproj
 
       - name: Audit solution dependencies
         shell: pwsh
         run: |
-          $solutionOutput = dotnet list Server.slnx package --vulnerable --include-transitive
+          $solutionOutput = dotnet list StackDuel.slnx package --vulnerable --include-transitive
 
           $solutionOutput | Write-Host
 

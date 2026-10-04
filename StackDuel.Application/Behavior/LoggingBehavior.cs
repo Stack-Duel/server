@@ -30,7 +30,7 @@ internal sealed partial class LoggingBehavior<TRequest, TResponse>(ILogger<Loggi
 
         try
         {
-            TResponse response = await next();
+            TResponse response = await next(cancellationToken);
             stopwatch.Stop();
 
             if (response is IResult result)

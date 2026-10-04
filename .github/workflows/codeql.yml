@@ -41,10 +41,10 @@ jobs:
           build-mode: manual
 
       - name: Restore dependencies
-        run: dotnet restore Server.slnx
+        run: dotnet restore StackDuel.slnx
 
       - name: Build solution
-        run: dotnet build Server.slnx -c Release --no-restore
+        run: dotnet build StackDuel.slnx -c Release --no-restore
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
