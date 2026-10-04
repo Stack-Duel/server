@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace StackDuel.Domain.SeedWork;
 
 public abstract class Entity
@@ -22,7 +24,9 @@ public abstract class Entity
 
     public override int GetHashCode() => Id.GetHashCode();
 
+#pragma warning disable S3875
     public static bool operator ==(Entity? left, Entity? right)
+#pragma warning restore S3875
     {
         if (left is null)
             return right is null;
