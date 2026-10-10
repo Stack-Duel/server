@@ -20,7 +20,7 @@ public class SubmissionTests
         Guid? gameId = null
     ) => new(UserId, ProblemSetupId, type, ValidSourceCode, testCaseIds ?? [TestCaseId1, TestCaseId2], gameId: gameId);
 
-    [Test]
+    [Fact]
     public void Complete_AllAccepted_SetsStatusToAccepted()
     {
         var submission = CreateSubmission();
@@ -29,10 +29,10 @@ public class SubmissionTests
 
         submission.Complete();
 
-        Assert.That(submission.Status, Is.EqualTo(SubmissionStatus.Accepted));
+        Assert.Equal(SubmissionStatus.Accepted, submission.Status);
     }
 
-    [Test]
+    [Fact]
     public void Complete_AnyNonAccepted_SetsStatusToWrongAnswer()
     {
         var submission = CreateSubmission();
@@ -41,13 +41,14 @@ public class SubmissionTests
 
         submission.Complete();
 
-        Assert.That(submission.Status, Is.EqualTo(SubmissionStatus.WrongAnswer));
+        Assert.Equal(SubmissionStatus.WrongAnswer, submission.Status);
     }
 
-    [TestCase(SubmissionResultStatus.TimeLimitExceeded)]
-    [TestCase(SubmissionResultStatus.MemoryLimitExceeded)]
-    [TestCase(SubmissionResultStatus.RuntimeError)]
-    [TestCase(SubmissionResultStatus.CompileError)]
+    [Theory]
+    [InlineData(SubmissionResultStatus.TimeLimitExceeded)]
+    [InlineData(SubmissionResultStatus.MemoryLimitExceeded)]
+    [InlineData(SubmissionResultStatus.RuntimeError)]
+    [InlineData(SubmissionResultStatus.CompileError)]
     public void Complete_AnyFailureStatus_SetsStatusToWrongAnswer(SubmissionResultStatus failureStatus)
     {
         var submission = CreateSubmission();
@@ -56,10 +57,10 @@ public class SubmissionTests
 
         submission.Complete();
 
-        Assert.That(submission.Status, Is.EqualTo(SubmissionStatus.WrongAnswer));
+        Assert.Equal(SubmissionStatus.WrongAnswer, submission.Status);
     }
 
-    [Test]
+    [Fact]
     public void Complete_RaisesSubmissionCompletedDomainEventWithStatusAndGameId()
     {
         var gameId = Guid.NewGuid();
@@ -71,16 +72,13 @@ public class SubmissionTests
         submission.Complete();
 
         var domainEvent = submission.PopDomainEvents().OfType<SubmissionCompletedDomainEvent>().Single();
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(domainEvent.UserId, Is.EqualTo(UserId));
-            Assert.That(domainEvent.SubmissionId, Is.EqualTo(submission.Id));
-            Assert.That(domainEvent.Status, Is.EqualTo(SubmissionStatus.Accepted));
-            Assert.That(domainEvent.GameId, Is.EqualTo(gameId));
-        }
+        Assert.Equal(UserId, domainEvent.UserId);
+        Assert.Equal(submission.Id, domainEvent.SubmissionId);
+        Assert.Equal(SubmissionStatus.Accepted, domainEvent.Status);
+        Assert.Equal(gameId, domainEvent.GameId);
     }
 
-    [Test]
+    [Fact]
     public void Fail_RaisesSubmissionCompletedDomainEventWithWrongAnswerAndGameId()
     {
         var gameId = Guid.NewGuid();
@@ -90,14 +88,11 @@ public class SubmissionTests
         submission.Fail();
 
         var domainEvent = submission.PopDomainEvents().OfType<SubmissionCompletedDomainEvent>().Single();
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(domainEvent.Status, Is.EqualTo(SubmissionStatus.WrongAnswer));
-            Assert.That(domainEvent.GameId, Is.EqualTo(gameId));
-        }
+        Assert.Equal(SubmissionStatus.WrongAnswer, domainEvent.Status);
+        Assert.Equal(gameId, domainEvent.GameId);
     }
 
-    [Test]
+    [Fact]
     public void Complete_WithPendingResult_ThrowsSubmissionNotCompleteException()
     {
         var submission = CreateSubmission();
@@ -106,7 +101,7 @@ public class SubmissionTests
         Assert.Throws<SubmissionNotCompleteException>(() => submission.Complete());
     }
 
-    [Test]
+    [Fact]
     public void Complete_WithProcessingResult_ThrowsSubmissionNotCompleteException()
     {
         var submission = CreateSubmission();
@@ -116,67 +111,64 @@ public class SubmissionTests
         Assert.Throws<SubmissionNotCompleteException>(() => submission.Complete());
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsInitialProperties()
     {
         var submission = CreateSubmission(SubmissionType.Run);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(submission.UserId, Is.EqualTo(UserId));
-            Assert.That(submission.ProblemSetupId, Is.EqualTo(ProblemSetupId));
-            Assert.That(submission.Type, Is.EqualTo(SubmissionType.Run));
-            Assert.That(submission.SourceCode, Is.EqualTo(ValidSourceCode));
-            Assert.That(submission.Status, Is.EqualTo(SubmissionStatus.Queued));
-            Assert.That(submission.GameId, Is.Null);
-        }
+        Assert.Equal(UserId, submission.UserId);
+        Assert.Equal(ProblemSetupId, submission.ProblemSetupId);
+        Assert.Equal(SubmissionType.Run, submission.Type);
+        Assert.Equal(ValidSourceCode, submission.SourceCode);
+        Assert.Equal(SubmissionStatus.Queued, submission.Status);
+        Assert.Null(submission.GameId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WithGameId_SetsGameId()
     {
         var gameId = Guid.NewGuid();
 
         var submission = CreateSubmission(gameId: gameId);
 
-        Assert.That(submission.GameId, Is.EqualTo(gameId));
+        Assert.Equal(gameId, submission.GameId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_CreatesResultPerTestCaseId()
     {
         var submission = CreateSubmission();
 
-        Assert.That(submission.Results, Has.Count.EqualTo(2));
+        Assert.Equal(2, submission.Results.Count);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_AllResultsInitiallyPending()
     {
         var submission = CreateSubmission();
 
-        Assert.That(submission.Results.All(r => r.Status == SubmissionResultStatus.Pending), Is.True);
+        Assert.True(submission.Results.All(r => r.Status == SubmissionResultStatus.Pending));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WithNoTestCases_ResultsIsEmpty()
     {
         var submission = CreateSubmission(testCaseIds: []);
 
-        Assert.That(submission.Results, Is.Empty);
+        Assert.Empty(submission.Results);
     }
 
-    [Test]
+    [Fact]
     public void StartRunning_FromQueued_SetsStatusToRunning()
     {
         var submission = CreateSubmission();
 
         submission.StartRunning();
 
-        Assert.That(submission.Status, Is.EqualTo(SubmissionStatus.Running));
+        Assert.Equal(SubmissionStatus.Running, submission.Status);
     }
 
-    [Test]
+    [Fact]
     public void StartRunning_WhenAlreadyRunning_ThrowsInvalidSubmissionStateException()
     {
         var submission = CreateSubmission();
@@ -185,7 +177,7 @@ public class SubmissionTests
         Assert.Throws<InvalidSubmissionStateException>(() => submission.StartRunning());
     }
 
-    [Test]
+    [Fact]
     public void UpdateResult_UnknownTestCaseId_ThrowsSubmissionResultNotFoundException()
     {
         var submission = CreateSubmission();
@@ -195,7 +187,7 @@ public class SubmissionTests
         );
     }
 
-    [Test]
+    [Fact]
     public void UpdateResult_UpdatesMatchingResult()
     {
         var submission = CreateSubmission();
@@ -203,15 +195,12 @@ public class SubmissionTests
         submission.UpdateResult(TestCaseId1, SubmissionResultStatus.Accepted, runtime: 100, memoryUsed: 32);
 
         var result = submission.Results.First(r => r.TestCaseId == TestCaseId1);
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(result.Status, Is.EqualTo(SubmissionResultStatus.Accepted));
-            Assert.That(result.Runtime, Is.EqualTo(100));
-            Assert.That(result.MemoryUsed, Is.EqualTo(32));
-        }
+        Assert.Equal(SubmissionResultStatus.Accepted, result.Status);
+        Assert.Equal(100, result.Runtime);
+        Assert.Equal(32, result.MemoryUsed);
     }
 
-    [Test]
+    [Fact]
     public void UpdateResult_Overwrite_UpdatesExistingResult()
     {
         var submission = CreateSubmission();
@@ -220,10 +209,10 @@ public class SubmissionTests
         submission.UpdateResult(TestCaseId1, SubmissionResultStatus.Accepted, runtime: 50);
 
         var result = submission.Results.First(r => r.TestCaseId == TestCaseId1);
-        Assert.That(result.Status, Is.EqualTo(SubmissionResultStatus.Accepted));
+        Assert.Equal(SubmissionResultStatus.Accepted, result.Status);
     }
 
-    [Test]
+    [Fact]
     public void UpdateResult_DoesNotAffectOtherResults()
     {
         var submission = CreateSubmission();
@@ -231,6 +220,6 @@ public class SubmissionTests
         submission.UpdateResult(TestCaseId1, SubmissionResultStatus.Accepted);
 
         var other = submission.Results.First(r => r.TestCaseId == TestCaseId2);
-        Assert.That(other.Status, Is.EqualTo(SubmissionResultStatus.Pending));
+        Assert.Equal(SubmissionResultStatus.Pending, other.Status);
     }
 }

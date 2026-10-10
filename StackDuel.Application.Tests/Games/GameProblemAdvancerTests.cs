@@ -12,8 +12,7 @@ public class GameProblemAdvancerTests
     private Mock<IProblemSelectionStrategy> _strategy = null!;
     private GameProblemAdvancer _advancer = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GameProblemAdvancerTests()
     {
         _sequencer = new Mock<IGameProblemSequencer>();
         _expiryCanceller = new Mock<IGameExpiryCanceller>();
@@ -35,7 +34,7 @@ public class GameProblemAdvancerTests
         return game;
     }
 
-    [Test]
+    [Fact]
     public async Task AdvanceAsync_NextProblemAvailable_InvokesOnAdvanceWithIt()
     {
         var game = CreateRunningGameWithParticipant(out var participant);
@@ -62,19 +61,16 @@ public class GameProblemAdvancerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result, Is.EqualTo(nextProblemId));
-            Assert.That(advancedTo, Is.EqualTo(nextProblemId));
-            Assert.That(participant.HasFinishedProblems, Is.False);
-        });
+        Assert.Equal(nextProblemId, result);
+        Assert.Equal(nextProblemId, advancedTo);
+        Assert.False(participant.HasFinishedProblems);
         _expiryCanceller.Verify(
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task AdvanceAsync_NoNextProblem_FinishesParticipantAndCancelsScheduledExpiry()
     {
         var game = CreateRunningGameWithParticipant(out var participant);
@@ -99,15 +95,12 @@ public class GameProblemAdvancerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result, Is.Null);
-            Assert.That(participant.HasFinishedProblems, Is.True);
-        });
+        Assert.Null(result);
+        Assert.True(participant.HasFinishedProblems);
         _expiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task AdvanceAsync_NoNextProblem_InvokesOnFinishBeforeMarkingParticipantFinished()
     {
         var game = CreateRunningGameWithParticipant(out var participant);
@@ -135,10 +128,10 @@ public class GameProblemAdvancerTests
 
         // Mirrors SkipProblemHandler's original ordering: UseSkip() ran before FinishProblemsFor,
         // so a skip is always consumed even when the finish was caused by pool exhaustion.
-        Assert.That(participantAlreadyFinishedWhenOnFinishRan, Is.False);
+        Assert.False(participantAlreadyFinishedWhenOnFinishRan);
     }
 
-    [Test]
+    [Fact]
     public async Task AdvanceAsync_ResolvesStrategyForTheGivenGameModeKey()
     {
         var game = CreateRunningGameWithParticipant(out var participant);

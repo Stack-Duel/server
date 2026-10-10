@@ -119,6 +119,9 @@ _TeamCity*
 *.coverage
 *.coveragexml
 
+# Coverage reports from `dotnet test --settings coverage.runsettings --results-directory coverage`
+coverage/
+
 # NCrunch
 _NCrunch_*
 .*crunch*.local.xml

@@ -20,8 +20,7 @@ public class GetOpenGamesHandlerTests
     private Mock<ITrackReadRepository> _trackReadRepository = null!;
     private GetOpenGamesHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetOpenGamesHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _userReadRepository = new Mock<IUserReadRepository>();
@@ -39,7 +38,7 @@ public class GetOpenGamesHandlerTests
     private static UserDto MakeUser(Guid id, string username) =>
         new(id, $"auth0|{id}", username, null, null, false, null, DateTime.UtcNow, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_PassesGameModeKeyAndPaginationToRepository()
     {
         var pagination = new PaginationRequest { Page = 2, Size = 10 };
@@ -61,17 +60,17 @@ public class GetOpenGamesHandlerTests
         var query = new GetOpenGamesQuery("blitz", pagination, null);
         Result<PageResult<GameLobbySummaryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value.Total, Is.EqualTo(0));
-        Assert.That(result.Value.Page, Is.EqualTo(2));
-        Assert.That(result.Value.Size, Is.EqualTo(10));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value.Total);
+        Assert.Equal(2, result.Value.Page);
+        Assert.Equal(10, result.Value.Size);
         _gameReadRepository.Verify(
             x => x.GetPendingGamesAsync("blitz", pagination, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameWithMissingGameMode_IsExcludedFromResults()
     {
         var hostId = Guid.NewGuid();
@@ -99,10 +98,10 @@ public class GetOpenGamesHandlerTests
         var query = new GetOpenGamesQuery(null, pagination, null);
         Result<PageResult<GameLobbySummaryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results, Is.Empty);
+        Assert.Empty(result.Value.Results);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_MapsSummaryWithHostAndParticipantFlags()
     {
         var hostId = Guid.NewGuid();
@@ -141,22 +140,19 @@ public class GetOpenGamesHandlerTests
         Result<PageResult<GameLobbySummaryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
         GameLobbySummaryDto summary = result.Value.Results.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(summary.GameId, Is.EqualTo(game.Id));
-            Assert.That(summary.GameModeKey, Is.EqualTo("blitz"));
-            Assert.That(summary.GameModeName, Is.EqualTo("Blitz"));
-            Assert.That(summary.MinPlayers, Is.EqualTo(1));
-            Assert.That(summary.MaxPlayers, Is.EqualTo(4));
-            Assert.That(summary.ParticipantCount, Is.EqualTo(2));
-            Assert.That(summary.HostUsername, Is.EqualTo("hostname"));
-            Assert.That(summary.IsHost, Is.True);
-            Assert.That(summary.IsParticipant, Is.True);
-            Assert.That(summary.TechStacks, Is.EquivalentTo(new[] { "Python" }));
-        });
+        Assert.Equal(game.Id, summary.GameId);
+        Assert.Equal("blitz", summary.GameModeKey);
+        Assert.Equal("Blitz", summary.GameModeName);
+        Assert.Equal(1, summary.MinPlayers);
+        Assert.Equal(4, summary.MaxPlayers);
+        Assert.Equal(2, summary.ParticipantCount);
+        Assert.Equal("hostname", summary.HostUsername);
+        Assert.True(summary.IsHost);
+        Assert.True(summary.IsParticipant);
+        Assert.Equivalent(new[] { "Python" }, summary.TechStacks, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RequestedByUserIdNull_IsHostAndIsParticipantAreFalse()
     {
         var hostId = Guid.NewGuid();
@@ -186,14 +182,11 @@ public class GetOpenGamesHandlerTests
         Result<PageResult<GameLobbySummaryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
         GameLobbySummaryDto summary = result.Value.Results.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(summary.IsHost, Is.False);
-            Assert.That(summary.IsParticipant, Is.False);
-        });
+        Assert.False(summary.IsHost);
+        Assert.False(summary.IsParticipant);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_HostNotResolvedInUserMap_HostUsernameIsEmpty()
     {
         var hostId = Guid.NewGuid();
@@ -222,6 +215,6 @@ public class GetOpenGamesHandlerTests
         var query = new GetOpenGamesQuery(null, pagination, null);
         Result<PageResult<GameLobbySummaryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results.Single().HostUsername, Is.EqualTo(string.Empty));
+        Assert.Equal(string.Empty, result.Value.Results.Single().HostUsername);
     }
 }

@@ -22,8 +22,7 @@ public class SkipProblemHandlerTests
     private Mock<IGameProblemSequencer> _gameProblemSequencer = null!;
     private SkipProblemHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public SkipProblemHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -53,17 +52,17 @@ public class SkipProblemHandlerTests
     private static GameMode CreateGameMode(string key = "solo_rush") =>
         new(key, "Solo Rush", "Solo rush mode", true, 1, 1, Guid.NewGuid());
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalid()
     {
         var command = new SkipProblemCommand(Guid.Empty, Guid.Empty, Guid.Empty);
 
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         var gameId = Guid.NewGuid();
@@ -74,10 +73,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(gameId, Guid.NewGuid(), Guid.NewGuid());
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotParticipant_ReturnsForbidden()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -86,10 +85,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, Guid.NewGuid(), Guid.NewGuid());
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotRunning_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -99,10 +98,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, Guid.NewGuid(), userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SkipsDisabledForGame_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -116,10 +115,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantHasForfeited_ReturnsInvalid()
     {
         var forfeitingUserId = Guid.NewGuid();
@@ -132,10 +131,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, Guid.NewGuid(), forfeitingUserId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemSessionNotInitialized_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -146,10 +145,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, Guid.NewGuid(), userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemIdDoesNotMatchCurrentProblem_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -162,10 +161,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, Guid.NewGuid(), userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoSkipsRemaining_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -181,10 +180,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeNoLongerExists_ReturnsNotFound()
     {
         var userId = Guid.NewGuid();
@@ -201,10 +200,10 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NextProblemAvailable_SkipsToItWithoutAffectingScore()
     {
         var userId = Guid.NewGuid();
@@ -235,15 +234,12 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.NextProblemId, Is.EqualTo(nextProblemId));
-            Assert.That(result.Value.SkipsRemaining, Is.EqualTo(GameParticipant.TotalSkips - 1));
-            Assert.That(participant.ProblemSession!.CurrentProblemId, Is.EqualTo(nextProblemId));
-            Assert.That(participant.ProblemSession.SkippedProblemIds, Does.Contain(problemId));
-            Assert.That(participant.Score, Is.EqualTo(0));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(nextProblemId, result.Value.NextProblemId);
+        Assert.Equal(GameParticipant.TotalSkips - 1, result.Value.SkipsRemaining);
+        Assert.Equal(nextProblemId, participant.ProblemSession!.CurrentProblemId);
+        Assert.Contains(problemId, participant.ProblemSession.SkippedProblemIds);
+        Assert.Equal(0, participant.Score);
         _gameExpiryCanceller.Verify(
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -251,7 +247,7 @@ public class SkipProblemHandlerTests
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SkippingAdvancesThePositionPassedToTheSequencerForDifficultyPacing()
     {
         var userId = Guid.NewGuid();
@@ -288,10 +284,10 @@ public class SkipProblemHandlerTests
 
         // Two problems already seen (the initial one, then the one skipped to) — the third slot
         // is position 2.
-        Assert.That(capturedPosition, Is.EqualTo(2));
+        Assert.Equal(2, capturedPosition);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoNextProblemAvailable_FinishesProblemsAndCancelsScheduledExpiry()
     {
         var userId = Guid.NewGuid();
@@ -321,17 +317,14 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.NextProblemId, Is.Null);
-            Assert.That(result.Value.SkipsRemaining, Is.EqualTo(GameParticipant.TotalSkips - 1));
-            Assert.That(participant.HasFinishedProblems, Is.True);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.NextProblemId);
+        Assert.Equal(GameParticipant.TotalSkips - 1, result.Value.SkipsRemaining);
+        Assert.True(participant.HasFinishedProblems);
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SaveChangesThrowsPositionConflictOnce_RetriesWithAFreshReadAndSucceeds()
     {
         var userId = Guid.NewGuid();
@@ -374,11 +367,8 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(gameId, problemId, userId);
         Result<SkipProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.NextProblemId, Is.EqualTo(winningProblemId));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(winningProblemId, result.Value.NextProblemId);
         _gameReadRepository.Verify(
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2)
@@ -389,8 +379,8 @@ public class SkipProblemHandlerTests
         );
     }
 
-    [Test]
-    public void Handle_SaveChangesThrowsPositionConflictTwice_PropagatesAfterOneRetry()
+    [Fact]
+    public async Task Handle_SaveChangesThrowsPositionConflictTwice_PropagatesAfterOneRetry()
     {
         var userId = Guid.NewGuid();
         var problemId = Guid.NewGuid();
@@ -429,9 +419,8 @@ public class SkipProblemHandlerTests
 
         var command = new SkipProblemCommand(gameId, problemId, userId);
 
-        Assert.That(
-            async () => await _handler.Handle(command, CancellationToken.None),
-            Throws.TypeOf<GameProblemPositionConflictException>()
+        await Assert.ThrowsAsync<GameProblemPositionConflictException>(() =>
+            _handler.Handle(command, CancellationToken.None)
         );
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),

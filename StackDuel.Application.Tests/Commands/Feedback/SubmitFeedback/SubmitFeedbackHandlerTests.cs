@@ -16,8 +16,7 @@ public class SubmitFeedbackHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private SubmitFeedbackHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public SubmitFeedbackHandlerTests()
     {
         _feedbackRepository = new Mock<IFeedbackWriteRepository>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
@@ -42,19 +41,19 @@ public class SubmitFeedbackHandlerTests
             "Mozilla/5.0"
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_ValidCommand_AddsFeedbackAndReturnsItsId()
     {
         var result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _feedbackRepository.Verify(
             r => r.AddAsync(It.Is<FeedbackSubmission>(f => f.Id == result.Value), CancellationToken.None),
             Times.Once
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_DoesNotAddFeedback()
     {
         var command = ValidCommand() with { Message = "" };

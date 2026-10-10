@@ -15,18 +15,20 @@ public class GetOrderedProblemPoolMembersHandlerTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private GetOrderedProblemPoolMembersHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetOrderedProblemPoolMembersHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
-        _handler = new GetOrderedProblemPoolMembersHandler(_problemPoolRepository.Object, _problemReadRepository.Object);
+        _handler = new GetOrderedProblemPoolMembersHandler(
+            _problemPoolRepository.Object,
+            _problemReadRepository.Object
+        );
     }
 
     private static AdminProblemListRowDto CreateRow(Guid id) =>
         new(id, $"slug-{id}", $"Title {id}", 100, ProblemStatus.Published, 1000, 64, [], [], 1, DateTime.UtcNow, null);
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolNotFound_ReturnsNotFound()
     {
         _problemPoolRepository
@@ -38,10 +40,10 @@ public class GetOrderedProblemPoolMembersHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ReturnsMembersInPoolOrder()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -60,10 +62,10 @@ public class GetOrderedProblemPoolMembersHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.Select(row => row.Id), Is.EqualTo(new[] { first, second }));
+        Assert.Equal(new[] { first, second }, result.Value.Select(row => row.Id));
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MemberMissingFromProblemLookup_IsOmitted()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -82,6 +84,6 @@ public class GetOrderedProblemPoolMembersHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.Select(row => row.Id), Is.EqualTo(new[] { first }));
+        Assert.Equal(new[] { first }, result.Value.Select(row => row.Id));
     }
 }

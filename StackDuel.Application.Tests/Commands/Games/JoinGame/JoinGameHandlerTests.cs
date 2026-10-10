@@ -20,8 +20,7 @@ public class JoinGameHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private JoinGameHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public JoinGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -40,21 +39,21 @@ public class JoinGameHandlerTests
     private static GameMode CreateGameMode(string key, int minPlayers, int maxPlayers) =>
         new(key, key, $"{key} description", isBuiltIn: true, minPlayers, maxPlayers, Guid.NewGuid());
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = new JoinGameCommand(Guid.Empty, Guid.NewGuid());
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameReadRepository.Verify(
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         var gameId = Guid.NewGuid();
@@ -65,10 +64,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(gameId, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotPending_ReturnsInvalid()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -81,10 +80,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(Guid.NewGuid(), Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeNotFound_ReturnsNotFound()
     {
         var gameModeId = Guid.NewGuid();
@@ -100,10 +99,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(Guid.NewGuid(), Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnknownGameModeKey_ReturnsForbiddenWithoutCallingPermissionService()
     {
         var gameModeId = Guid.NewGuid();
@@ -120,10 +119,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(Guid.NewGuid(), Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoPermission_ReturnsForbidden()
     {
         var gameModeId = Guid.NewGuid();
@@ -141,10 +140,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(Guid.NewGuid(), Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AlreadyJoined_ReturnsInvalid()
     {
         var gameModeId = Guid.NewGuid();
@@ -163,10 +162,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(game.Id, requesterId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameFull_ReturnsInvalid()
     {
         var gameModeId = Guid.NewGuid();
@@ -184,10 +183,10 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(game.Id, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_JoinsGameAndDispatchesEvents()
     {
         var gameModeId = Guid.NewGuid();
@@ -206,8 +205,8 @@ public class JoinGameHandlerTests
         var command = new JoinGameCommand(game.Id, requesterId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(game.Participants.Any(p => p.UserId == requesterId), Is.True);
+        Assert.True(result.IsSuccess);
+        Assert.Contains(game.Participants, p => p.UserId == requesterId);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),

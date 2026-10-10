@@ -13,14 +13,13 @@ public class GetGameProblemsHandlerTests
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private GetGameProblemsHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetGameProblemsHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _handler = new GetGameProblemsHandler(_gameReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -30,10 +29,10 @@ public class GetGameProblemsHandlerTests
         var query = new GetGameProblemsQuery(Guid.NewGuid(), Guid.NewGuid());
         Result<IReadOnlyList<GameProblemHistoryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RequestedByNonParticipant_ReturnsForbidden()
     {
         var participantId = Guid.NewGuid();
@@ -44,10 +43,10 @@ public class GetGameProblemsHandlerTests
         var query = new GetGameProblemsQuery(game.Id, Guid.NewGuid());
         Result<IReadOnlyList<GameProblemHistoryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantWithoutProblemSession_ReturnsEmptyHistories()
     {
         var participantId = Guid.NewGuid();
@@ -58,17 +57,14 @@ public class GetGameProblemsHandlerTests
         var query = new GetGameProblemsQuery(game.Id, participantId);
         Result<IReadOnlyList<GameProblemHistoryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         GameProblemHistoryDto history = result.Value.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(history.UserId, Is.EqualTo(participantId));
-            Assert.That(history.SolvedProblemIds, Is.Empty);
-            Assert.That(history.SolvedProblemSubmissions, Is.Empty);
-        });
+        Assert.Equal(participantId, history.UserId);
+        Assert.Empty(history.SolvedProblemIds);
+        Assert.Empty(history.SolvedProblemSubmissions);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantWithProblemSession_ReturnsSolvedProblemsAndSubmissions()
     {
         var requesterId = Guid.NewGuid();
@@ -89,14 +85,11 @@ public class GetGameProblemsHandlerTests
         var query = new GetGameProblemsQuery(game.Id, requesterId);
         Result<IReadOnlyList<GameProblemHistoryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         GameProblemHistoryDto history = result.Value.Single(h => h.UserId == requesterId);
-        Assert.Multiple(() =>
-        {
-            Assert.That(history.SolvedProblemIds, Is.EqualTo(new[] { solvedProblemId }));
-            Assert.That(history.SolvedProblemSubmissions.Single().ProblemId, Is.EqualTo(solvedProblemId));
-            Assert.That(history.SolvedProblemSubmissions.Single().SubmissionId, Is.EqualTo(submissionId));
-        });
-        Assert.That(result.Value, Has.Count.EqualTo(2));
+        Assert.Equal(new[] { solvedProblemId }, history.SolvedProblemIds);
+        Assert.Equal(solvedProblemId, history.SolvedProblemSubmissions.Single().ProblemId);
+        Assert.Equal(submissionId, history.SolvedProblemSubmissions.Single().SubmissionId);
+        Assert.Equal(2, result.Value.Count);
     }
 }

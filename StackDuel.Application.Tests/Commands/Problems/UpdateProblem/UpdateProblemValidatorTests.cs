@@ -11,8 +11,7 @@ public class UpdateProblemValidatorTests
 
     private UpdateProblemValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpdateProblemValidatorTests()
     {
         _validator = new UpdateProblemValidator();
     }
@@ -20,88 +19,90 @@ public class UpdateProblemValidatorTests
     private static UpdateProblemCommand ValidCommand() =>
         new(Guid.NewGuid(), "Two Sum", ValidQuestion, 100, 1000, 256, ["arrays"], ProblemStatus.Published);
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
-        Assert.That(_validator.Validate(ValidCommand()).IsValid, Is.True);
+        Assert.True(_validator.Validate(ValidCommand()).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyProblemId_IsInvalid()
     {
         var command = ValidCommand() with { ProblemId = Guid.Empty };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_TitleTooShort_IsInvalid()
     {
         var command = ValidCommand() with { Title = "ab" };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_TitleTooLong_IsInvalid()
     {
         var command = ValidCommand() with { Title = new string('a', 201) };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_QuestionTooShort_IsInvalid()
     {
         var command = ValidCommand() with { Question = "too short" };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_DifficultyNegative_IsInvalid()
     {
         var command = ValidCommand() with { Difficulty = -1 };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [TestCase(99)]
-    [TestCase(10001)]
+    [Theory]
+    [InlineData(99)]
+    [InlineData(10001)]
     public void Validate_TimeLimitOutOfRange_IsInvalid(int timeLimitMs)
     {
         var command = ValidCommand() with { TimeLimitMs = timeLimitMs };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [TestCase(15)]
-    [TestCase(513)]
+    [Theory]
+    [InlineData(15)]
+    [InlineData(513)]
     public void Validate_MemoryLimitOutOfRange_IsInvalid(int memoryLimitMb)
     {
         var command = ValidCommand() with { MemoryLimitMb = memoryLimitMb };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NullTags_IsInvalid()
     {
         var command = ValidCommand() with { Tags = null! };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyTagString_IsInvalid()
     {
         var command = ValidCommand() with { Tags = [""] };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_TagTooLong_IsInvalid()
     {
         var command = ValidCommand() with { Tags = [new string('a', 51)] };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NullStatus_IsValid()
     {
         var command = ValidCommand() with { Status = null };
-        Assert.That(_validator.Validate(command).IsValid, Is.True);
+        Assert.True(_validator.Validate(command).IsValid);
     }
 }

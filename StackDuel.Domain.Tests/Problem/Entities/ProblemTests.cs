@@ -16,67 +16,64 @@ public class ProblemTests
     private static ProblemEntity CreateProblem() =>
         new(ValidSlug, ValidTitle, ValidQuestion, ValidDifficulty, ValidTimeLimit, ValidMemoryLimit);
 
-    [Test]
+    [Fact]
     public void Constructor_SetsSlug()
     {
         ProblemEntity problem = CreateProblem();
 
-        Assert.That(problem.Slug, Is.EqualTo(ValidSlug));
+        Assert.Equal(ValidSlug, problem.Slug);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsContentFields()
     {
         ProblemEntity problem = CreateProblem();
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(problem.Title, Is.EqualTo(ValidTitle));
-            Assert.That(problem.Question, Is.EqualTo(ValidQuestion));
-            Assert.That(problem.Difficulty, Is.EqualTo(ValidDifficulty));
-            Assert.That(problem.TimeLimit, Is.EqualTo(ValidTimeLimit));
-            Assert.That(problem.MemoryLimit, Is.EqualTo(ValidMemoryLimit));
-        }
+        Assert.Equal(ValidTitle, problem.Title);
+        Assert.Equal(ValidQuestion, problem.Question);
+        Assert.Equal(ValidDifficulty, problem.Difficulty);
+        Assert.Equal(ValidTimeLimit, problem.TimeLimit);
+        Assert.Equal(ValidMemoryLimit, problem.MemoryLimit);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsStatusToDraft()
     {
         ProblemEntity problem = CreateProblem();
 
-        Assert.That(problem.Status, Is.EqualTo(ProblemStatus.Draft));
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsCreatedAt()
     {
         DateTime before = DateTime.UtcNow;
         ProblemEntity problem = CreateProblem();
 
-        Assert.That(problem.CreatedAt, Is.GreaterThanOrEqualTo(before));
+        Assert.True(problem.CreatedAt >= before);
     }
 
-    [Test]
+    [Fact]
     public void Archive_SetsStatusToArchived()
     {
         ProblemEntity problem = CreateProblem();
 
         problem.Archive();
 
-        Assert.That(problem.Status, Is.EqualTo(ProblemStatus.Archived));
+        Assert.Equal(ProblemStatus.Archived, problem.Status);
     }
 
-    [Test]
+    [Fact]
     public void Publish_SetsStatusToPublished()
     {
         ProblemEntity problem = CreateProblem();
 
         problem.Publish();
 
-        Assert.That(problem.Status, Is.EqualTo(ProblemStatus.Published));
+        Assert.Equal(ProblemStatus.Published, problem.Status);
     }
 
-    [Test]
+    [Fact]
     public void UpdateContent_UpdatesAllContentFields()
     {
         ProblemEntity problem = CreateProblem();
@@ -88,17 +85,14 @@ public class ProblemTests
 
         problem.UpdateContent(newTitle, newQuestion, newDifficulty, newTimeLimit, newMemoryLimit);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(problem.Title, Is.EqualTo(newTitle));
-            Assert.That(problem.Question, Is.EqualTo(newQuestion));
-            Assert.That(problem.Difficulty, Is.EqualTo(newDifficulty));
-            Assert.That(problem.TimeLimit, Is.EqualTo(newTimeLimit));
-            Assert.That(problem.MemoryLimit, Is.EqualTo(newMemoryLimit));
-        }
+        Assert.Equal(newTitle, problem.Title);
+        Assert.Equal(newQuestion, problem.Question);
+        Assert.Equal(newDifficulty, problem.Difficulty);
+        Assert.Equal(newTimeLimit, problem.TimeLimit);
+        Assert.Equal(newMemoryLimit, problem.MemoryLimit);
     }
 
-    [Test]
+    [Fact]
     public void UpdateContent_AddsHistoryEntry()
     {
         ProblemEntity problem = CreateProblem();
@@ -111,10 +105,10 @@ public class ProblemTests
             new MemoryLimit(128)
         );
 
-        Assert.That(problem.History, Has.Count.EqualTo(1));
+        Assert.Single(problem.History);
     }
 
-    [Test]
+    [Fact]
     public void UpdateContent_MultipleUpdates_AddsMultipleHistoryEntries()
     {
         ProblemEntity problem = CreateProblem();
@@ -134,10 +128,10 @@ public class ProblemTests
             new MemoryLimit(256)
         );
 
-        Assert.That(problem.History, Has.Count.EqualTo(2));
+        Assert.Equal(2, problem.History.Count);
     }
 
-    [Test]
+    [Fact]
     public void UpdateSlug_ChangesSlug()
     {
         ProblemEntity problem = CreateProblem();
@@ -145,20 +139,20 @@ public class ProblemTests
 
         problem.UpdateSlug(newSlug);
 
-        Assert.That(problem.Slug, Is.EqualTo(newSlug));
+        Assert.Equal(newSlug, problem.Slug);
     }
 
-    [Test]
+    [Fact]
     public void AddSetup_AddsToSetups()
     {
         ProblemEntity problem = CreateProblem();
 
         problem.AddSetup(Guid.NewGuid(), "def twoSum():", "twoSum", Guid.NewGuid());
 
-        Assert.That(problem.Setups, Has.Count.EqualTo(1));
+        Assert.Single(problem.Setups);
     }
 
-    [Test]
+    [Fact]
     public void AddSetup_SetsProperties()
     {
         ProblemEntity problem = CreateProblem();
@@ -171,11 +165,8 @@ public class ProblemTests
             Guid.NewGuid()
         );
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(setup.LanguageVersionId, Is.EqualTo(langVersionId));
-            Assert.That(setup.InitialCode, Is.EqualTo("def twoSum():"));
-            Assert.That(setup.FunctionName, Is.EqualTo("twoSum"));
-        }
+        Assert.Equal(langVersionId, setup.LanguageVersionId);
+        Assert.Equal("def twoSum():", setup.InitialCode);
+        Assert.Equal("twoSum", setup.FunctionName);
     }
 }

@@ -19,8 +19,7 @@ public class GetLeaderboardHandlerTests
     private Mock<IUserReadRepository> _userReadRepository = null!;
     private GetLeaderboardHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetLeaderboardHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _leaderboardReadRepository = new Mock<ILeaderboardReadRepository>();
@@ -35,7 +34,7 @@ public class GetLeaderboardHandlerTests
     private static UserDto MakeUser(Guid id, string username, string? imageUrl = null) =>
         new(id, $"auth0|{id}", username, imageUrl, null, false, null, DateTime.UtcNow, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -45,10 +44,10 @@ public class GetLeaderboardHandlerTests
         var query = new GetLeaderboardQuery("blitz", 300, new PaginationRequest { Page = 1, Size = 10 }, null);
         Result<PageResult<LeaderboardEntryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_ComputesRankFromPageOffset()
     {
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
@@ -83,23 +82,20 @@ public class GetLeaderboardHandlerTests
         var query = new GetLeaderboardQuery("blitz", 300, pagination, null);
         Result<PageResult<LeaderboardEntryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value.Total, Is.EqualTo(7));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(7, result.Value.Total);
 
         LeaderboardEntryDto entry1 = result.Value.Results[0];
         LeaderboardEntryDto entry2 = result.Value.Results[1];
-        Assert.Multiple(() =>
-        {
-            Assert.That(entry1.Rank, Is.EqualTo(6));
-            Assert.That(entry1.Username, Is.EqualTo("alice"));
-            Assert.That(entry1.ImageUrl, Is.EqualTo("https://example.com/a.png"));
-            Assert.That(entry1.HighScore, Is.EqualTo(100));
-            Assert.That(entry2.Rank, Is.EqualTo(7));
-            Assert.That(entry2.Username, Is.EqualTo("bob"));
-        });
+        Assert.Equal(6, entry1.Rank);
+        Assert.Equal("alice", entry1.Username);
+        Assert.Equal("https://example.com/a.png", entry1.ImageUrl);
+        Assert.Equal(100, entry1.HighScore);
+        Assert.Equal(7, entry2.Rank);
+        Assert.Equal("bob", entry2.Username);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotResolved_UsernameEmptyAndImageNull()
     {
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
@@ -128,14 +124,11 @@ public class GetLeaderboardHandlerTests
         Result<PageResult<LeaderboardEntryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
         LeaderboardEntryDto entry = result.Value.Results.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(entry.Username, Is.EqualTo(string.Empty));
-            Assert.That(entry.ImageUrl, Is.Null);
-        });
+        Assert.Equal(string.Empty, entry.Username);
+        Assert.Null(entry.ImageUrl);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RequestedByUserIdMatchesParticipant_SetsIsCurrentUser()
     {
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
@@ -165,6 +158,6 @@ public class GetLeaderboardHandlerTests
         var query = new GetLeaderboardQuery("blitz", 300, pagination, participant.UserId);
         Result<PageResult<LeaderboardEntryDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results.Single().IsCurrentUser, Is.True);
+        Assert.True(result.Value.Results.Single().IsCurrentUser);
     }
 }

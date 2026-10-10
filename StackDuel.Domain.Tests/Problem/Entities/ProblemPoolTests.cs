@@ -6,51 +6,51 @@ public class ProblemPoolTests
 {
     private static ProblemPoolEntity CreatePool() => new("all-problems", "All Problems", "Every published problem.");
 
-    [Test]
+    [Fact]
     public void Constructor_NormalizesKeyToLowercase()
     {
         ProblemPoolEntity pool = new("  Game-Rotation  ", "Game Rotation");
 
-        Assert.That(pool.Key, Is.EqualTo("game-rotation"));
+        Assert.Equal("game-rotation", pool.Key);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_TrimsName()
     {
         ProblemPoolEntity pool = new("featured", "  Featured  ");
 
-        Assert.That(pool.Name, Is.EqualTo("Featured"));
+        Assert.Equal("Featured", pool.Name);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WithNullDescription_LeavesDescriptionNull()
     {
         ProblemPoolEntity pool = new("featured", "Featured");
 
-        Assert.That(pool.Description, Is.Null);
+        Assert.Null(pool.Description);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WithEmptyKey_Throws()
     {
         Assert.Throws<ArgumentException>(() => new ProblemPoolEntity("   ", "Featured"));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WithEmptyName_Throws()
     {
         Assert.Throws<ArgumentException>(() => new ProblemPoolEntity("featured", "   "));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_StartsWithNoProblems()
     {
         ProblemPoolEntity pool = CreatePool();
 
-        Assert.That(pool.ProblemIds, Is.Empty);
+        Assert.Empty(pool.ProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void AddProblem_AddsProblemId()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -58,10 +58,10 @@ public class ProblemPoolTests
 
         pool.AddProblem(problemId);
 
-        Assert.That(pool.ProblemIds, Does.Contain(problemId));
+        Assert.Contains(problemId, pool.ProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void AddProblem_CalledTwiceWithSameId_IsIdempotent()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -70,10 +70,10 @@ public class ProblemPoolTests
         pool.AddProblem(problemId);
         pool.AddProblem(problemId);
 
-        Assert.That(pool.ProblemIds.Count(id => id == problemId), Is.EqualTo(1));
+        Assert.Equal(1, pool.ProblemIds.Count(id => id == problemId));
     }
 
-    [Test]
+    [Fact]
     public void AddProblem_WithEmptyGuid_Throws()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -81,7 +81,7 @@ public class ProblemPoolTests
         Assert.Throws<ArgumentException>(() => pool.AddProblem(Guid.Empty));
     }
 
-    [Test]
+    [Fact]
     public void RemoveProblem_RemovesExistingMember()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -90,18 +90,18 @@ public class ProblemPoolTests
 
         pool.RemoveProblem(problemId);
 
-        Assert.That(pool.ProblemIds, Does.Not.Contain(problemId));
+        Assert.DoesNotContain(problemId, pool.ProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void RemoveProblem_WhenNotAMember_DoesNotThrow()
     {
         ProblemPoolEntity pool = CreatePool();
 
-        Assert.DoesNotThrow(() => pool.RemoveProblem(Guid.NewGuid()));
+        Assert.Null(Record.Exception(() => pool.RemoveProblem(Guid.NewGuid())));
     }
 
-    [Test]
+    [Fact]
     public void AddProblem_AssignsIncreasingPositions()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -113,10 +113,10 @@ public class ProblemPoolTests
         pool.AddProblem(second);
         pool.AddProblem(third);
 
-        Assert.That(pool.ProblemIds, Is.EqualTo(new[] { first, second, third }));
+        Assert.Equal(new[] { first, second, third }, pool.ProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void Reorder_ReassignsPositionsToMatchGivenOrder()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -129,10 +129,10 @@ public class ProblemPoolTests
 
         pool.Reorder([third, first, second]);
 
-        Assert.That(pool.ProblemIds, Is.EqualTo(new[] { third, first, second }));
+        Assert.Equal(new[] { third, first, second }, pool.ProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void Reorder_MissingAMember_Throws()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -144,7 +144,7 @@ public class ProblemPoolTests
         Assert.Throws<ArgumentException>(() => pool.Reorder([first]));
     }
 
-    [Test]
+    [Fact]
     public void Reorder_WithUnknownId_Throws()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -154,7 +154,7 @@ public class ProblemPoolTests
         Assert.Throws<ArgumentException>(() => pool.Reorder([Guid.NewGuid()]));
     }
 
-    [Test]
+    [Fact]
     public void Reorder_WithDuplicateId_Throws()
     {
         ProblemPoolEntity pool = CreatePool();
@@ -166,23 +166,23 @@ public class ProblemPoolTests
         Assert.Throws<ArgumentException>(() => pool.Reorder([first, first]));
     }
 
-    [Test]
+    [Fact]
     public void Rename_UpdatesName()
     {
         ProblemPoolEntity pool = CreatePool();
 
         pool.Rename("Renamed Pool");
 
-        Assert.That(pool.Name, Is.EqualTo("Renamed Pool"));
+        Assert.Equal("Renamed Pool", pool.Name);
     }
 
-    [Test]
+    [Fact]
     public void UpdateDescription_WithWhitespace_ClearsDescription()
     {
         ProblemPoolEntity pool = CreatePool();
 
         pool.UpdateDescription("   ");
 
-        Assert.That(pool.Description, Is.Null);
+        Assert.Null(pool.Description);
     }
 }

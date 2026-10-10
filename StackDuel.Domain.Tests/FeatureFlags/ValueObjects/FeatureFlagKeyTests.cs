@@ -4,39 +4,41 @@ namespace StackDuel.Domain.Tests.FeatureFlags.ValueObjects;
 
 public class FeatureFlagKeyTests
 {
-    [TestCase("leaderboards")]
-    [TestCase("solo-rush-canary")]
-    [TestCase("a")]
-    [TestCase("a1-b2")]
+    [Theory]
+    [InlineData("leaderboards")]
+    [InlineData("solo-rush-canary")]
+    [InlineData("a")]
+    [InlineData("a1-b2")]
     public void Constructor_ValidKebabCase_Succeeds(string value)
     {
-        Assert.That(new FeatureFlagKey(value).Value, Is.EqualTo(value));
+        Assert.Equal(value, new FeatureFlagKey(value).Value);
     }
 
-    [TestCase("")]
-    [TestCase("   ")]
-    [TestCase("Leaderboards")]
-    [TestCase("leader_boards")]
-    [TestCase("leader boards")]
-    [TestCase("-leaderboards")]
-    [TestCase("leaderboards-")]
-    [TestCase("leader--boards")]
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("Leaderboards")]
+    [InlineData("leader_boards")]
+    [InlineData("leader boards")]
+    [InlineData("-leaderboards")]
+    [InlineData("leaderboards-")]
+    [InlineData("leader--boards")]
     public void Constructor_InvalidFormat_Throws(string value)
     {
         Assert.Throws<ArgumentException>(() => new FeatureFlagKey(value));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_TooLong_Throws()
     {
         string tooLong = new('a', FeatureFlagKey.MaxLength + 1);
         Assert.Throws<ArgumentException>(() => new FeatureFlagKey(tooLong));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_AtMaxLength_Succeeds()
     {
         string maxLength = new('a', FeatureFlagKey.MaxLength);
-        Assert.That(new FeatureFlagKey(maxLength).Value, Is.EqualTo(maxLength));
+        Assert.Equal(maxLength, new FeatureFlagKey(maxLength).Value);
     }
 }

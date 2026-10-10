@@ -18,8 +18,7 @@ public class ForfeitGameHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private ForfeitGameHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public ForfeitGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -35,17 +34,17 @@ public class ForfeitGameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalid()
     {
         var command = new ForfeitGameCommand(Guid.Empty, Guid.Empty);
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         var gameId = Guid.NewGuid();
@@ -56,10 +55,10 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(gameId, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotParticipant_ReturnsForbidden()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -69,10 +68,10 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(game.Id, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotRunning_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -83,10 +82,10 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantAlreadyForfeited_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -100,10 +99,10 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantAlreadyFinishedProblems_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -117,10 +116,10 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LastActiveParticipantForfeits_CompletesGameAndCancelsScheduledExpiry()
     {
         var userId = Guid.NewGuid();
@@ -132,12 +131,9 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(game.Status, Is.EqualTo(StackDuel.Domain.Games.Enums.GameStatus.Completed));
-            Assert.That(game.Participants.First().HasForfeited, Is.True);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Completed, game.Status);
+        Assert.True(game.Participants.First().HasForfeited);
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
@@ -150,7 +146,7 @@ public class ForfeitGameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_OtherParticipantsStillPlaying_GameRemainsRunning()
     {
         var userId = Guid.NewGuid();
@@ -163,11 +159,8 @@ public class ForfeitGameHandlerTests
         var command = new ForfeitGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(game.Status, Is.EqualTo(StackDuel.Domain.Games.Enums.GameStatus.Running));
-            Assert.That(game.Participants.First(p => p.UserId == userId).HasForfeited, Is.True);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Running, game.Status);
+        Assert.True(game.Participants.First(p => p.UserId == userId).HasForfeited);
     }
 }

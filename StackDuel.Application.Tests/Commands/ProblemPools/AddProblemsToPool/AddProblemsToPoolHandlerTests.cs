@@ -16,8 +16,7 @@ public class AddProblemsToPoolHandlerTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private AddProblemsToPoolHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public AddProblemsToPoolHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
@@ -32,7 +31,7 @@ public class AddProblemsToPoolHandlerTests
     private static AdminProblemListRowDto CreateRow(Guid id) =>
         new(id, $"slug-{id}", $"Title {id}", 100, ProblemStatus.Published, 1000, 64, [], [], 1, DateTime.UtcNow, null);
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolNotFound_ReturnsNotFound()
     {
         _problemPoolRepository
@@ -42,19 +41,19 @@ public class AddProblemsToPoolHandlerTests
         var command = new AddProblemsToPoolCommand("missing-pool", [Guid.NewGuid()], false, null, []);
         Result<int> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExplicitIds_NoSelection_ReturnsInvalid()
     {
         var command = new AddProblemsToPoolCommand("pool", [], false, null, []);
         Result<int> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExplicitIds_AddsOnlyExistingProblemsAndReturnsDelta()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -72,16 +71,13 @@ public class AddProblemsToPoolHandlerTests
         var command = new AddProblemsToPoolCommand("pool", [existingId1, existingId2, staleId], false, null, []);
         Result<int> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value, Is.EqualTo(2));
-            Assert.That(pool.ProblemIds, Is.EquivalentTo(new[] { existingId1, existingId2 }));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value);
+        Assert.Equivalent(new[] { existingId1, existingId2 }, pool.ProblemIds, strict: true);
         _problemPoolRepository.Verify(x => x.UpdateAsync(pool, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExplicitIds_AlreadyMemberDoesNotCountTowardDelta()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -97,15 +93,12 @@ public class AddProblemsToPoolHandlerTests
         var command = new AddProblemsToPoolCommand("pool", [alreadyMemberId, newId], false, null, []);
         Result<int> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value, Is.EqualTo(1));
-            Assert.That(pool.ProblemIds, Is.EquivalentTo(new[] { alreadyMemberId, newId }));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value);
+        Assert.Equivalent(new[] { alreadyMemberId, newId }, pool.ProblemIds, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SelectAllMatching_ExcludesGivenIdsAndAddsRest()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -121,13 +114,10 @@ public class AddProblemsToPoolHandlerTests
         var command = new AddProblemsToPoolCommand("pool", [], true, "array", [excluded]);
         Result<int> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value, Is.EqualTo(2));
-            Assert.That(pool.ProblemIds, Is.EquivalentTo(new[] { keep1, keep2 }));
-            Assert.That(pool.ProblemIds, Does.Not.Contain(excluded));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value);
+        Assert.Equivalent(new[] { keep1, keep2 }, pool.ProblemIds, strict: true);
+        Assert.DoesNotContain(excluded, pool.ProblemIds);
         _problemReadRepository.Verify(
             x => x.FindByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never

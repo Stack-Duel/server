@@ -17,8 +17,7 @@ public class GetUserProfileByUsernameHandlerTests
     private Mock<ISubmissionReadRepository> _submissionReadRepository = null!;
     private GetUserProfileByUsernameHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetUserProfileByUsernameHandlerTests()
     {
         _userReadRepository = new Mock<IUserReadRepository>();
         _gameReadRepository = new Mock<IGameReadRepository>();
@@ -69,7 +68,7 @@ public class GetUserProfileByUsernameHandlerTests
         return game;
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProfileNotFound_ReturnsNotFound()
     {
         _userReadRepository
@@ -81,10 +80,10 @@ public class GetUserProfileByUsernameHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PrivateProfile_NotOwner_ReturnsMinimalProfileWithoutFetchingGamesOrSubmissions()
     {
         var profile = CreateBaseProfile(Guid.NewGuid(), isPrivate: true);
@@ -97,15 +96,12 @@ public class GetUserProfileByUsernameHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.IsOwnProfile, Is.False);
-            Assert.That(result.Value.GameModeStats, Is.Null);
-            Assert.That(result.Value.RecentGames, Is.Null);
-            Assert.That(result.Value.RecentSubmissions, Is.Null);
-            Assert.That(result.Value.SubmissionCalendar, Is.Null);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.False(result.Value.IsOwnProfile);
+        Assert.Null(result.Value.GameModeStats);
+        Assert.Null(result.Value.RecentGames);
+        Assert.Null(result.Value.RecentSubmissions);
+        Assert.Null(result.Value.SubmissionCalendar);
         _gameReadRepository.Verify(
             x => x.GetCompletedGamesForUserAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -125,7 +121,7 @@ public class GetUserProfileByUsernameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PrivateProfile_Owner_FetchesPrivateSections()
     {
         var profile = CreateBaseProfile(Guid.NewGuid(), isPrivate: true);
@@ -138,17 +134,14 @@ public class GetUserProfileByUsernameHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.IsOwnProfile, Is.True);
-            Assert.That(result.Value.GameModeStats, Is.Not.Null);
-            Assert.That(result.Value.RecentGames, Is.Not.Null);
-            Assert.That(result.Value.RecentSubmissions, Is.Not.Null);
-            Assert.That(result.Value.SubmissionCalendar, Is.Not.Null);
-        });
+        Assert.True(result.Value.IsOwnProfile);
+        Assert.NotNull(result.Value.GameModeStats);
+        Assert.NotNull(result.Value.RecentGames);
+        Assert.NotNull(result.Value.RecentSubmissions);
+        Assert.NotNull(result.Value.SubmissionCalendar);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionCalendar_OnlyIncludesDaysWithSubmissionsAndExposesRange()
     {
         var userId = Guid.NewGuid();
@@ -170,17 +163,14 @@ public class GetUserProfileByUsernameHandlerTests
         );
 
         var calendar = result.Value.SubmissionCalendar!;
-        Assert.Multiple(() =>
-        {
-            Assert.That(calendar, Has.Count.EqualTo(1));
-            Assert.That(calendar[0].Date, Is.EqualTo(today));
-            Assert.That(calendar[0].Count, Is.EqualTo(3));
-            Assert.That(result.Value.SubmissionCalendarRangeStart, Is.EqualTo(today.AddMonths(-12)));
-            Assert.That(result.Value.SubmissionCalendarRangeEnd, Is.EqualTo(today));
-        });
+        Assert.Single(calendar);
+        Assert.Equal(today, calendar[0].Date);
+        Assert.Equal(3, calendar[0].Count);
+        Assert.Equal(today.AddMonths(-12), result.Value.SubmissionCalendarRangeStart);
+        Assert.Equal(today, result.Value.SubmissionCalendarRangeEnd);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PublicProfile_NotOwner_StillFetchesSections()
     {
         var profile = CreateBaseProfile(Guid.NewGuid(), isPrivate: false);
@@ -193,10 +183,10 @@ public class GetUserProfileByUsernameHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.GameModeStats, Is.Not.Null);
+        Assert.NotNull(result.Value.GameModeStats);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MultiplayerMode_ComputesWinsLossesDrawsAndBestScore()
     {
         var userId = Guid.NewGuid();
@@ -224,18 +214,15 @@ public class GetUserProfileByUsernameHandlerTests
         );
 
         var stat = result.Value.GameModeStats!.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(stat.GamesPlayed, Is.EqualTo(3));
-            Assert.That(stat.Wins, Is.EqualTo(1));
-            Assert.That(stat.Losses, Is.EqualTo(1));
-            Assert.That(stat.Draws, Is.EqualTo(1));
-            Assert.That(stat.BestScore, Is.EqualTo(5));
-            Assert.That(stat.HasOpponents, Is.True);
-        });
+        Assert.Equal(3, stat.GamesPlayed);
+        Assert.Equal(1, stat.Wins);
+        Assert.Equal(1, stat.Losses);
+        Assert.Equal(1, stat.Draws);
+        Assert.Equal(5, stat.BestScore);
+        Assert.True(stat.HasOpponents);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SoloMode_OnlyTracksBestScoreWithoutWinLossDraw()
     {
         var userId = Guid.NewGuid();
@@ -260,18 +247,15 @@ public class GetUserProfileByUsernameHandlerTests
         );
 
         var stat = result.Value.GameModeStats!.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(stat.HasOpponents, Is.False);
-            Assert.That(stat.BestScore, Is.EqualTo(7));
-            Assert.That(stat.Wins, Is.EqualTo(0));
-            Assert.That(stat.Losses, Is.EqualTo(0));
-            Assert.That(stat.Draws, Is.EqualTo(0));
-            Assert.That(stat.GamesPlayed, Is.EqualTo(1));
-        });
+        Assert.False(stat.HasOpponents);
+        Assert.Equal(7, stat.BestScore);
+        Assert.Equal(0, stat.Wins);
+        Assert.Equal(0, stat.Losses);
+        Assert.Equal(0, stat.Draws);
+        Assert.Equal(1, stat.GamesPlayed);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DeactivatedGameMode_StillIncludedWhenLookupSucceeds()
     {
         var userId = Guid.NewGuid();
@@ -296,10 +280,10 @@ public class GetUserProfileByUsernameHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.GameModeStats!.Single().GameModeName, Is.EqualTo("Retired Mode"));
+        Assert.Equal("Retired Mode", result.Value.GameModeStats!.Single().GameModeName);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnknownGameMode_ExcludedFromStatsAndRecentGames()
     {
         var userId = Guid.NewGuid();
@@ -321,14 +305,13 @@ public class GetUserProfileByUsernameHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.GameModeStats, Is.Empty);
-            Assert.That(result.Value.RecentGames, Is.Empty);
-        });
+        Assert.NotNull(result.Value.GameModeStats);
+        Assert.Empty(result.Value.GameModeStats);
+        Assert.NotNull(result.Value.RecentGames);
+        Assert.Empty(result.Value.RecentGames);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RecentGames_MapsParticipantsOrderedByScoreDescendingWithUnknownFallback()
     {
         var userId = Guid.NewGuid();
@@ -373,12 +356,9 @@ public class GetUserProfileByUsernameHandlerTests
         );
 
         var recentGame = result.Value.RecentGames!.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(recentGame.Participants[0].Username, Is.EqualTo("Unknown"));
-            Assert.That(recentGame.Participants[0].Score, Is.EqualTo(6));
-            Assert.That(recentGame.Participants[1].Username, Is.EqualTo("alice"));
-            Assert.That(recentGame.Participants[1].Score, Is.EqualTo(2));
-        });
+        Assert.Equal("Unknown", recentGame.Participants[0].Username);
+        Assert.Equal(6, recentGame.Participants[0].Score);
+        Assert.Equal("alice", recentGame.Participants[1].Username);
+        Assert.Equal(2, recentGame.Participants[1].Score);
     }
 }

@@ -21,8 +21,7 @@ public class GetAdminGamePlayerHistoryHandlerTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private GetAdminGamePlayerHistoryHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminGamePlayerHistoryHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _submissionReadRepository = new Mock<ISubmissionReadRepository>();
@@ -37,7 +36,7 @@ public class GetAdminGamePlayerHistoryHandlerTests
     private static AdminProblemListRowDto MakeProblemRow(Guid id, string title, string slug) =>
         new(id, slug, title, 1, ProblemStatus.Published, 1000, 256, [], [], 1, DateTime.UtcNow, null);
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -46,10 +45,10 @@ public class GetAdminGamePlayerHistoryHandlerTests
 
         var result = await _handler.Handle(new GetAdminGamePlayerHistoryQuery(Guid.NewGuid()), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantWithSolvedAndWrongSubmissions_OrdersEventsChronologically()
     {
         var participantId = Guid.NewGuid();
@@ -88,19 +87,16 @@ public class GetAdminGamePlayerHistoryHandlerTests
 
         var result = await _handler.Handle(new GetAdminGamePlayerHistoryQuery(game.Id), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         var history = result.Value.Single(h => h.UserId == participantId);
-        Assert.That(history.Events, Has.Count.EqualTo(2));
-        Assert.Multiple(() =>
-        {
-            Assert.That(history.Events[0].Type, Is.EqualTo(AdminGameHistoryEventType.WrongAnswer));
-            Assert.That(history.Events[0].SubmissionId, Is.EqualTo(wrongSubmissionId));
-            Assert.That(history.Events[1].Type, Is.EqualTo(AdminGameHistoryEventType.Accepted));
-            Assert.That(history.Events[1].SubmissionId, Is.EqualTo(acceptedSubmissionId));
-        });
+        Assert.Equal(2, history.Events.Count);
+        Assert.Equal(AdminGameHistoryEventType.WrongAnswer, history.Events[0].Type);
+        Assert.Equal(wrongSubmissionId, history.Events[0].SubmissionId);
+        Assert.Equal(AdminGameHistoryEventType.Accepted, history.Events[1].Type);
+        Assert.Equal(acceptedSubmissionId, history.Events[1].SubmissionId);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SkippedProblemWithNoSubmissions_ResolvesTitleFromProblemRepository()
     {
         var participantId = Guid.NewGuid();
@@ -128,19 +124,16 @@ public class GetAdminGamePlayerHistoryHandlerTests
 
         var result = await _handler.Handle(new GetAdminGamePlayerHistoryQuery(game.Id), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         var history = result.Value.Single(h => h.UserId == participantId);
         var skipEvent = history.Events.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(skipEvent.Type, Is.EqualTo(AdminGameHistoryEventType.Skipped));
-            Assert.That(skipEvent.ProblemId, Is.EqualTo(skippedProblemId));
-            Assert.That(skipEvent.ProblemTitle, Is.EqualTo("Merge Intervals"));
-            Assert.That(skipEvent.OccurredAt, Is.Null);
-        });
+        Assert.Equal(AdminGameHistoryEventType.Skipped, skipEvent.Type);
+        Assert.Equal(skippedProblemId, skipEvent.ProblemId);
+        Assert.Equal("Merge Intervals", skipEvent.ProblemTitle);
+        Assert.Null(skipEvent.OccurredAt);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SkippedProblemWithPriorWrongSubmission_UsesLastSubmissionTimeAsApproxTimestamp()
     {
         var participantId = Guid.NewGuid();
@@ -175,6 +168,6 @@ public class GetAdminGamePlayerHistoryHandlerTests
 
         var history = result.Value.Single(h => h.UserId == participantId);
         var skipEvent = history.Events.Single(e => e.Type == AdminGameHistoryEventType.Skipped);
-        Assert.That(skipEvent.OccurredAt, Is.EqualTo(lastAttemptAt));
+        Assert.Equal(lastAttemptAt, skipEvent.OccurredAt);
     }
 }

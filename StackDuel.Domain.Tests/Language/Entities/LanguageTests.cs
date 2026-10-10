@@ -15,7 +15,7 @@ public class LanguageTests
 
     private static LanguageEntity CreateLanguage() => new(ValidName, ValidSlug, Guid.NewGuid());
 
-    [Test]
+    [Fact]
     public void Activate_WhenInactive_SetsStatusToActive()
     {
         var language = CreateLanguage();
@@ -23,20 +23,20 @@ public class LanguageTests
 
         language.Activate();
 
-        Assert.That(language.Status, Is.EqualTo(LanguageStatus.Active));
+        Assert.Equal(LanguageStatus.Active, language.Status);
     }
 
-    [Test]
+    [Fact]
     public void AddVersion_AddsToVersionsCollection()
     {
         var language = CreateLanguage();
 
         language.AddVersion(ValidVersion, ValidJudge0Id);
 
-        Assert.That(language.Versions, Has.Count.EqualTo(1));
+        Assert.Single(language.Versions);
     }
 
-    [Test]
+    [Fact]
     public void AddVersion_MultipleVersions_AllAdded()
     {
         var language = CreateLanguage();
@@ -44,63 +44,57 @@ public class LanguageTests
         language.AddVersion(new LanguageVersion("3.10"), new Judge0Id(100));
         language.AddVersion(new LanguageVersion("3.11"), new Judge0Id(109));
 
-        Assert.That(language.Versions, Has.Count.EqualTo(2));
+        Assert.Equal(2, language.Versions.Count);
     }
 
-    [Test]
+    [Fact]
     public void AddVersion_ReturnsEntryWithActiveStatus()
     {
         var language = CreateLanguage();
 
         LanguageVersionEntry entry = language.AddVersion(ValidVersion, ValidJudge0Id);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(entry.IsActive, Is.True);
-            Assert.That(entry.Version, Is.EqualTo(ValidVersion));
-            Assert.That(entry.Judge0Id, Is.EqualTo(ValidJudge0Id));
-        }
+        Assert.True(entry.IsActive);
+        Assert.Equal(ValidVersion, entry.Version);
+        Assert.Equal(ValidJudge0Id, entry.Judge0Id);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsNameAndSlug()
     {
         var language = CreateLanguage();
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(language.Name, Is.EqualTo(ValidName));
-            Assert.That(language.Slug, Is.EqualTo(ValidSlug));
-        }
+        Assert.Equal(ValidName, language.Name);
+        Assert.Equal(ValidSlug, language.Slug);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsStatusToActive()
     {
         var language = CreateLanguage();
 
-        Assert.That(language.Status, Is.EqualTo(LanguageStatus.Active));
+        Assert.Equal(LanguageStatus.Active, language.Status);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_VersionsIsEmpty()
     {
         var language = CreateLanguage();
 
-        Assert.That(language.Versions, Is.Empty);
+        Assert.Empty(language.Versions);
     }
 
-    [Test]
+    [Fact]
     public void Deactivate_SetsStatusToInactive()
     {
         var language = CreateLanguage();
 
         language.Deactivate();
 
-        Assert.That(language.Status, Is.EqualTo(LanguageStatus.Inactive));
+        Assert.Equal(LanguageStatus.Inactive, language.Status);
     }
 
-    [Test]
+    [Fact]
     public void DeprecateVersion_DoesNotRemoveVersion()
     {
         var language = CreateLanguage();
@@ -108,10 +102,10 @@ public class LanguageTests
 
         language.DeprecateVersion(entry.Id);
 
-        Assert.That(language.Versions, Has.Count.EqualTo(1));
+        Assert.Single(language.Versions);
     }
 
-    [Test]
+    [Fact]
     public void DeprecateVersion_SetsVersionToDeprecated()
     {
         LanguageEntity language = CreateLanguage();
@@ -119,10 +113,10 @@ public class LanguageTests
 
         language.DeprecateVersion(entry.Id);
 
-        Assert.That(entry.Status, Is.EqualTo(LanguageVersionStatus.Deprecated));
+        Assert.Equal(LanguageVersionStatus.Deprecated, entry.Status);
     }
 
-    [Test]
+    [Fact]
     public void DeprecateVersion_UnknownVersionId_ThrowsLanguageVersionNotFoundException()
     {
         var language = CreateLanguage();
@@ -130,20 +124,20 @@ public class LanguageTests
         Assert.Throws<LanguageVersionNotFoundException>(() => language.DeprecateVersion(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void IsActive_WhenActive_IsTrue()
     {
         var language = CreateLanguage();
 
-        Assert.That(language.IsActive, Is.True);
+        Assert.True(language.IsActive);
     }
 
-    [Test]
+    [Fact]
     public void IsActive_WhenInactive_IsFalse()
     {
         var language = CreateLanguage();
         language.Deactivate();
 
-        Assert.That(language.IsActive, Is.False);
+        Assert.False(language.IsActive);
     }
 }

@@ -14,14 +14,13 @@ public class UpdateProfilePrivacyHandlerTests
     private Mock<IUserWriteRepository> _userRepository = null!;
     private UpdateProfilePrivacyHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpdateProfilePrivacyHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
         _handler = new UpdateProfilePrivacyHandler(new UpdateProfilePrivacyValidator(), _userRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
         _userRepository
@@ -31,10 +30,10 @@ public class UpdateProfilePrivacyHandlerTests
         var command = new UpdateProfilePrivacyCommand(Guid.NewGuid(), true);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserFound_SetsPrivacyAndPersists()
     {
         var user = new UserFactory().Create(new CreateUserParams("alice", "auth0|abc", null));
@@ -43,12 +42,12 @@ public class UpdateProfilePrivacyHandlerTests
         var command = new UpdateProfilePrivacyCommand(user.Id, true);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(user.IsPrivate, Is.True);
+        Assert.True(result.IsSuccess);
+        Assert.True(user.IsPrivate);
         _userRepository.Verify(x => x.UpdateAsync(user, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserFound_CanUnsetPrivacy()
     {
         var user = new UserFactory().Create(new CreateUserParams("alice", "auth0|abc", null));
@@ -58,6 +57,6 @@ public class UpdateProfilePrivacyHandlerTests
         var command = new UpdateProfilePrivacyCommand(user.Id, false);
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(user.IsPrivate, Is.False);
+        Assert.False(user.IsPrivate);
     }
 }

@@ -17,15 +17,14 @@ public class GetTracksHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetTracksHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetTracksHandlerTests()
     {
         _trackReadRepository = new Mock<ITrackReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
         _handler = new GetTracksHandler(_trackReadRepository.Object, _languageReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoTracks_ReturnsEmptyList()
     {
         _trackReadRepository.Setup(x => x.GetActiveTracksAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
@@ -37,11 +36,11 @@ public class GetTracksHandlerTests
 
         Result<IReadOnlyList<TrackDto>> result = await _handler.Handle(new GetTracksQuery(), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Empty);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_GroupsLanguagesUnderTheirOwnTrackOnly()
     {
         var frontendTrack = new Track("frontend", "Frontend");
@@ -61,14 +60,11 @@ public class GetTracksHandlerTests
 
         Result<IReadOnlyList<TrackDto>> result = await _handler.Handle(new GetTracksQuery(), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         TrackDto frontendDto = result.Value.Single(t => t.Key == "frontend");
         TrackDto sqlDto = result.Value.Single(t => t.Key == "sql");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(frontendDto.Languages.Select(l => l.Name), Is.EquivalentTo(new[] { "React", "Angular" }));
-            Assert.That(sqlDto.Languages.Select(l => l.Name), Is.EquivalentTo(new[] { "SQLite" }));
-        });
+        Assert.Equivalent(new[] { "React", "Angular" }, frontendDto.Languages.Select(l => l.Name), strict: true);
+        Assert.Equivalent(new[] { "SQLite" }, sqlDto.Languages.Select(l => l.Name), strict: true);
     }
 }

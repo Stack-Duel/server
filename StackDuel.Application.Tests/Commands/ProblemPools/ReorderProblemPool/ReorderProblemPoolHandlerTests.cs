@@ -13,14 +13,13 @@ public class ReorderProblemPoolHandlerTests
     private Mock<IProblemPoolRepository> _problemPoolRepository = null!;
     private ReorderProblemPoolHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public ReorderProblemPoolHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
         _handler = new ReorderProblemPoolHandler(_problemPoolRepository.Object, new ReorderProblemPoolValidator());
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolNotFound_ReturnsNotFound()
     {
         _problemPoolRepository
@@ -30,19 +29,19 @@ public class ReorderProblemPoolHandlerTests
         var command = new ReorderProblemPoolCommand("missing", [Guid.NewGuid()]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyProblemIds_ReturnsInvalid()
     {
         var command = new ReorderProblemPoolCommand("pool", []);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GivenOrderMatchesCurrentMembers_ReordersAndSaves()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -58,15 +57,12 @@ public class ReorderProblemPoolHandlerTests
         var command = new ReorderProblemPoolCommand("pool", [third, first, second]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(pool.ProblemIds, Is.EqualTo(new[] { third, first, second }));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(new[] { third, first, second }, pool.ProblemIds);
         _problemPoolRepository.Verify(x => x.UpdateAsync(pool, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MissingAMember_ReturnsInvalidAndDoesNotSave()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -80,11 +76,14 @@ public class ReorderProblemPoolHandlerTests
         var command = new ReorderProblemPoolCommand("pool", [first]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
-        _problemPoolRepository.Verify(x => x.UpdateAsync(It.IsAny<ProblemPool>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        _problemPoolRepository.Verify(
+            x => x.UpdateAsync(It.IsAny<ProblemPool>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_IncludesUnknownId_ReturnsInvalid()
     {
         var pool = new ProblemPool("pool", "Pool");
@@ -96,6 +95,6 @@ public class ReorderProblemPoolHandlerTests
         var command = new ReorderProblemPoolCommand("pool", [Guid.NewGuid()]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 }

@@ -13,14 +13,13 @@ public class GetGameModesHandlerTests
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private GetGameModesHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetGameModesHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _handler = new GetGameModesHandler(_gameReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoActiveModes_ReturnsEmptyList()
     {
         _gameReadRepository.Setup(x => x.GetActiveGameModesAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
@@ -30,11 +29,11 @@ public class GetGameModesHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Empty);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ActiveModes_MapsFieldsAndOrdersTimeOptionsByDuration()
     {
         var mode = new GameMode(
@@ -57,18 +56,15 @@ public class GetGameModesHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         GameModeDto dto = result.Value.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.Id, Is.EqualTo(mode.Id));
-            Assert.That(dto.Key, Is.EqualTo("blitz"));
-            Assert.That(dto.Name, Is.EqualTo("Blitz"));
-            Assert.That(dto.Description, Is.EqualTo("Fast paced games."));
-            Assert.That(dto.MinPlayers, Is.EqualTo(1));
-            Assert.That(dto.MaxPlayers, Is.EqualTo(4));
-            Assert.That(dto.TimeOptions.Select(o => o.DurationSeconds), Is.EqualTo(new[] { 60, 180, 300 }));
-            Assert.That(dto.TimeOptions.Single(o => o.DurationSeconds == 60).IsDefault, Is.True);
-        });
+        Assert.Equal(mode.Id, dto.Id);
+        Assert.Equal("blitz", dto.Key);
+        Assert.Equal("Blitz", dto.Name);
+        Assert.Equal("Fast paced games.", dto.Description);
+        Assert.Equal(1, dto.MinPlayers);
+        Assert.Equal(4, dto.MaxPlayers);
+        Assert.Equal(new[] { 60, 180, 300 }, dto.TimeOptions.Select(o => o.DurationSeconds));
+        Assert.True(dto.TimeOptions.Single(o => o.DurationSeconds == 60).IsDefault);
     }
 }

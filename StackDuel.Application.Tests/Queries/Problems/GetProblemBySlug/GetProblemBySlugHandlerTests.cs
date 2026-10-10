@@ -16,8 +16,7 @@ public class GetProblemBySlugHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetProblemBySlugHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetProblemBySlugHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
@@ -38,7 +37,7 @@ public class GetProblemBySlugHandlerTests
             new MemoryLimit(256)
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemReadRepository
@@ -50,10 +49,10 @@ public class GetProblemBySlugHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemFound_LooksUpBySlugAndMapsFields()
     {
         var problem = CreateProblem();
@@ -67,20 +66,17 @@ public class GetProblemBySlugHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         ProblemWithSetupsDto dto = result.Value;
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.Id, Is.EqualTo(problem.Id));
-            Assert.That(dto.Slug, Is.EqualTo("two-sum"));
-            Assert.That(dto.Title, Is.EqualTo("Two Sum"));
-            Assert.That(dto.Tags, Is.EquivalentTo(new[] { "arrays" }));
-            Assert.That(dto.Author, Is.Null);
-            Assert.That(dto.PublicTestCases, Is.Empty);
-        });
+        Assert.Equal(problem.Id, dto.Id);
+        Assert.Equal("two-sum", dto.Slug);
+        Assert.Equal("Two Sum", dto.Title);
+        Assert.Equivalent(new[] { "arrays" }, dto.Tags, strict: true);
+        Assert.Null(dto.Author);
+        Assert.Empty(dto.PublicTestCases);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_QueriesRepositoryWithGivenSlug()
     {
         _problemReadRepository

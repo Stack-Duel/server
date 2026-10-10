@@ -7,33 +7,33 @@ public class CreateFeatureFlagValidatorTests
 {
     private CreateFeatureFlagValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CreateFeatureFlagValidatorTests()
     {
         _validator = new CreateFeatureFlagValidator();
     }
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
         var command = new CreateFeatureFlagCommand("leaderboards", "Leaderboards", "Global kill-switch.", true);
-        Assert.That(_validator.Validate(command).IsValid, Is.True);
+        Assert.True(_validator.Validate(command).IsValid);
     }
 
-    [TestCase("")]
-    [TestCase("Leaderboards")]
-    [TestCase("leader_boards")]
-    [TestCase("leader boards")]
+    [Theory]
+    [InlineData("")]
+    [InlineData("Leaderboards")]
+    [InlineData("leader_boards")]
+    [InlineData("leader boards")]
     public void Validate_InvalidKeyFormat_IsInvalid(string key)
     {
         var command = new CreateFeatureFlagCommand(key, "Name", "Description", false);
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_BlankName_IsInvalid()
     {
         var command = new CreateFeatureFlagCommand("leaderboards", "  ", "Description", false);
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 }

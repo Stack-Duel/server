@@ -24,23 +24,23 @@ public class GameTests
     private static GameEntity CreatePendingLobby(Guid hostId) =>
         new(GameModeId, Guid.NewGuid(), [TrackId], [hostId], timeLimitInSeconds: 300);
 
-    [Test]
+    [Fact]
     public void Constructor_GeneratesASevenCharacterJoinCode()
     {
         GameEntity game = CreatePendingLobby(HostId);
 
-        Assert.That(game.JoinCode, Has.Length.EqualTo(7));
+        Assert.Equal(7, game.JoinCode.Length);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_DefaultsSkipsEnabledToTrue()
     {
         GameEntity game = CreatePendingLobby(HostId);
 
-        Assert.That(game.SkipsEnabled, Is.True);
+        Assert.True(game.SkipsEnabled);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SkipsEnabledFalse_IsHonored()
     {
         GameEntity game = new(
@@ -52,10 +52,10 @@ public class GameTests
             skipsEnabled: false
         );
 
-        Assert.That(game.SkipsEnabled, Is.False);
+        Assert.False(game.SkipsEnabled);
     }
 
-    [Test]
+    [Fact]
     public void Start_WithCountdownSeconds_DelaysStartedAtByThatMany()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -64,10 +64,10 @@ public class GameTests
 
         game.Start(countdownSeconds: 6);
 
-        Assert.That(game.StartedAt, Is.GreaterThanOrEqualTo(beforeStart.AddSeconds(6)));
+        Assert.True(game.StartedAt >= beforeStart.AddSeconds(6));
     }
 
-    [Test]
+    [Fact]
     public void Start_RaisesGameStartedAndGameLobbyUpdatedDomainEvents()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -77,30 +77,24 @@ public class GameTests
         game.Start();
 
         var domainEvents = game.PopDomainEvents();
-        Assert.That(domainEvents.OfType<GameStartedDomainEvent>().Single().GameId, Is.EqualTo(game.Id));
-        Assert.That(
-            domainEvents.OfType<GameLobbyUpdatedDomainEvent>().Single().GameId,
-            Is.EqualTo(game.Id),
-            "participants still sitting in the lobby need a push to learn the game just started, "
-                + "not just the players who joined/left it"
-        );
+        Assert.Equal(game.Id, domainEvents.OfType<GameStartedDomainEvent>().Single().GameId);
+        // participants still sitting in the lobby need a push to learn the game just started,
+        // not just the players who joined/left it
+        Assert.Equal(game.Id, domainEvents.OfType<GameLobbyUpdatedDomainEvent>().Single().GameId);
     }
 
-    [Test]
+    [Fact]
     public void RecordProblemSolved_IncrementsOnlyThatParticipantsScore()
     {
         GameEntity game = CreateRunningDuel();
 
         game.RecordProblemSolved(OpponentId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Participants.Single(p => p.UserId == OpponentId).Score, Is.EqualTo(1));
-            Assert.That(game.Participants.Single(p => p.UserId == HostId).Score, Is.EqualTo(0));
-        }
+        Assert.Equal(1, game.Participants.Single(p => p.UserId == OpponentId).Score);
+        Assert.Equal(0, game.Participants.Single(p => p.UserId == HostId).Score);
     }
 
-    [Test]
+    [Fact]
     public void RecordProblemSolved_RaisesGameProgressUpdatedDomainEvent()
     {
         GameEntity game = CreateRunningDuel();
@@ -108,10 +102,10 @@ public class GameTests
         game.RecordProblemSolved(OpponentId);
 
         var domainEvent = game.PopDomainEvents().OfType<GameProgressUpdatedDomainEvent>().Single();
-        Assert.That(domainEvent.GameId, Is.EqualTo(game.Id));
+        Assert.Equal(game.Id, domainEvent.GameId);
     }
 
-    [Test]
+    [Fact]
     public void RecordProblemSolved_AccumulatesAcrossMultipleCalls()
     {
         GameEntity game = CreateRunningDuel();
@@ -120,10 +114,10 @@ public class GameTests
         game.RecordProblemSolved(OpponentId);
         game.RecordProblemSolved(OpponentId);
 
-        Assert.That(game.Participants.Single(p => p.UserId == OpponentId).Score, Is.EqualTo(3));
+        Assert.Equal(3, game.Participants.Single(p => p.UserId == OpponentId).Score);
     }
 
-    [Test]
+    [Fact]
     public void RecordProblemSolved_GameNotRunning_Throws()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -131,7 +125,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.RecordProblemSolved(HostId));
     }
 
-    [Test]
+    [Fact]
     public void RecordProblemSolved_UnknownUser_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -139,33 +133,30 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.RecordProblemSolved(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_OneOfTwoParticipants_MarksThatParticipantForfeited_GameStaysRunning()
     {
         GameEntity game = CreateRunningDuel();
 
         game.Forfeit(OpponentId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Running));
-            Assert.That(game.EndedAt, Is.Null);
-            Assert.That(game.Participants.Single(p => p.UserId == OpponentId).HasForfeited, Is.True);
-            Assert.That(game.Participants.Single(p => p.UserId == HostId).HasForfeited, Is.False);
-        }
+        Assert.Equal(GameStatus.Running, game.Status);
+        Assert.Null(game.EndedAt);
+        Assert.True(game.Participants.Single(p => p.UserId == OpponentId).HasForfeited);
+        Assert.False(game.Participants.Single(p => p.UserId == HostId).HasForfeited);
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_OneOfTwoParticipants_DoesNotRaiseGameCompletedDomainEvent()
     {
         GameEntity game = CreateRunningDuel();
 
         game.Forfeit(OpponentId);
 
-        Assert.That(game.PopDomainEvents(), Is.Empty);
+        Assert.Empty(game.PopDomainEvents());
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_EveryParticipant_CompletesTheGame()
     {
         GameEntity game = CreateRunningDuel();
@@ -173,14 +164,11 @@ public class GameTests
         game.Forfeit(OpponentId);
         game.Forfeit(HostId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Completed));
-            Assert.That(game.EndedAt, Is.Not.Null);
-        }
+        Assert.Equal(GameStatus.Completed, game.Status);
+        Assert.NotNull(game.EndedAt);
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_EveryParticipant_RaisesGameCompletedDomainEvent()
     {
         GameEntity game = CreateRunningDuel();
@@ -189,10 +177,10 @@ public class GameTests
         game.Forfeit(HostId);
 
         var domainEvent = game.PopDomainEvents().OfType<GameCompletedDomainEvent>().Single();
-        Assert.That(domainEvent.Status, Is.EqualTo(GameStatus.Completed));
+        Assert.Equal(GameStatus.Completed, domainEvent.Status);
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_GameNotRunning_Throws()
     {
         GameEntity game = new(GameModeId, Guid.NewGuid(), [TrackId], [HostId], timeLimitInSeconds: 300);
@@ -200,7 +188,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.Forfeit(HostId));
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_UnknownUser_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -208,7 +196,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.Forfeit(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_SameParticipantTwice_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -217,7 +205,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.Forfeit(OpponentId));
     }
 
-    [Test]
+    [Fact]
     public void Forfeit_ParticipantWhoAlreadyFinishedProblems_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -226,23 +214,20 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.Forfeit(OpponentId));
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_OneOfTwoParticipants_MarksThatParticipantFinished_GameStaysRunning()
     {
         GameEntity game = CreateRunningDuel();
 
         game.FinishProblemsFor(OpponentId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Running));
-            Assert.That(game.EndedAt, Is.Null);
-            Assert.That(game.Participants.Single(p => p.UserId == OpponentId).HasFinishedProblems, Is.True);
-            Assert.That(game.Participants.Single(p => p.UserId == HostId).HasFinishedProblems, Is.False);
-        }
+        Assert.Equal(GameStatus.Running, game.Status);
+        Assert.Null(game.EndedAt);
+        Assert.True(game.Participants.Single(p => p.UserId == OpponentId).HasFinishedProblems);
+        Assert.False(game.Participants.Single(p => p.UserId == HostId).HasFinishedProblems);
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_EveryParticipant_CompletesTheGame()
     {
         GameEntity game = CreateRunningDuel();
@@ -250,14 +235,11 @@ public class GameTests
         game.FinishProblemsFor(OpponentId);
         game.FinishProblemsFor(HostId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Completed));
-            Assert.That(game.EndedAt, Is.Not.Null);
-        }
+        Assert.Equal(GameStatus.Completed, game.Status);
+        Assert.NotNull(game.EndedAt);
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_EveryParticipant_RaisesGameCompletedDomainEvent()
     {
         GameEntity game = CreateRunningDuel();
@@ -266,10 +248,10 @@ public class GameTests
         game.FinishProblemsFor(HostId);
 
         var domainEvent = game.PopDomainEvents().OfType<GameCompletedDomainEvent>().Single();
-        Assert.That(domainEvent.Status, Is.EqualTo(GameStatus.Completed));
+        Assert.Equal(GameStatus.Completed, domainEvent.Status);
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_MixedWithForfeit_CoveringEveryone_CompletesTheGame()
     {
         GameEntity game = CreateRunningDuel();
@@ -277,10 +259,10 @@ public class GameTests
         game.Forfeit(OpponentId);
         game.FinishProblemsFor(HostId);
 
-        Assert.That(game.Status, Is.EqualTo(GameStatus.Completed));
+        Assert.Equal(GameStatus.Completed, game.Status);
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_GameNotRunning_Throws()
     {
         GameEntity game = new(GameModeId, Guid.NewGuid(), [TrackId], [HostId], timeLimitInSeconds: 300);
@@ -288,7 +270,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.FinishProblemsFor(HostId));
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_UnknownUser_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -296,7 +278,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.FinishProblemsFor(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_SameParticipantTwice_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -305,7 +287,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.FinishProblemsFor(OpponentId));
     }
 
-    [Test]
+    [Fact]
     public void FinishProblemsFor_ParticipantWhoAlreadyForfeited_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -314,7 +296,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.FinishProblemsFor(OpponentId));
     }
 
-    [Test]
+    [Fact]
     public void CompleteIfEveryoneStopped_NotEveryoneStopped_ReturnsFalse_GameStaysRunning()
     {
         GameEntity game = CreateRunningDuel();
@@ -322,14 +304,11 @@ public class GameTests
 
         bool completed = game.CompleteIfEveryoneStopped();
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(completed, Is.False);
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Running));
-        }
+        Assert.False(completed);
+        Assert.Equal(GameStatus.Running, game.Status);
     }
 
-    [Test]
+    [Fact]
     public void CompleteIfEveryoneStopped_EveryoneStopped_CompletesGame_AndReturnsTrue()
     {
         GameEntity game = CreateRunningDuel();
@@ -343,31 +322,28 @@ public class GameTests
 
         bool completed = game.CompleteIfEveryoneStopped();
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(completed, Is.True);
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Completed));
-        }
+        Assert.True(completed);
+        Assert.Equal(GameStatus.Completed, game.Status);
     }
 
-    [Test]
+    [Fact]
     public void CompleteIfEveryoneStopped_GameNotRunning_ReturnsFalse()
     {
         GameEntity game = new(GameModeId, Guid.NewGuid(), [TrackId], [HostId], timeLimitInSeconds: 300);
 
-        Assert.That(game.CompleteIfEveryoneStopped(), Is.False);
+        Assert.False(game.CompleteIfEveryoneStopped());
     }
 
-    [Test]
+    [Fact]
     public void HostUserId_IsWhoeverHasTheLowestSeat()
     {
         GameEntity game = CreatePendingLobby(HostId);
         game.Join(OpponentId, maxPlayers: 3);
 
-        Assert.That(game.HostUserId, Is.EqualTo(HostId));
+        Assert.Equal(HostId, game.HostUserId);
     }
 
-    [Test]
+    [Fact]
     public void Join_RaisesGameLobbyUpdatedDomainEvent()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -375,10 +351,10 @@ public class GameTests
         game.Join(OpponentId, maxPlayers: 2);
 
         var domainEvent = game.PopDomainEvents().OfType<GameLobbyUpdatedDomainEvent>().Single();
-        Assert.That(domainEvent.GameId, Is.EqualTo(game.Id));
+        Assert.Equal(game.Id, domainEvent.GameId);
     }
 
-    [Test]
+    [Fact]
     public void Leave_WithRemainingParticipants_RaisesGameLobbyUpdatedDomainEvent()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -388,20 +364,20 @@ public class GameTests
         game.Leave(OpponentId);
 
         var domainEvent = game.PopDomainEvents().OfType<GameLobbyUpdatedDomainEvent>().Single();
-        Assert.That(domainEvent.GameId, Is.EqualTo(game.Id));
+        Assert.Equal(game.Id, domainEvent.GameId);
     }
 
-    [Test]
+    [Fact]
     public void Leave_LastParticipant_DoesNotRaiseGameLobbyUpdatedDomainEvent()
     {
         GameEntity game = CreatePendingLobby(HostId);
 
         game.Leave(HostId);
 
-        Assert.That(game.PopDomainEvents().OfType<GameLobbyUpdatedDomainEvent>(), Is.Empty);
+        Assert.Empty(game.PopDomainEvents().OfType<GameLobbyUpdatedDomainEvent>());
     }
 
-    [Test]
+    [Fact]
     public void Leave_NonHostParticipant_RemovesThem_HostUnchanged()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -409,15 +385,12 @@ public class GameTests
 
         game.Leave(OpponentId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Participants.Select(p => p.UserId), Does.Not.Contain(OpponentId));
-            Assert.That(game.HostUserId, Is.EqualTo(HostId));
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Pending));
-        }
+        Assert.DoesNotContain(OpponentId, game.Participants.Select(p => p.UserId));
+        Assert.Equal(HostId, game.HostUserId);
+        Assert.Equal(GameStatus.Pending, game.Status);
     }
 
-    [Test]
+    [Fact]
     public void Leave_HostParticipant_HandsHostToNextLowestSeat_WithoutRenumbering()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -427,33 +400,24 @@ public class GameTests
 
         game.Leave(HostId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.HostUserId, Is.EqualTo(OpponentId));
-            Assert.That(
-                game.Participants.Single(p => p.UserId == OpponentId).SeatNo,
-                Is.EqualTo(2),
-                "seats are never renumbered — the new host keeps the seat they already had"
-            );
-        }
+        Assert.Equal(OpponentId, game.HostUserId);
+        // seats are never renumbered — the new host keeps the seat they already had
+        Assert.Equal(2, game.Participants.Single(p => p.UserId == OpponentId).SeatNo);
     }
 
-    [Test]
+    [Fact]
     public void Leave_LastParticipant_CancelsTheGame()
     {
         GameEntity game = CreatePendingLobby(HostId);
 
         game.Leave(HostId);
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Cancelled));
-            Assert.That(game.Participants, Is.Empty);
-            Assert.That(game.HostUserId, Is.Null);
-        }
+        Assert.Equal(GameStatus.Cancelled, game.Status);
+        Assert.Empty(game.Participants);
+        Assert.Null(game.HostUserId);
     }
 
-    [Test]
+    [Fact]
     public void Join_AfterHostLeaves_AssignsASeatThatDoesNotCollide()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -466,14 +430,11 @@ public class GameTests
         game.Join(thirdPlayerId, maxPlayers: 3);
 
         var seats = game.Participants.Select(p => p.SeatNo).ToList();
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(seats, Is.EquivalentTo(new[] { 2, 3 }));
-            Assert.That(seats, Is.Unique);
-        }
+        Assert.Equivalent(new[] { 2, 3 }, seats, strict: true);
+        Assert.Distinct(seats);
     }
 
-    [Test]
+    [Fact]
     public void Leave_RunningGame_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -481,7 +442,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.Leave(HostId));
     }
 
-    [Test]
+    [Fact]
     public void Leave_UnknownUser_Throws()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -489,7 +450,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.Leave(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void CloseLobby_CancelsTheGame_EvenWithParticipantsRemaining()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -497,19 +458,13 @@ public class GameTests
 
         game.CloseLobby();
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Cancelled));
-            Assert.That(game.EndedAt, Is.Not.Null);
-            Assert.That(
-                game.Participants,
-                Has.Count.EqualTo(2),
-                "closing doesn't clear the roster, just ends the game"
-            );
-        }
+        Assert.Equal(GameStatus.Cancelled, game.Status);
+        Assert.NotNull(game.EndedAt);
+        // closing doesn't clear the roster, just ends the game
+        Assert.Equal(2, game.Participants.Count);
     }
 
-    [Test]
+    [Fact]
     public void CloseLobby_RaisesGameLobbyUpdatedDomainEvent()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -519,10 +474,10 @@ public class GameTests
         game.CloseLobby();
 
         var domainEvent = game.PopDomainEvents().OfType<GameLobbyUpdatedDomainEvent>().Single();
-        Assert.That(domainEvent.GameId, Is.EqualTo(game.Id));
+        Assert.Equal(game.Id, domainEvent.GameId);
     }
 
-    [Test]
+    [Fact]
     public void CloseLobby_RunningGame_Throws()
     {
         GameEntity game = CreateRunningDuel();
@@ -530,7 +485,7 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.CloseLobby());
     }
 
-    [Test]
+    [Fact]
     public void CloseLobby_AlreadyClosed_Throws()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -539,15 +494,15 @@ public class GameTests
         Assert.Throws<InvalidOperationException>(() => game.CloseLobby());
     }
 
-    [Test]
+    [Fact]
     public void ProblemIdAtPosition_NothingAppendedYet_ReturnsNull()
     {
         GameEntity game = CreatePendingLobby(HostId);
 
-        Assert.That(game.ProblemIdAtPosition(0), Is.Null);
+        Assert.Null(game.ProblemIdAtPosition(0));
     }
 
-    [Test]
+    [Fact]
     public void AppendProblem_FirstCall_OccupiesPositionZero()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -555,10 +510,10 @@ public class GameTests
 
         game.AppendProblem(problemId);
 
-        Assert.That(game.ProblemIdAtPosition(0), Is.EqualTo(problemId));
+        Assert.Equal(problemId, game.ProblemIdAtPosition(0));
     }
 
-    [Test]
+    [Fact]
     public void AppendProblem_SecondCall_OccupiesTheNextPosition()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -568,14 +523,11 @@ public class GameTests
         game.AppendProblem(firstProblemId);
         game.AppendProblem(secondProblemId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(game.ProblemIdAtPosition(0), Is.EqualTo(firstProblemId));
-            Assert.That(game.ProblemIdAtPosition(1), Is.EqualTo(secondProblemId));
-        });
+        Assert.Equal(firstProblemId, game.ProblemIdAtPosition(0));
+        Assert.Equal(secondProblemId, game.ProblemIdAtPosition(1));
     }
 
-    [Test]
+    [Fact]
     public void AppendProblem_EmptyGuid_Throws()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -583,7 +535,7 @@ public class GameTests
         Assert.Throws<ArgumentException>(() => game.AppendProblem(Guid.Empty));
     }
 
-    [Test]
+    [Fact]
     public void EvaluateProblemAttempt_UserNotParticipant_ReturnsParticipantNotFound()
     {
         GameEntity game = CreateRunningDuel();
@@ -595,10 +547,10 @@ public class GameTests
             DateTime.UtcNow
         );
 
-        Assert.That(attempt.Eligibility, Is.EqualTo(ProblemAttemptEligibility.ParticipantNotFound));
+        Assert.Equal(ProblemAttemptEligibility.ParticipantNotFound, attempt.Eligibility);
     }
 
-    [Test]
+    [Fact]
     public void EvaluateProblemAttempt_GameNotRunning_ReturnsGameNotRunning()
     {
         GameEntity game = CreatePendingLobby(HostId);
@@ -610,10 +562,10 @@ public class GameTests
             DateTime.UtcNow
         );
 
-        Assert.That(attempt.Eligibility, Is.EqualTo(ProblemAttemptEligibility.GameNotRunning));
+        Assert.Equal(ProblemAttemptEligibility.GameNotRunning, attempt.Eligibility);
     }
 
-    [Test]
+    [Fact]
     public void EvaluateProblemAttempt_ParticipantOnCurrentProblem_ReturnsEligible()
     {
         GameEntity game = CreateRunningDuel();
@@ -628,14 +580,11 @@ public class GameTests
             DateTime.UtcNow
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(attempt.IsEligible, Is.True);
-            Assert.That(attempt.Participant, Is.SameAs(participant));
-        });
+        Assert.True(attempt.IsEligible);
+        Assert.Same(participant, attempt.Participant);
     }
 
-    [Test]
+    [Fact]
     public void EvaluateProblemAttempt_ProblemIdDoesNotMatchCurrentProblem_ReturnsProblemMismatch()
     {
         GameEntity game = CreateRunningDuel();
@@ -649,10 +598,10 @@ public class GameTests
             DateTime.UtcNow
         );
 
-        Assert.That(attempt.Eligibility, Is.EqualTo(ProblemAttemptEligibility.ProblemMismatch));
+        Assert.Equal(ProblemAttemptEligibility.ProblemMismatch, attempt.Eligibility);
     }
 
-    [Test]
+    [Fact]
     public void EvaluateProblemAttempt_GameClockHasElapsed_ReportsGameJustExpiredAndGameNotRunning()
     {
         GameEntity game = CreateRunningDuel();
@@ -665,11 +614,8 @@ public class GameTests
             pastExpiry
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(attempt.GameJustExpired, Is.True);
-            Assert.That(attempt.Eligibility, Is.EqualTo(ProblemAttemptEligibility.GameNotRunning));
-            Assert.That(game.Status, Is.EqualTo(GameStatus.Completed));
-        });
+        Assert.True(attempt.GameJustExpired);
+        Assert.Equal(ProblemAttemptEligibility.GameNotRunning, attempt.Eligibility);
+        Assert.Equal(GameStatus.Completed, game.Status);
     }
 }

@@ -19,8 +19,7 @@ public class GetAdminGameDetailHandlerTests
     private Mock<ITrackReadRepository> _trackReadRepository = null!;
     private GetAdminGameDetailHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminGameDetailHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _userReadRepository = new Mock<IUserReadRepository>();
@@ -38,7 +37,7 @@ public class GetAdminGameDetailHandlerTests
     private static UserDto MakeUser(Guid id, string username) =>
         new(id, $"auth0|{id}", username, null, null, false, null, DateTime.UtcNow, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -47,10 +46,10 @@ public class GetAdminGameDetailHandlerTests
 
         var result = await _handler.Handle(new GetAdminGameDetailQuery(Guid.NewGuid()), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeMissing_ReturnsError()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 300);
@@ -62,10 +61,10 @@ public class GetAdminGameDetailHandlerTests
 
         var result = await _handler.Handle(new GetAdminGameDetailQuery(game.Id), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+        Assert.Equal(ResultStatus.Error, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RequestedByNonParticipant_StillSucceeds()
     {
         var participantId = Guid.NewGuid();
@@ -82,11 +81,11 @@ public class GetAdminGameDetailHandlerTests
 
         var result = await _handler.Handle(new GetAdminGameDetailQuery(game.Id), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value.Participants.Single().Username, Is.EqualTo("alice"));
+        Assert.True(result.IsSuccess);
+        Assert.Equal("alice", result.Value.Participants.Single().Username);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExpiredRunningGame_DoesNotCompleteIt()
     {
         var participantId = Guid.NewGuid();
@@ -104,8 +103,8 @@ public class GetAdminGameDetailHandlerTests
 
         var result = await _handler.Handle(new GetAdminGameDetailQuery(game.Id), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(game.Status, Is.EqualTo(GameStatus.Running), "admin read must not mutate game state");
-        Assert.That(result.Value.Status, Is.EqualTo(GameStatus.Running));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(GameStatus.Running, game.Status); // admin read must not mutate game state
+        Assert.Equal(GameStatus.Running, result.Value.Status);
     }
 }

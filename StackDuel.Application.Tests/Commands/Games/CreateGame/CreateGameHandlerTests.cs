@@ -24,8 +24,7 @@ public class CreateGameHandlerTests
     private UserContext _userContext = null!;
     private CreateGameHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CreateGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -75,21 +74,21 @@ public class CreateGameHandlerTests
             )
             .ReturnsAsync(languages);
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotQueryGameMode()
     {
         var command = new CreateGameCommand(string.Empty, [], 0, Guid.Empty);
 
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameReadRepository.Verify(
             x => x.FindGameModeByKeyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -104,10 +103,10 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TrackNotFound_ReturnsNotFound()
     {
         var mode = CreateDuelMode();
@@ -124,10 +123,10 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SomeTracksNotFound_ReturnsNotFound()
     {
         var mode = CreateDuelMode();
@@ -147,10 +146,10 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LanguageNotAvailableForTrack_ReturnsNotFound()
     {
         var mode = CreateDuelMode();
@@ -170,10 +169,10 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TrackDisallowsLanguageSelection_PartialLanguageSet_ReturnsInvalid()
     {
         var mode = CreateDuelMode();
@@ -194,11 +193,11 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameWriteRepository.Verify(x => x.AddAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TrackDisallowsLanguageSelection_AllActiveLanguagesIncluded_CreatesGame()
     {
         var mode = CreateDuelMode(600);
@@ -227,17 +226,15 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(
-                addedGame!.Tracks.Single(t => t.TrackId == track.Id).Languages.Select(l => l.LanguageId),
-                Is.EquivalentTo(new[] { javascript.Id, python.Id })
-            );
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equivalent(
+            new[] { javascript.Id, python.Id },
+            addedGame!.Tracks.Single(t => t.TrackId == track.Id).Languages.Select(l => l.LanguageId),
+            strict: true
+        );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserLacksRequiredPermission_ReturnsForbidden()
     {
         var mode = CreateDuelMode();
@@ -258,10 +255,10 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnmappedGameModeKey_ReturnsForbiddenWithoutCheckingPermission()
     {
         var mode = new GameMode("mystery", "Mystery", "Unmapped mode", true, 1, 1, Guid.NewGuid());
@@ -282,10 +279,10 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DurationNotOfferedByGameMode_ReturnsInvalid()
     {
         var mode = CreateDuelMode(600);
@@ -306,11 +303,11 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameWriteRepository.Verify(x => x.AddAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ValidRequest_CreatesGameAndReturnsSuccess()
     {
         var mode = CreateDuelMode(600);
@@ -338,22 +335,20 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(addedGame, Is.Not.Null);
-            Assert.That(addedGame!.GameModeId, Is.EqualTo(mode.Id));
-            Assert.That(addedGame.Tracks.Select(t => t.TrackId), Does.Contain(track.Id));
-            Assert.That(
-                addedGame.Tracks.Single(t => t.TrackId == track.Id).Languages.Select(l => l.LanguageId),
-                Is.EquivalentTo(new[] { language.Id })
-            );
-            Assert.That(addedGame.Participants.Select(p => p.UserId), Does.Contain(userId));
-            Assert.That(result.Value, Is.EqualTo(addedGame.Id));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(addedGame);
+        Assert.Equal(mode.Id, addedGame!.GameModeId);
+        Assert.Contains(track.Id, addedGame.Tracks.Select(t => t.TrackId));
+        Assert.Equivalent(
+            new[] { language.Id },
+            addedGame.Tracks.Single(t => t.TrackId == track.Id).Languages.Select(l => l.LanguageId),
+            strict: true
+        );
+        Assert.Contains(userId, addedGame.Participants.Select(p => p.UserId));
+        Assert.Equal(addedGame.Id, result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ValidRequest_WithMultipleTracks_CreatesGameWithAllTracks()
     {
         var mode = CreateDuelMode(600);
@@ -386,13 +381,11 @@ public class CreateGameHandlerTests
         );
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(
-                addedGame!.Tracks.Select(t => t.TrackId),
-                Is.EquivalentTo(new[] { generalPurposeTrack.Id, sqlTrack.Id })
-            );
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equivalent(
+            new[] { generalPurposeTrack.Id, sqlTrack.Id },
+            addedGame!.Tracks.Select(t => t.TrackId),
+            strict: true
+        );
     }
 }

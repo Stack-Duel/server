@@ -16,8 +16,7 @@ public class SelectUserAvatarHandlerTests
     private Mock<IUserAvatarWriteRepository> _userAvatarRepository = null!;
     private SelectUserAvatarHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public SelectUserAvatarHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
         _userAvatarRepository = new Mock<IUserAvatarWriteRepository>();
@@ -29,7 +28,7 @@ public class SelectUserAvatarHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
         _userRepository
@@ -39,10 +38,10 @@ public class SelectUserAvatarHandlerTests
         var command = new SelectUserAvatarCommand(Guid.NewGuid(), Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AvatarNotOwnedByUser_ReturnsNotFound()
     {
         var user = new UserFactory().Create(new CreateUserParams("alice", "auth0|abc", null));
@@ -54,10 +53,10 @@ public class SelectUserAvatarHandlerTests
         var command = new SelectUserAvatarCommand(user.Id, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AvatarOwnedByUser_SetsImageUrlAndPersists()
     {
         var user = new UserFactory().Create(
@@ -73,11 +72,8 @@ public class SelectUserAvatarHandlerTests
         var command = new SelectUserAvatarCommand(user.Id, avatar.Id);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(user.ImageUrl!.Value, Is.EqualTo("https://storage.example.com/avatars/older.png"));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal("https://storage.example.com/avatars/older.png", user.ImageUrl!.Value);
         _userRepository.Verify(x => x.UpdateAsync(user, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

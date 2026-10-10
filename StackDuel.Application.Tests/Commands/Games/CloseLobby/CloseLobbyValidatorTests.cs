@@ -8,39 +8,38 @@ public class CloseLobbyValidatorTests
 {
     private CloseLobbyValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CloseLobbyValidatorTests()
     {
         _validator = new CloseLobbyValidator();
     }
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
         var command = new CloseLobbyCommand(Guid.NewGuid(), Guid.NewGuid());
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyGameId_IsInvalid()
     {
         var command = new CloseLobbyCommand(Guid.Empty, Guid.NewGuid());
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyRequestedByUserId_IsInvalid()
     {
         var command = new CloseLobbyCommand(Guid.NewGuid(), Guid.Empty);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 }

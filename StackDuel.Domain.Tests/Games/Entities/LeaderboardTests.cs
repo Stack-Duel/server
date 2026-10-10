@@ -9,18 +9,18 @@ public class LeaderboardTests
 
     private static LeaderboardEntity CreateLeaderboard() => new(GameModeId, timeLimitInSeconds: 300);
 
-    [Test]
+    [Fact]
     public void RecordScore_AddsNewParticipant_WhenUserHasNoExistingEntry()
     {
         LeaderboardEntity leaderboard = CreateLeaderboard();
 
         leaderboard.RecordScore(UserId, 10);
 
-        Assert.That(leaderboard.Rankings.Single().UserId, Is.EqualTo(UserId));
-        Assert.That(leaderboard.Rankings.Single().HighScore, Is.EqualTo(10));
+        Assert.Equal(UserId, leaderboard.Rankings.Single().UserId);
+        Assert.Equal(10, leaderboard.Rankings.Single().HighScore);
     }
 
-    [Test]
+    [Fact]
     public void RecordScore_UpdatesHighScore_WhenNewScoreIsGreater()
     {
         LeaderboardEntity leaderboard = CreateLeaderboard();
@@ -28,10 +28,10 @@ public class LeaderboardTests
 
         leaderboard.RecordScore(UserId, 15);
 
-        Assert.That(leaderboard.Rankings.Single().HighScore, Is.EqualTo(15));
+        Assert.Equal(15, leaderboard.Rankings.Single().HighScore);
     }
 
-    [Test]
+    [Fact]
     public void RecordScore_KeepsExistingHighScore_WhenNewScoreIsLower()
     {
         LeaderboardEntity leaderboard = CreateLeaderboard();
@@ -39,10 +39,10 @@ public class LeaderboardTests
 
         leaderboard.RecordScore(UserId, 10);
 
-        Assert.That(leaderboard.Rankings.Single().HighScore, Is.EqualTo(15));
+        Assert.Equal(15, leaderboard.Rankings.Single().HighScore);
     }
 
-    [Test]
+    [Fact]
     public void RecordScore_DoesNotDuplicateParticipant_WhenCalledMultipleTimesForSameUser()
     {
         LeaderboardEntity leaderboard = CreateLeaderboard();
@@ -50,10 +50,10 @@ public class LeaderboardTests
         leaderboard.RecordScore(UserId, 5);
         leaderboard.RecordScore(UserId, 20);
 
-        Assert.That(leaderboard.Rankings, Has.Count.EqualTo(1));
+        Assert.Single(leaderboard.Rankings);
     }
 
-    [Test]
+    [Fact]
     public void RecordScore_ThrowsArgumentException_WhenUserIdIsEmpty()
     {
         LeaderboardEntity leaderboard = CreateLeaderboard();
@@ -61,7 +61,7 @@ public class LeaderboardTests
         Assert.Throws<ArgumentException>(() => leaderboard.RecordScore(Guid.Empty, 10));
     }
 
-    [Test]
+    [Fact]
     public void Rankings_OrdersParticipantsByHighScoreDescending()
     {
         LeaderboardEntity leaderboard = CreateLeaderboard();
@@ -71,10 +71,10 @@ public class LeaderboardTests
         leaderboard.RecordScore(lowScorer, 5);
         leaderboard.RecordScore(highScorer, 25);
 
-        Assert.That(leaderboard.Rankings.Select(p => p.UserId), Is.EqualTo(new[] { highScorer, lowScorer }));
+        Assert.Equal(new[] { highScorer, lowScorer }, leaderboard.Rankings.Select(p => p.UserId));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_ThrowsArgumentException_WhenTimeLimitIsNotPositive()
     {
         Assert.Throws<ArgumentException>(() => new LeaderboardEntity(GameModeId, timeLimitInSeconds: 0));

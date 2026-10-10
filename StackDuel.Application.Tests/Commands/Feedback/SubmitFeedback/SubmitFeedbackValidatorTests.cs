@@ -9,8 +9,7 @@ public class SubmitFeedbackValidatorTests
 {
     private SubmitFeedbackValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public SubmitFeedbackValidatorTests()
     {
         _validator = new SubmitFeedbackValidator();
     }
@@ -31,62 +30,69 @@ public class SubmitFeedbackValidatorTests
             "Mozilla/5.0"
         );
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
-        Assert.That(_validator.Validate(ValidCommand()).IsValid, Is.True);
+        Assert.True(_validator.Validate(ValidCommand()).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyUserId_IsInvalid()
     {
         var command = ValidCommand() with { UserId = Guid.Empty };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyMessage_IsInvalid()
     {
         var command = ValidCommand() with { Message = "" };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_MessageTooLong_IsInvalid()
     {
         var command = ValidCommand() with { Message = new string('a', FeedbackMessage.MaxLength + 1) };
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
-    public void Validate_RatingWithinRange_IsValid([Values(1, 2, 3, 4, 5)] int rating)
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void Validate_RatingWithinRange_IsValid(int rating)
     {
-        Assert.That(_validator.Validate(ValidCommand(rating: rating)).IsValid, Is.True);
+        Assert.True(_validator.Validate(ValidCommand(rating: rating)).IsValid);
     }
 
-    [Test]
-    public void Validate_RatingOutOfRange_IsInvalid([Values(0, 6)] int rating)
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    public void Validate_RatingOutOfRange_IsInvalid(int rating)
     {
-        Assert.That(_validator.Validate(ValidCommand(rating: rating)).IsValid, Is.False);
+        Assert.False(_validator.Validate(ValidCommand(rating: rating)).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NullRating_IsValid()
     {
-        Assert.That(_validator.Validate(ValidCommand(rating: null)).IsValid, Is.True);
+        Assert.True(_validator.Validate(ValidCommand(rating: null)).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_ContextTypeSetWithoutEntityId_IsInvalid()
     {
         var command = ValidCommand(contextType: FeedbackContextType.Problem, contextEntityId: null);
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_ContextTypeSetWithEntityId_IsValid()
     {
         var command = ValidCommand(contextType: FeedbackContextType.Problem, contextEntityId: Guid.NewGuid());
-        Assert.That(_validator.Validate(command).IsValid, Is.True);
+        Assert.True(_validator.Validate(command).IsValid);
     }
 }

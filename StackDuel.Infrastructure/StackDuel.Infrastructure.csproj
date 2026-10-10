@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The execution-engine strategies and step handlers are internal by design. -->
+    <InternalsVisibleTo Include="StackDuel.Infrastructure.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Persistence\Seeders\Assets\chinook-sqlite.zip" />
   </ItemGroup>
 

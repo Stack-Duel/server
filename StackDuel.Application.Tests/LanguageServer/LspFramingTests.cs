@@ -4,7 +4,7 @@ namespace StackDuel.Application.Tests.LanguageServer;
 
 public class LspFramingTests
 {
-    [Test]
+    [Fact]
     public async Task WriteThenRead_RoundTripsMessage()
     {
         using MemoryStream stream = new();
@@ -14,10 +14,10 @@ public class LspFramingTests
 
         string? message = await LspFraming.ReadMessageAsync(stream, CancellationToken.None);
 
-        Assert.That(message, Is.EqualTo("{\"hello\":\"world\"}"));
+        Assert.Equal("{\"hello\":\"world\"}", message);
     }
 
-    [Test]
+    [Fact]
     public async Task WriteThenRead_HandlesMultiByteUtf8ContentLengthCorrectly()
     {
         using MemoryStream stream = new();
@@ -28,10 +28,10 @@ public class LspFramingTests
 
         string? read = await LspFraming.ReadMessageAsync(stream, CancellationToken.None);
 
-        Assert.That(read, Is.EqualTo(message));
+        Assert.Equal(message, read);
     }
 
-    [Test]
+    [Fact]
     public async Task ReadMessageAsync_ReadsMultipleSequentialMessages()
     {
         using MemoryStream stream = new();
@@ -42,11 +42,11 @@ public class LspFramingTests
         string? first = await LspFraming.ReadMessageAsync(stream, CancellationToken.None);
         string? second = await LspFraming.ReadMessageAsync(stream, CancellationToken.None);
 
-        Assert.That(first, Is.EqualTo("first"));
-        Assert.That(second, Is.EqualTo("second"));
+        Assert.Equal("first", first);
+        Assert.Equal("second", second);
     }
 
-    [Test]
+    [Fact]
     public async Task ReadMessageAsync_ToleratesAdditionalHeaders()
     {
         using MemoryStream stream = new();
@@ -60,27 +60,29 @@ public class LspFramingTests
 
         string? message = await LspFraming.ReadMessageAsync(stream, CancellationToken.None);
 
-        Assert.That(message, Is.EqualTo("{}"));
+        Assert.Equal("{}", message);
     }
 
-    [Test]
+    [Fact]
     public async Task ReadMessageAsync_EmptyStream_ReturnsNull()
     {
         using MemoryStream stream = new();
 
         string? message = await LspFraming.ReadMessageAsync(stream, CancellationToken.None);
 
-        Assert.That(message, Is.Null);
+        Assert.Null(message);
     }
 
-    [Test]
-    public void ReadMessageAsync_MissingContentLength_Throws()
+    [Fact]
+    public async Task ReadMessageAsync_MissingContentLength_Throws()
     {
         using MemoryStream stream = new();
         byte[] header = System.Text.Encoding.ASCII.GetBytes("Content-Type: application/json\r\n\r\n");
         stream.Write(header);
         stream.Position = 0;
 
-        Assert.ThrowsAsync<InvalidDataException>(() => LspFraming.ReadMessageAsync(stream, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            LspFraming.ReadMessageAsync(stream, CancellationToken.None)
+        );
     }
 }

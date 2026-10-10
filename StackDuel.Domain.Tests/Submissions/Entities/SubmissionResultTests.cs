@@ -11,7 +11,7 @@ public class SubmissionResultTests
     private static Submission CreateSubmission(params Guid[] testCaseIds) =>
         new(Guid.NewGuid(), Guid.NewGuid(), SubmissionType.Submit, ValidSourceCode, testCaseIds);
 
-    [Test]
+    [Fact]
     public void InitialStatus_IsPending()
     {
         var testCaseId = Guid.NewGuid();
@@ -19,44 +19,45 @@ public class SubmissionResultTests
 
         var result = submission.Results.First();
 
-        Assert.That(result.Status, Is.EqualTo(SubmissionResultStatus.Pending));
+        Assert.Equal(SubmissionResultStatus.Pending, result.Status);
     }
 
-    [Test]
+    [Fact]
     public void IsTerminal_WhenPending_IsFalse()
     {
         var testCaseId = Guid.NewGuid();
         var submission = CreateSubmission(testCaseId);
 
-        Assert.That(submission.Results.First().IsTerminal, Is.False);
+        Assert.False(submission.Results.First().IsTerminal);
     }
 
-    [Test]
+    [Fact]
     public void IsTerminal_WhenProcessing_IsFalse()
     {
         var testCaseId = Guid.NewGuid();
         var submission = CreateSubmission(testCaseId);
         submission.UpdateResult(testCaseId, SubmissionResultStatus.Processing);
 
-        Assert.That(submission.Results.First().IsTerminal, Is.False);
+        Assert.False(submission.Results.First().IsTerminal);
     }
 
-    [TestCase(SubmissionResultStatus.Accepted)]
-    [TestCase(SubmissionResultStatus.WrongAnswer)]
-    [TestCase(SubmissionResultStatus.TimeLimitExceeded)]
-    [TestCase(SubmissionResultStatus.MemoryLimitExceeded)]
-    [TestCase(SubmissionResultStatus.RuntimeError)]
-    [TestCase(SubmissionResultStatus.CompileError)]
+    [Theory]
+    [InlineData(SubmissionResultStatus.Accepted)]
+    [InlineData(SubmissionResultStatus.WrongAnswer)]
+    [InlineData(SubmissionResultStatus.TimeLimitExceeded)]
+    [InlineData(SubmissionResultStatus.MemoryLimitExceeded)]
+    [InlineData(SubmissionResultStatus.RuntimeError)]
+    [InlineData(SubmissionResultStatus.CompileError)]
     public void IsTerminal_WhenTerminalStatus_IsTrue(SubmissionResultStatus status)
     {
         var testCaseId = Guid.NewGuid();
         var submission = CreateSubmission(testCaseId);
         submission.UpdateResult(testCaseId, status);
 
-        Assert.That(submission.Results.First().IsTerminal, Is.True);
+        Assert.True(submission.Results.First().IsTerminal);
     }
 
-    [Test]
+    [Fact]
     public void Update_SetsAllOutputFields()
     {
         var testCaseId = Guid.NewGuid();
@@ -74,19 +75,16 @@ public class SubmissionResultTests
         );
 
         var result = submission.Results.First();
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(result.Status, Is.EqualTo(SubmissionResultStatus.WrongAnswer));
-            Assert.That(result.Runtime, Is.EqualTo(150));
-            Assert.That(result.MemoryUsed, Is.EqualTo(64));
-            Assert.That(result.ActualOutput, Is.EqualTo("wrong"));
-            Assert.That(result.StandardOutput, Is.EqualTo("stdout"));
-            Assert.That(result.StandardError, Is.EqualTo("stderr"));
-            Assert.That(result.CompileOutput, Is.EqualTo("compile"));
-        }
+        Assert.Equal(SubmissionResultStatus.WrongAnswer, result.Status);
+        Assert.Equal(150, result.Runtime);
+        Assert.Equal(64, result.MemoryUsed);
+        Assert.Equal("wrong", result.ActualOutput);
+        Assert.Equal("stdout", result.StandardOutput);
+        Assert.Equal("stderr", result.StandardError);
+        Assert.Equal("compile", result.CompileOutput);
     }
 
-    [Test]
+    [Fact]
     public void Update_NullableFields_DefaultToNull()
     {
         var testCaseId = Guid.NewGuid();
@@ -95,18 +93,15 @@ public class SubmissionResultTests
         submission.UpdateResult(testCaseId, SubmissionResultStatus.Accepted);
 
         var result = submission.Results.First();
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(result.Runtime, Is.Null);
-            Assert.That(result.MemoryUsed, Is.Null);
-            Assert.That(result.ActualOutput, Is.Null);
-            Assert.That(result.StandardOutput, Is.Null);
-            Assert.That(result.StandardError, Is.Null);
-            Assert.That(result.CompileOutput, Is.Null);
-        }
+        Assert.Null(result.Runtime);
+        Assert.Null(result.MemoryUsed);
+        Assert.Null(result.ActualOutput);
+        Assert.Null(result.StandardOutput);
+        Assert.Null(result.StandardError);
+        Assert.Null(result.CompileOutput);
     }
 
-    [Test]
+    [Fact]
     public void Update_CalledTwice_OverwritesPreviousValues()
     {
         var testCaseId = Guid.NewGuid();
@@ -116,19 +111,16 @@ public class SubmissionResultTests
         submission.UpdateResult(testCaseId, SubmissionResultStatus.Accepted, runtime: 200);
 
         var result = submission.Results.First();
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(result.Status, Is.EqualTo(SubmissionResultStatus.Accepted));
-            Assert.That(result.Runtime, Is.EqualTo(200));
-        }
+        Assert.Equal(SubmissionResultStatus.Accepted, result.Status);
+        Assert.Equal(200, result.Runtime);
     }
 
-    [Test]
+    [Fact]
     public void TestCaseId_SetCorrectly()
     {
         var testCaseId = Guid.NewGuid();
         var submission = CreateSubmission(testCaseId);
 
-        Assert.That(submission.Results.First().TestCaseId, Is.EqualTo(testCaseId));
+        Assert.Equal(testCaseId, submission.Results.First().TestCaseId);
     }
 }

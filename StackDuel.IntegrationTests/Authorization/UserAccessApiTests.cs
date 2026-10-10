@@ -6,9 +6,9 @@ using System.Net.Http.Json;
 
 namespace StackDuel.IntegrationTests.Authorization;
 
-public sealed class UserAccessApiTests : ApiIntegrationTestBase
+public sealed class UserAccessApiTests(IntegrationTestEnvironment environment) : ApiIntegrationTestBase(environment)
 {
-    [Test]
+    [Fact]
     public async Task GetAccount_returns_permissions_and_roles_derived_from_the_users_groups()
     {
         const string sub = "sub-alice-1";
@@ -28,20 +28,20 @@ public sealed class UserAccessApiTests : ApiIntegrationTestBase
             AuthenticatedRequest(HttpMethod.Get, "/api/v1/user", sub)
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         UserResponse? body = await response.Content.ReadFromJsonAsync<UserResponse>();
-        Assert.That(body, Is.Not.Null);
-        Assert.That(body!.Username, Is.EqualTo("alice123"));
-        Assert.That(body.Permissions, Is.EquivalentTo(new[] { "problems.read" }));
-        Assert.That(body.Roles, Is.EquivalentTo(new[] { "Member" }));
+        Assert.NotNull(body);
+        Assert.Equal("alice123", body!.Username);
+        Assert.Equivalent(new[] { "problems.read" }, body.Permissions, strict: true);
+        Assert.Equivalent(new[] { "Member" }, body.Roles, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAccount_returns_not_found_when_unauthenticated()
     {
         HttpResponseMessage response = await Client.GetAsync("/api/v1/user");
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private async Task CreateAccountAsync(string sub, string username)
@@ -50,6 +50,6 @@ public sealed class UserAccessApiTests : ApiIntegrationTestBase
         request.Content = JsonContent.Create(new UpsertUserRequest(username, null, null));
 
         HttpResponseMessage response = await Client.SendAsync(request);
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
     }
 }

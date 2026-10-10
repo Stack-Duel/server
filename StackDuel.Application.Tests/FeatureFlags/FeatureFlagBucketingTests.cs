@@ -4,7 +4,7 @@ namespace StackDuel.Application.Tests.FeatureFlags;
 
 public class FeatureFlagBucketingTests
 {
-    [Test]
+    [Fact]
     public void GetBucket_SameInputs_AlwaysReturnsSameBucket()
     {
         Guid userId = Guid.NewGuid();
@@ -12,20 +12,20 @@ public class FeatureFlagBucketingTests
         int first = FeatureFlagBucketing.GetBucket("leaderboards", userId);
         int second = FeatureFlagBucketing.GetBucket("leaderboards", userId);
 
-        Assert.That(second, Is.EqualTo(first));
+        Assert.Equal(first, second);
     }
 
-    [Test]
+    [Fact]
     public void GetBucket_ReturnsValueInZeroToNinetyNineRange()
     {
         for (int i = 0; i < 1000; i++)
         {
             int bucket = FeatureFlagBucketing.GetBucket("flag", Guid.NewGuid());
-            Assert.That(bucket, Is.InRange(0, 99));
+            Assert.InRange(bucket, 0, 99);
         }
     }
 
-    [Test]
+    [Fact]
     public void GetBucket_DifferentFlagKeys_ProduceDifferentBucketsForSameUser()
     {
         Guid userId = Guid.NewGuid();
@@ -33,28 +33,28 @@ public class FeatureFlagBucketingTests
         int bucketA = FeatureFlagBucketing.GetBucket("flag-a", userId);
         int bucketB = FeatureFlagBucketing.GetBucket("flag-b", userId);
 
-        Assert.That(bucketA, Is.Not.EqualTo(bucketB));
+        Assert.NotEqual(bucketB, bucketA);
     }
 
-    [Test]
+    [Fact]
     public void IsInRollout_ZeroPercent_NeverEnabled()
     {
         for (int i = 0; i < 100; i++)
         {
-            Assert.That(FeatureFlagBucketing.IsInRollout("flag", Guid.NewGuid(), 0), Is.False);
+            Assert.False(FeatureFlagBucketing.IsInRollout("flag", Guid.NewGuid(), 0));
         }
     }
 
-    [Test]
+    [Fact]
     public void IsInRollout_HundredPercent_AlwaysEnabled()
     {
         for (int i = 0; i < 100; i++)
         {
-            Assert.That(FeatureFlagBucketing.IsInRollout("flag", Guid.NewGuid(), 100), Is.True);
+            Assert.True(FeatureFlagBucketing.IsInRollout("flag", Guid.NewGuid(), 100));
         }
     }
 
-    [Test]
+    [Fact]
     public void IsInRollout_TenPercent_EnablesRoughlyTenPercentOfUsers()
     {
         const int sampleSize = 10_000;
@@ -68,10 +68,10 @@ public class FeatureFlagBucketingTests
 
         double enabledPercentage = enabledCount / (double)sampleSize * 100;
 
-        Assert.That(enabledPercentage, Is.InRange(8.0, 12.0));
+        Assert.InRange(enabledPercentage, 8.0, 12.0);
     }
 
-    [Test]
+    [Fact]
     public void IsInRollout_SameUserAndFlag_IsStickyAcrossRepeatedCalls()
     {
         Guid userId = Guid.NewGuid();
@@ -80,6 +80,6 @@ public class FeatureFlagBucketingTests
         bool second = FeatureFlagBucketing.IsInRollout("flag", userId, 50);
         bool third = FeatureFlagBucketing.IsInRollout("flag", userId, 50);
 
-        Assert.That(new[] { first, second, third }, Is.All.EqualTo(first));
+        Assert.All(new[] { first, second, third }, item => Assert.Equal(first, item));
     }
 }

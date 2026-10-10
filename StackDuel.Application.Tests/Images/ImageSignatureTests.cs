@@ -4,27 +4,27 @@ namespace StackDuel.Application.Tests.Images;
 
 public class ImageSignatureTests
 {
-    [Test]
+    [Fact]
     public void Detect_PngSignature_ReturnsPng()
     {
         byte[] content = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0];
 
         ImageFormat? format = ImageSignature.Detect(content);
 
-        Assert.That(format?.ContentType, Is.EqualTo("image/png"));
+        Assert.Equal("image/png", format?.ContentType);
     }
 
-    [Test]
+    [Fact]
     public void Detect_JpegSignature_ReturnsJpeg()
     {
         byte[] content = [0xFF, 0xD8, 0xFF, 0, 0];
 
         ImageFormat? format = ImageSignature.Detect(content);
 
-        Assert.That(format?.ContentType, Is.EqualTo("image/jpeg"));
+        Assert.Equal("image/jpeg", format?.ContentType);
     }
 
-    [Test]
+    [Fact]
     public void Detect_WebpSignature_ReturnsWebp()
     {
         byte[] content =
@@ -45,38 +45,40 @@ public class ImageSignatureTests
 
         ImageFormat? format = ImageSignature.Detect(content);
 
-        Assert.That(format?.ContentType, Is.EqualTo("image/webp"));
+        Assert.Equal("image/webp", format?.ContentType);
     }
 
-    [TestCase(new byte[] { })]
-    [TestCase(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 })]
-    [TestCase(new byte[] { 0x25, 0x50, 0x44, 0x46 })]
+    [Theory]
+    [InlineData(new byte[] { })]
+    [InlineData(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 })]
+    [InlineData(new byte[] { 0x25, 0x50, 0x44, 0x46 })]
     public void Detect_UnrecognizedOrEmptyContent_ReturnsNull(byte[] content)
     {
         ImageFormat? format = ImageSignature.Detect(content);
 
-        Assert.That(format, Is.Null);
+        Assert.Null(format);
     }
 
-    [Test]
+    [Fact]
     public void Detect_ContentTypeHeaderClaimingPngButBytesAreNotPng_IsNotFooled()
     {
         byte[] htmlBytes = "<html></html>"u8.ToArray();
 
         ImageFormat? format = ImageSignature.Detect(htmlBytes);
 
-        Assert.That(format, Is.Null);
+        Assert.Null(format);
     }
 
-    [TestCase("image/png", ".png")]
-    [TestCase("image/jpeg", ".jpg")]
-    [TestCase("image/webp", ".webp")]
+    [Theory]
+    [InlineData("image/png", ".png")]
+    [InlineData("image/jpeg", ".jpg")]
+    [InlineData("image/webp", ".webp")]
     public void ExtensionFor_SupportedContentType_ReturnsMatchingExtension(string contentType, string expectedExtension)
     {
-        Assert.That(ImageSignature.ExtensionFor(contentType), Is.EqualTo(expectedExtension));
+        Assert.Equal(expectedExtension, ImageSignature.ExtensionFor(contentType));
     }
 
-    [Test]
+    [Fact]
     public void ExtensionFor_UnsupportedContentType_Throws()
     {
         Assert.Throws<InvalidOperationException>(() => ImageSignature.ExtensionFor("image/gif"));

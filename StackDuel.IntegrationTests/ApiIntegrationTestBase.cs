@@ -3,32 +3,32 @@ using StackDuel.IntegrationTests.Infrastructure;
 
 namespace StackDuel.IntegrationTests;
 
-public abstract class ApiIntegrationTestBase
+[Collection(IntegrationTestCollection.Name)]
+public abstract class ApiIntegrationTestBase(IntegrationTestEnvironment environment) : IAsyncLifetime
 {
     private HttpClient? _client;
 
-    protected HttpClient Client => _client ?? throw new InvalidOperationException("SetUp has not run yet.");
+    protected HttpClient Client => _client ?? throw new InvalidOperationException("InitializeAsync has not run yet.");
 
     protected TestDataSeeder Seeder
     {
-        get => field ?? throw new InvalidOperationException("SetUp has not run yet.");
+        get => field ?? throw new InvalidOperationException("InitializeAsync has not run yet.");
         private set;
     }
 
-    [SetUp]
-    public void SetUpClient()
+    public Task InitializeAsync()
     {
-        _client = IntegrationTestEnvironment.Factory.CreateClient();
-        Seeder = new TestDataSeeder(IntegrationTestEnvironment.ConnectionString);
+        _client = environment.Factory.CreateClient();
+        Seeder = new TestDataSeeder(environment.ConnectionString);
+        return Task.CompletedTask;
     }
 
-    [TearDown]
-    public async Task TearDownAsync()
+    public async Task DisposeAsync()
     {
         _client?.Dispose();
         _client = null;
 
-        await using NpgsqlConnection connection = new(IntegrationTestEnvironment.ConnectionString);
+        await using NpgsqlConnection connection = new(environment.ConnectionString);
         await connection.OpenAsync();
         await using NpgsqlCommand command = connection.CreateCommand();
         command.CommandText = """

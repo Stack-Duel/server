@@ -12,14 +12,13 @@ public class GetAdminDashboardStatsHandlerTests
     private Mock<IDashboardReadRepository> _dashboardReadRepository = null!;
     private GetAdminDashboardStatsHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminDashboardStatsHandlerTests()
     {
         _dashboardReadRepository = new Mock<IDashboardReadRepository>();
         _handler = new GetAdminDashboardStatsHandler(_dashboardReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DelegatesToRepositoryWithRequestedWindow_ReturnsStats()
     {
         var stats = new AdminDashboardStatsDto(
@@ -37,8 +36,8 @@ public class GetAdminDashboardStatsHandlerTests
 
         var result = await _handler.Handle(new GetAdminDashboardStatsQuery(30), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.EqualTo(stats));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(stats, result.Value);
         _dashboardReadRepository.Verify(r => r.GetAdminDashboardStatsAsync(30, CancellationToken.None), Times.Once);
     }
 }

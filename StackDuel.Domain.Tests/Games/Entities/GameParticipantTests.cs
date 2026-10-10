@@ -13,39 +13,36 @@ public class GameParticipantTests
         return participant;
     }
 
-    [Test]
+    [Fact]
     public void Constructor_StartsWithTotalSkipsRemaining()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
-        Assert.That(participant.SkipsRemaining, Is.EqualTo(GameParticipant.TotalSkips));
+        Assert.Equal(GameParticipant.TotalSkips, participant.SkipsRemaining);
     }
 
-    [Test]
+    [Fact]
     public void SkipToProblem_DecrementsSkipsRemaining()
     {
         var participant = CreateParticipantWithProblem(out _);
 
         participant.SkipToProblem(Guid.NewGuid());
 
-        Assert.That(participant.SkipsRemaining, Is.EqualTo(GameParticipant.TotalSkips - 1));
+        Assert.Equal(GameParticipant.TotalSkips - 1, participant.SkipsRemaining);
     }
 
-    [Test]
+    [Fact]
     public void SkipToProblem_MovesCurrentProblemToSkipped_NotSolved()
     {
         var participant = CreateParticipantWithProblem(out Guid problemId);
 
         participant.SkipToProblem(Guid.NewGuid());
 
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(participant.ProblemSession!.SkippedProblemIds, Does.Contain(problemId));
-            Assert.That(participant.ProblemSession.SolvedProblemIds, Does.Not.Contain(problemId));
-        }
+        Assert.Contains(problemId, participant.ProblemSession!.SkippedProblemIds);
+        Assert.DoesNotContain(problemId, participant.ProblemSession.SolvedProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void SkipToProblem_SetsCurrentProblemToTheNewProblem()
     {
         var participant = CreateParticipantWithProblem(out _);
@@ -53,20 +50,20 @@ public class GameParticipantTests
 
         participant.SkipToProblem(nextProblemId);
 
-        Assert.That(participant.ProblemSession!.CurrentProblemId, Is.EqualTo(nextProblemId));
+        Assert.Equal(nextProblemId, participant.ProblemSession!.CurrentProblemId);
     }
 
-    [Test]
+    [Fact]
     public void SkipToProblem_DoesNotAffectScore()
     {
         var participant = CreateParticipantWithProblem(out _);
 
         participant.SkipToProblem(Guid.NewGuid());
 
-        Assert.That(participant.Score, Is.EqualTo(0));
+        Assert.Equal(0, participant.Score);
     }
 
-    [Test]
+    [Fact]
     public void SkipToProblem_NoSkipsRemaining_Throws()
     {
         var participant = CreateParticipantWithProblem(out _);
@@ -76,7 +73,7 @@ public class GameParticipantTests
         Assert.Throws<InvalidOperationException>(() => participant.SkipToProblem(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void SkipToProblem_ProblemSessionNotInitialized_Throws()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
@@ -84,25 +81,25 @@ public class GameParticipantTests
         Assert.Throws<InvalidOperationException>(() => participant.SkipToProblem(Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void ExcludedProblemIds_IncludesSkippedProblems_NotJustSolved()
     {
         var participant = CreateParticipantWithProblem(out Guid firstProblemId);
         var secondProblemId = Guid.NewGuid();
         participant.SkipToProblem(secondProblemId);
 
-        Assert.That(participant.ProblemSession!.ExcludedProblemIds, Does.Contain(firstProblemId));
+        Assert.Contains(firstProblemId, participant.ProblemSession!.ExcludedProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void ExcludedProblemIds_IncludesTheCurrentProblem()
     {
         var participant = CreateParticipantWithProblem(out Guid problemId);
 
-        Assert.That(participant.ProblemSession!.ExcludedProblemIds, Does.Contain(problemId));
+        Assert.Contains(problemId, participant.ProblemSession!.ExcludedProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void AdvanceProblem_PreservesPreviouslySkippedProblems()
     {
         var participant = CreateParticipantWithProblem(out _);
@@ -115,10 +112,10 @@ public class GameParticipantTests
 
         participant.AdvanceProblem(Guid.NewGuid());
 
-        Assert.That(participant.ProblemSession!.SkippedProblemIds, Does.Contain(skippedProblemId));
+        Assert.Contains(skippedProblemId, participant.ProblemSession!.SkippedProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void SetActiveSubmission_PreservesPreviouslySkippedProblems()
     {
         var participant = CreateParticipantWithProblem(out Guid skippedProblemId);
@@ -126,20 +123,20 @@ public class GameParticipantTests
 
         participant.SetActiveSubmission(Guid.NewGuid());
 
-        Assert.That(participant.ProblemSession!.SkippedProblemIds, Does.Contain(skippedProblemId));
+        Assert.Contains(skippedProblemId, participant.ProblemSession!.SkippedProblemIds);
     }
 
-    [Test]
+    [Fact]
     public void UseSkip_DecrementsSkipsRemaining()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
         participant.UseSkip();
 
-        Assert.That(participant.SkipsRemaining, Is.EqualTo(GameParticipant.TotalSkips - 1));
+        Assert.Equal(GameParticipant.TotalSkips - 1, participant.SkipsRemaining);
     }
 
-    [Test]
+    [Fact]
     public void UseSkip_NoSkipsRemaining_Throws()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
@@ -149,100 +146,100 @@ public class GameParticipantTests
         Assert.Throws<InvalidOperationException>(() => participant.UseSkip());
     }
 
-    [Test]
+    [Fact]
     public void PlayState_FreshParticipant_IsInProgress()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
-        Assert.That(participant.PlayState, Is.EqualTo(ParticipantPlayState.InProgress));
+        Assert.Equal(ParticipantPlayState.InProgress, participant.PlayState);
     }
 
-    [Test]
+    [Fact]
     public void PlayState_AfterForfeit_IsForfeited()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
         participant.Forfeit();
 
-        Assert.That(participant.PlayState, Is.EqualTo(ParticipantPlayState.Forfeited));
+        Assert.Equal(ParticipantPlayState.Forfeited, participant.PlayState);
     }
 
-    [Test]
+    [Fact]
     public void PlayState_AfterFinishProblems_IsFinished()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
         participant.FinishProblems();
 
-        Assert.That(participant.PlayState, Is.EqualTo(ParticipantPlayState.Finished));
+        Assert.Equal(ParticipantPlayState.Finished, participant.PlayState);
     }
 
-    [Test]
-    [TestCase(ParticipantAction.CompleteProblem)]
-    [TestCase(ParticipantAction.SkipProblem)]
-    [TestCase(ParticipantAction.Forfeit)]
+    [Theory]
+    [InlineData(ParticipantAction.CompleteProblem)]
+    [InlineData(ParticipantAction.SkipProblem)]
+    [InlineData(ParticipantAction.Forfeit)]
     public void CanPerform_WhileInProgress_AllowsEveryAction(ParticipantAction action)
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
-        Assert.That(participant.CanPerform(action), Is.True);
+        Assert.True(participant.CanPerform(action));
     }
 
-    [Test]
-    [TestCase(ParticipantAction.CompleteProblem)]
-    [TestCase(ParticipantAction.SkipProblem)]
-    [TestCase(ParticipantAction.Forfeit)]
+    [Theory]
+    [InlineData(ParticipantAction.CompleteProblem)]
+    [InlineData(ParticipantAction.SkipProblem)]
+    [InlineData(ParticipantAction.Forfeit)]
     public void CanPerform_AfterForfeit_DisallowsEveryAction(ParticipantAction action)
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
         participant.Forfeit();
 
-        Assert.That(participant.CanPerform(action), Is.False);
+        Assert.False(participant.CanPerform(action));
     }
 
-    [Test]
-    [TestCase(ParticipantAction.CompleteProblem)]
-    [TestCase(ParticipantAction.SkipProblem)]
-    [TestCase(ParticipantAction.Forfeit)]
+    [Theory]
+    [InlineData(ParticipantAction.CompleteProblem)]
+    [InlineData(ParticipantAction.SkipProblem)]
+    [InlineData(ParticipantAction.Forfeit)]
     public void CanPerform_AfterFinishProblems_DisallowsEveryAction(ParticipantAction action)
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
         participant.FinishProblems();
 
-        Assert.That(participant.CanPerform(action), Is.False);
+        Assert.False(participant.CanPerform(action));
     }
 
-    [Test]
+    [Fact]
     public void CanAttemptProblem_OnCurrentProblem_ReturnsEligible()
     {
         var participant = CreateParticipantWithProblem(out Guid problemId);
 
         var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, problemId);
 
-        Assert.That(eligibility, Is.EqualTo(ProblemAttemptEligibility.Eligible));
+        Assert.Equal(ProblemAttemptEligibility.Eligible, eligibility);
     }
 
-    [Test]
+    [Fact]
     public void CanAttemptProblem_NoSessionInitialized_ReturnsProblemSessionNotInitialized()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
 
         var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, Guid.NewGuid());
 
-        Assert.That(eligibility, Is.EqualTo(ProblemAttemptEligibility.ProblemSessionNotInitialized));
+        Assert.Equal(ProblemAttemptEligibility.ProblemSessionNotInitialized, eligibility);
     }
 
-    [Test]
+    [Fact]
     public void CanAttemptProblem_DifferentProblemId_ReturnsProblemMismatch()
     {
         var participant = CreateParticipantWithProblem(out _);
 
         var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, Guid.NewGuid());
 
-        Assert.That(eligibility, Is.EqualTo(ProblemAttemptEligibility.ProblemMismatch));
+        Assert.Equal(ProblemAttemptEligibility.ProblemMismatch, eligibility);
     }
 
-    [Test]
+    [Fact]
     public void CanAttemptProblem_AfterForfeit_ReturnsParticipantStopped()
     {
         var participant = CreateParticipantWithProblem(out Guid problemId);
@@ -250,6 +247,6 @@ public class GameParticipantTests
 
         var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, problemId);
 
-        Assert.That(eligibility, Is.EqualTo(ProblemAttemptEligibility.ParticipantStopped));
+        Assert.Equal(ProblemAttemptEligibility.ParticipantStopped, eligibility);
     }
 }

@@ -27,8 +27,7 @@ public class CompleteProblemHandlerTests
     private Mock<ISubmissionWriteRepository> _submissionRepository = null!;
     private CompleteProblemHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CompleteProblemHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -67,17 +66,17 @@ public class CompleteProblemHandlerTests
     private static GameMode CreateGameMode(string key = "solo_rush") =>
         new(key, "Solo Rush", "Solo rush mode", true, 1, 1, Guid.NewGuid());
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalid()
     {
         var command = new CompleteProblemCommand(Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty);
 
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         var gameId = Guid.NewGuid();
@@ -88,10 +87,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(gameId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotParticipant_ReturnsForbidden()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -100,10 +99,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotRunning_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -113,10 +112,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, Guid.NewGuid(), Guid.NewGuid(), userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantHasForfeited_ReturnsInvalid()
     {
         var forfeitingUserId = Guid.NewGuid();
@@ -129,10 +128,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, Guid.NewGuid(), Guid.NewGuid(), forfeitingUserId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemSessionNotInitialized_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -143,10 +142,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, Guid.NewGuid(), Guid.NewGuid(), userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemIdDoesNotMatchCurrentProblem_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -159,10 +158,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, Guid.NewGuid(), Guid.NewGuid(), userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionIdNotActiveSubmission_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -176,10 +175,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, Guid.NewGuid(), userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionNotFound_ReturnsNotFound()
     {
         var userId = Guid.NewGuid();
@@ -198,10 +197,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submissionId, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionBelongsToDifferentUser_ReturnsNotFound()
     {
         var userId = Guid.NewGuid();
@@ -220,10 +219,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submission.Id, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionNotAccepted_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -242,10 +241,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submission.Id, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeNoLongerExists_ReturnsNotFound()
     {
         var userId = Guid.NewGuid();
@@ -267,10 +266,10 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submission.Id, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NextProblemAvailable_AdvancesProblemAndReturnsSuccess()
     {
         var userId = Guid.NewGuid();
@@ -306,14 +305,11 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submission.Id, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.NextProblemId, Is.EqualTo(nextProblemId));
-            Assert.That(result.Value.NewScore, Is.EqualTo(1));
-            Assert.That(participant.ProblemSession!.CurrentProblemId, Is.EqualTo(nextProblemId));
-            Assert.That(participant.Score, Is.EqualTo(1));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(nextProblemId, result.Value.NextProblemId);
+        Assert.Equal(1, result.Value.NewScore);
+        Assert.Equal(nextProblemId, participant.ProblemSession!.CurrentProblemId);
+        Assert.Equal(1, participant.Score);
         _gameExpiryCanceller.Verify(
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -329,7 +325,7 @@ public class CompleteProblemHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PriorSkipsAdvanceThePositionPassedToTheSequencerForDifficultyPacing()
     {
         var userId = Guid.NewGuid();
@@ -371,10 +367,10 @@ public class CompleteProblemHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Three problems already seen (initial, then two skips) — the fourth slot is position 3.
-        Assert.That(capturedPosition, Is.EqualTo(3));
+        Assert.Equal(3, capturedPosition);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoNextProblemAvailable_FinishesProblemsAndCancelsScheduledExpiry()
     {
         var userId = Guid.NewGuid();
@@ -409,16 +405,13 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submission.Id, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.NextProblemId, Is.Null);
-            Assert.That(participant.HasFinishedProblems, Is.True);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.NextProblemId);
+        Assert.True(participant.HasFinishedProblems);
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SaveChangesThrowsPositionConflictOnce_RetriesWithAFreshReadAndSucceeds()
     {
         var userId = Guid.NewGuid();
@@ -468,11 +461,8 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(Guid.NewGuid(), problemId, submission.Id, userId);
         Result<CompleteProblemResultDto> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.NextProblemId, Is.EqualTo(winningProblemId));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(winningProblemId, result.Value.NextProblemId);
         _gameReadRepository.Verify(
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2)
@@ -483,8 +473,8 @@ public class CompleteProblemHandlerTests
         );
     }
 
-    [Test]
-    public void Handle_SaveChangesThrowsPositionConflictTwice_PropagatesAfterOneRetry()
+    [Fact]
+    public async Task Handle_SaveChangesThrowsPositionConflictTwice_PropagatesAfterOneRetry()
     {
         var userId = Guid.NewGuid();
         var problemId = Guid.NewGuid();
@@ -530,9 +520,8 @@ public class CompleteProblemHandlerTests
 
         var command = new CompleteProblemCommand(Guid.NewGuid(), problemId, submission.Id, userId);
 
-        Assert.That(
-            async () => await _handler.Handle(command, CancellationToken.None),
-            Throws.TypeOf<GameProblemPositionConflictException>()
+        await Assert.ThrowsAsync<GameProblemPositionConflictException>(() =>
+            _handler.Handle(command, CancellationToken.None)
         );
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),

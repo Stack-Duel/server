@@ -16,8 +16,7 @@ public class JoinGameByCodeHandlerTests
     private Mock<IMediator> _mediator = null!;
     private JoinGameByCodeHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public JoinGameByCodeHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _mediator = new Mock<IMediator>();
@@ -29,21 +28,21 @@ public class JoinGameByCodeHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = new JoinGameByCodeCommand(string.Empty, Guid.NewGuid());
 
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameReadRepository.Verify(
             x => x.FindGameByJoinCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_CodeNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -53,25 +52,25 @@ public class JoinGameByCodeHandlerTests
         var command = new JoinGameByCodeCommand("ABCDEFG", Guid.NewGuid());
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
         _mediator.Verify(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCodeLength_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = new JoinGameByCodeCommand("ABC", Guid.NewGuid());
 
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameReadRepository.Verify(
             x => x.FindGameByJoinCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotPendingAndNotAParticipant_ReturnsInvalid()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -84,11 +83,11 @@ public class JoinGameByCodeHandlerTests
         var command = new JoinGameByCodeCommand(game.JoinCode, Guid.NewGuid());
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _mediator.Verify(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AlreadyAParticipantInAPendingLobby_RedirectsWithoutDelegatingToJoin()
     {
         var requesterId = Guid.NewGuid();
@@ -101,12 +100,12 @@ public class JoinGameByCodeHandlerTests
         var command = new JoinGameByCodeCommand(game.JoinCode, requesterId);
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.EqualTo(game.Id));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(game.Id, result.Value);
         _mediator.Verify(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AlreadyAParticipantInARunningGame_StillRedirects()
     {
         var requesterId = Guid.NewGuid();
@@ -120,11 +119,11 @@ public class JoinGameByCodeHandlerTests
         var command = new JoinGameByCodeCommand(game.JoinCode, requesterId);
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.EqualTo(game.Id));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(game.Id, result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnderlyingJoinFails_PropagatesFailure()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -139,10 +138,10 @@ public class JoinGameByCodeHandlerTests
         var command = new JoinGameByCodeCommand(game.JoinCode, Guid.NewGuid());
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_ReturnsGameId()
     {
         var requesterId = Guid.NewGuid();
@@ -163,7 +162,7 @@ public class JoinGameByCodeHandlerTests
         var command = new JoinGameByCodeCommand(game.JoinCode, requesterId);
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.EqualTo(game.Id));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(game.Id, result.Value);
     }
 }

@@ -8,63 +8,62 @@ public class UpsertUserValidatorTests
 {
     private UpsertUserValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpsertUserValidatorTests()
     {
         _validator = new UpsertUserValidator();
     }
 
-    [Test]
+    [Fact]
     public void Validate_AllFieldsWithinLimits_IsValid()
     {
         var command = new UpsertUserCommand("auth0|abc", "alice", "https://example.com/a.png", "Hello.");
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_UsernameTooLong_IsInvalid()
     {
         var command = new UpsertUserCommand("auth0|abc", new string('a', 21), null, null);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NullUsername_IsValid()
     {
         var command = new UpsertUserCommand("auth0|abc", null, null, null);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_ImageUrlTooLong_IsInvalid()
     {
         var command = new UpsertUserCommand("auth0|abc", null, new string('a', 2049), null);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_BioTooLong_IsInvalid()
     {
         var command = new UpsertUserCommand("auth0|abc", null, null, new string('a', 501));
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_DuplicateLanguageIds_IsInvalid()
     {
         var languageId = Guid.NewGuid();
@@ -72,26 +71,26 @@ public class UpsertUserValidatorTests
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_DistinctLanguageIds_IsValid()
     {
         var command = new UpsertUserCommand("auth0|abc", null, null, null, [Guid.NewGuid(), Guid.NewGuid()]);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NullLanguageIds_IsValid()
     {
         var command = new UpsertUserCommand("auth0|abc", null, null, null, null);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 }

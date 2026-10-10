@@ -16,8 +16,7 @@ public class GetUserAccessContextHandlerTests
     private Mock<IAuthorizationReadRepository> _authorizationReadRepository = null!;
     private GetUserAccessContextHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetUserAccessContextHandlerTests()
     {
         _userReadRepository = new Mock<IUserReadRepository>();
         _authorizationReadRepository = new Mock<IAuthorizationReadRepository>();
@@ -27,7 +26,7 @@ public class GetUserAccessContextHandlerTests
     private static UserDto CreateUser() =>
         new(Guid.NewGuid(), ValidSub, "alice", null, null, false, null, DateTime.UtcNow, DateTime.UtcNow, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
         _userReadRepository
@@ -39,14 +38,14 @@ public class GetUserAccessContextHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
         _authorizationReadRepository.Verify(
             x => x.GetUserPermissionsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserFound_ComposesAccessContextFromPermissionsAndRoles()
     {
         var user = CreateUser();
@@ -63,16 +62,13 @@ public class GetUserAccessContextHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.User, Is.EqualTo(user));
-            Assert.That(result.Value.Permissions, Is.EquivalentTo(new[] { "problems:read", "problems:write" }));
-            Assert.That(result.Value.Roles, Is.EquivalentTo(new[] { "Admin" }));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(user, result.Value.User);
+        Assert.Equivalent(new[] { "problems:read", "problems:write" }, result.Value.Permissions, strict: true);
+        Assert.Equivalent(new[] { "Admin" }, result.Value.Roles, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserFound_LooksUpPermissionsAndRolesByUserId()
     {
         var user = CreateUser();

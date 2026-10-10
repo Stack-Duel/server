@@ -17,8 +17,7 @@ public class CloseLobbyHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private CloseLobbyHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CloseLobbyHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -39,21 +38,21 @@ public class CloseLobbyHandlerTests
         return new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [hostId, otherId], 600);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = new CloseLobbyCommand(Guid.Empty, Guid.NewGuid());
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameReadRepository.Verify(
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         var gameId = Guid.NewGuid();
@@ -64,10 +63,10 @@ public class CloseLobbyHandlerTests
         var command = new CloseLobbyCommand(gameId, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RequesterIsNotHost_ReturnsForbidden()
     {
         var game = CreatePendingGame(out _, out var otherId);
@@ -76,14 +75,14 @@ public class CloseLobbyHandlerTests
         var command = new CloseLobbyCommand(game.Id, otherId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotPending_ReturnsInvalid()
     {
         var game = CreatePendingGame(out var hostId, out _);
@@ -93,10 +92,10 @@ public class CloseLobbyHandlerTests
         var command = new CloseLobbyCommand(game.Id, hostId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_HostClosesPendingLobby_CancelsGameAndDispatchesEvents()
     {
         var game = CreatePendingGame(out var hostId, out _);
@@ -105,11 +104,8 @@ public class CloseLobbyHandlerTests
         var command = new CloseLobbyCommand(game.Id, hostId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(game.Status, Is.EqualTo(StackDuel.Domain.Games.Enums.GameStatus.Cancelled));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Cancelled, game.Status);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>

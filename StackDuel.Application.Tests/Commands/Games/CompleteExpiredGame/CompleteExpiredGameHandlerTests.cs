@@ -20,8 +20,7 @@ public class CompleteExpiredGameHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private CompleteExpiredGameHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CompleteExpiredGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -36,17 +35,17 @@ public class CompleteExpiredGameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalid()
     {
         var command = new CompleteExpiredGameCommand(Guid.NewGuid(), DateTime.UtcNow, -1);
 
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsStaleDropped()
     {
         var gameId = Guid.NewGuid();
@@ -57,11 +56,11 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(gameId, DateTime.UtcNow, 0);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value.Outcome, Is.EqualTo(CompleteExpiredGameOutcome.Stale_Dropped));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(CompleteExpiredGameOutcome.Stale_Dropped, result.Value.Outcome);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotRunning_ReturnsAlreadyFinalizedNoOp()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -70,10 +69,10 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(game.Id, DateTime.UtcNow, 0);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Value.Outcome, Is.EqualTo(CompleteExpiredGameOutcome.AlreadyFinalized_NoOp));
+        Assert.Equal(CompleteExpiredGameOutcome.AlreadyFinalized_NoOp, result.Value.Outcome);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_StartedAtDoesNotMatchExpected_ReturnsStaleDropped()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -83,10 +82,10 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(game.Id, game.StartedAt!.Value.AddMinutes(-5), 0);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Value.Outcome, Is.EqualTo(CompleteExpiredGameOutcome.Stale_Dropped));
+        Assert.Equal(CompleteExpiredGameOutcome.Stale_Dropped, result.Value.Outcome);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NotYetExpired_BelowRescheduleLimit_ReturnsRescheduled()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -96,19 +95,16 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(game.Id, game.StartedAt!.Value, 0);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Outcome, Is.EqualTo(CompleteExpiredGameOutcome.NotYetExpired_Rescheduled));
-            Assert.That(result.Value.RescheduleForUtc, Is.Not.Null);
-            Assert.That(game.Status, Is.EqualTo(StackDuel.Domain.Games.Enums.GameStatus.Running));
-        });
+        Assert.Equal(CompleteExpiredGameOutcome.NotYetExpired_Rescheduled, result.Value.Outcome);
+        Assert.NotNull(result.Value.RescheduleForUtc);
+        Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Running, game.Status);
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NotYetExpired_RescheduleLimitReached_CompletesGameAnyway()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -118,14 +114,11 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(game.Id, game.StartedAt!.Value, 3);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(
-                result.Value.Outcome,
-                Is.EqualTo(CompleteExpiredGameOutcome.NotYetExpired_RescheduleLimitReached_CompletedAnyway)
-            );
-            Assert.That(game.Status, Is.EqualTo(StackDuel.Domain.Games.Enums.GameStatus.Completed));
-        });
+        Assert.Equal(
+            CompleteExpiredGameOutcome.NotYetExpired_RescheduleLimitReached_CompletedAnyway,
+            result.Value.Outcome
+        );
+        Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Completed, game.Status);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>
@@ -137,7 +130,7 @@ public class CompleteExpiredGameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NotYetExpired_ImplausibleDelay_ReturnsDropped()
     {
         var game = new Game(
@@ -153,17 +146,14 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(game.Id, game.StartedAt!.Value, 0);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(
-            result.Value.Outcome,
-            Is.EqualTo(CompleteExpiredGameOutcome.NotYetExpired_ImplausibleDelay_Dropped)
-        );
+        Assert.Equal(CompleteExpiredGameOutcome.NotYetExpired_ImplausibleDelay_Dropped, result.Value.Outcome);
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameHasExpired_CompletesGameAndReturnsCompleted()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 1);
@@ -174,11 +164,8 @@ public class CompleteExpiredGameHandlerTests
         var command = new CompleteExpiredGameCommand(game.Id, game.StartedAt!.Value, 0);
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Outcome, Is.EqualTo(CompleteExpiredGameOutcome.Completed));
-            Assert.That(game.Status, Is.EqualTo(StackDuel.Domain.Games.Enums.GameStatus.Completed));
-        });
+        Assert.Equal(CompleteExpiredGameOutcome.Completed, result.Value.Outcome);
+        Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Completed, game.Status);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>

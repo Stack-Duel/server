@@ -5,21 +5,21 @@ namespace StackDuel.Domain.Tests.Language.ValueObjects;
 
 public class LanguageVersionTests
 {
-    [Test]
+    [Fact]
     public void Constructor_AtMaxLength_Succeeds()
     {
         string value = new('a', LanguageVersion.MaxLength);
 
-        Assert.That(() => new LanguageVersion(value), Throws.Nothing);
+        Assert.Null(Record.Exception(() => new LanguageVersion(value)));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyString_ThrowsInvalidLanguageVersionException()
     {
         Assert.Throws<InvalidLanguageVersionException>(() => new LanguageVersion(string.Empty));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_ExceedsMaxLength_ThrowsInvalidLanguageVersionException()
     {
         string value = new('a', LanguageVersion.MaxLength + 1);
@@ -27,45 +27,45 @@ public class LanguageVersionTests
         Assert.Throws<InvalidLanguageVersionException>(() => new LanguageVersion(value));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WhitespaceOnly_ThrowsInvalidLanguageVersionException()
     {
         Assert.Throws<InvalidLanguageVersionException>(() => new LanguageVersion("   "));
     }
 
-    [Test]
+    [Fact]
     public void Equality_DifferentValues_AreNotEqual()
     {
         var a = new LanguageVersion("3.11");
         var b = new LanguageVersion("3.12");
 
-        Assert.That(a, Is.Not.EqualTo(b));
+        Assert.NotEqual(b, a);
     }
 
-    [Test]
+    [Fact]
     public void Equality_SameValue_AreEqual()
     {
         var a = new LanguageVersion("3.11");
         var b = new LanguageVersion("3.11");
 
-        Assert.That(a, Is.EqualTo(b));
+        Assert.Equal(b, a);
     }
 
-    [Test]
+    [Fact]
     public void ImplicitConversion_ReturnsValue()
     {
         var version = new LanguageVersion("3.11");
 
         string result = version;
 
-        Assert.That(result, Is.EqualTo("3.11"));
+        Assert.Equal("3.11", result);
     }
 
-    [Test]
+    [Fact]
     public void ToString_ReturnsValue()
     {
         var version = new LanguageVersion("3.11");
 
-        Assert.That(version.ToString(), Is.EqualTo("3.11"));
+        Assert.Equal("3.11", version.ToString());
     }
 }

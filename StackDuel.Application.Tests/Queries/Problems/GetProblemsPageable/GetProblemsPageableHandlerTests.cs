@@ -16,8 +16,7 @@ public class GetProblemsPageableHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetProblemsPageableHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetProblemsPageableHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
@@ -27,7 +26,7 @@ public class GetProblemsPageableHandlerTests
     private static ProblemListRowDto CreateRow(int difficultyValue = 100, IReadOnlyList<Guid>? versionIds = null) =>
         new(Guid.NewGuid(), "two-sum", "Two Sum", difficultyValue, ["arrays"], versionIds ?? []);
 
-    [Test]
+    [Fact]
     public async Task Handle_PassesThroughPageMetadata()
     {
         var page = new PageResult<ProblemListRowDto>
@@ -47,17 +46,14 @@ public class GetProblemsPageableHandlerTests
 
         var result = await _handler.Handle(new GetProblemsPageableQuery(pagination, null), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Total, Is.EqualTo(1));
-            Assert.That(result.Value.Page, Is.EqualTo(1));
-            Assert.That(result.Value.Size, Is.EqualTo(20));
-            Assert.That(result.Value.Results, Has.Count.EqualTo(1));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value.Total);
+        Assert.Equal(1, result.Value.Page);
+        Assert.Equal(20, result.Value.Size);
+        Assert.Single(result.Value.Results);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PassesPaginationRequestAndSearchThroughToRepository()
     {
         var pagination = new PaginationRequest { Page = 3, Size = 5 };
@@ -86,7 +82,7 @@ public class GetProblemsPageableHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_KnownLanguageVersion_MapsLanguageWithSlug()
     {
         var language = new Language(new LanguageName("SQLite"), new LanguageSlug("sqlite"), Guid.NewGuid());
@@ -111,15 +107,12 @@ public class GetProblemsPageableHandlerTests
         var query = new GetProblemsPageableQuery(new PaginationRequest { Page = 1, Size = 20 }, null);
         var result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results[0].Languages, Has.Count.EqualTo(1));
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Results[0].Languages[0].Name, Is.EqualTo("SQLite"));
-            Assert.That(result.Value.Results[0].Languages[0].Slug, Is.EqualTo("sqlite"));
-        });
+        Assert.Single(result.Value.Results[0].Languages);
+        Assert.Equal("SQLite", result.Value.Results[0].Languages[0].Name);
+        Assert.Equal("sqlite", result.Value.Results[0].Languages[0].Slug);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MultipleVersionsOfSameLanguage_DeduplicatesToOneEntry()
     {
         var language = new Language(new LanguageName("Python"), new LanguageSlug("python"), Guid.NewGuid());
@@ -145,10 +138,10 @@ public class GetProblemsPageableHandlerTests
         var query = new GetProblemsPageableQuery(new PaginationRequest { Page = 1, Size = 20 }, null);
         var result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results[0].Languages, Has.Count.EqualTo(1));
+        Assert.Single(result.Value.Results[0].Languages);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnknownLanguageVersion_OmitsFromLanguages()
     {
         _problemReadRepository
@@ -171,6 +164,6 @@ public class GetProblemsPageableHandlerTests
         var query = new GetProblemsPageableQuery(new PaginationRequest { Page = 1, Size = 20 }, null);
         var result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results[0].Languages, Is.Empty);
+        Assert.Empty(result.Value.Results[0].Languages);
     }
 }

@@ -10,21 +10,21 @@ public class FeatureFlagTests
     private static FeatureFlag CreateFlag(bool defaultEnabled = false) =>
         FeatureFlag.Create(new FeatureFlagKey("leaderboards"), "Leaderboards", "Global kill-switch.", defaultEnabled);
 
-    [Test]
+    [Fact]
     public void Create_SetsRolloutPercentageToZero()
     {
         FeatureFlag flag = CreateFlag();
-        Assert.That(flag.RolloutPercentage, Is.EqualTo(RolloutPercentage.Zero));
+        Assert.Equal(RolloutPercentage.Zero, flag.RolloutPercentage);
     }
 
-    [Test]
+    [Fact]
     public void Create_SetsCreatedAtAndUpdatedAtToSameInstant()
     {
         FeatureFlag flag = CreateFlag();
-        Assert.That(flag.CreatedAt, Is.EqualTo(flag.UpdatedAt));
+        Assert.Equal(flag.UpdatedAt, flag.CreatedAt);
     }
 
-    [Test]
+    [Fact]
     public void Create_BlankName_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -32,7 +32,7 @@ public class FeatureFlagTests
         );
     }
 
-    [Test]
+    [Fact]
     public void SetDefaultEnabled_UpdatesValueAndBumpsUpdatedAt()
     {
         FeatureFlag flag = CreateFlag(defaultEnabled: false);
@@ -40,14 +40,11 @@ public class FeatureFlagTests
 
         flag.SetDefaultEnabled(true);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(flag.DefaultEnabled, Is.True);
-            Assert.That(flag.UpdatedAt, Is.GreaterThanOrEqualTo(originalUpdatedAt));
-        });
+        Assert.True(flag.DefaultEnabled);
+        Assert.True(flag.UpdatedAt >= originalUpdatedAt);
     }
 
-    [Test]
+    [Fact]
     public void SetUserOverride_NewUser_AddsOverride()
     {
         FeatureFlag flag = CreateFlag();
@@ -55,11 +52,11 @@ public class FeatureFlagTests
 
         flag.SetUserOverride(userId, DecisionEffect.Allow);
 
-        Assert.That(flag.UserOverrides, Has.Count.EqualTo(1));
-        Assert.That(flag.UserOverrides.Single().Effect, Is.EqualTo(DecisionEffect.Allow));
+        Assert.Single(flag.UserOverrides);
+        Assert.Equal(DecisionEffect.Allow, flag.UserOverrides.Single().Effect);
     }
 
-    [Test]
+    [Fact]
     public void SetUserOverride_ExistingUser_UpdatesEffectInPlaceRatherThanDuplicating()
     {
         FeatureFlag flag = CreateFlag();
@@ -68,11 +65,11 @@ public class FeatureFlagTests
         flag.SetUserOverride(userId, DecisionEffect.Allow);
         flag.SetUserOverride(userId, DecisionEffect.Deny);
 
-        Assert.That(flag.UserOverrides, Has.Count.EqualTo(1));
-        Assert.That(flag.UserOverrides.Single().Effect, Is.EqualTo(DecisionEffect.Deny));
+        Assert.Single(flag.UserOverrides);
+        Assert.Equal(DecisionEffect.Deny, flag.UserOverrides.Single().Effect);
     }
 
-    [Test]
+    [Fact]
     public void RemoveUserOverride_RemovesMatchingOverride()
     {
         FeatureFlag flag = CreateFlag();
@@ -81,10 +78,10 @@ public class FeatureFlagTests
 
         flag.RemoveUserOverride(userId);
 
-        Assert.That(flag.UserOverrides, Is.Empty);
+        Assert.Empty(flag.UserOverrides);
     }
 
-    [Test]
+    [Fact]
     public void SetGroupOverride_ExistingGroup_UpdatesEffectInPlaceRatherThanDuplicating()
     {
         FeatureFlag flag = CreateFlag();
@@ -93,11 +90,11 @@ public class FeatureFlagTests
         flag.SetGroupOverride(groupId, DecisionEffect.Deny);
         flag.SetGroupOverride(groupId, DecisionEffect.Allow);
 
-        Assert.That(flag.GroupOverrides, Has.Count.EqualTo(1));
-        Assert.That(flag.GroupOverrides.Single().Effect, Is.EqualTo(DecisionEffect.Allow));
+        Assert.Single(flag.GroupOverrides);
+        Assert.Equal(DecisionEffect.Allow, flag.GroupOverrides.Single().Effect);
     }
 
-    [Test]
+    [Fact]
     public void RemoveGroupOverride_RemovesMatchingOverride()
     {
         FeatureFlag flag = CreateFlag();
@@ -106,6 +103,6 @@ public class FeatureFlagTests
 
         flag.RemoveGroupOverride(groupId);
 
-        Assert.That(flag.GroupOverrides, Is.Empty);
+        Assert.Empty(flag.GroupOverrides);
     }
 }

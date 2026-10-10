@@ -8,9 +8,9 @@ using System.Net.Http.Json;
 
 namespace StackDuel.IntegrationTests.Users;
 
-public sealed class AdminUsersApiTests : ApiIntegrationTestBase
+public sealed class AdminUsersApiTests(IntegrationTestEnvironment environment) : ApiIntegrationTestBase(environment)
 {
-    [Test]
+    [Fact]
     public async Task GetAdminUsers_returns_users_with_group_memberships_for_a_permitted_caller()
     {
         const string adminSub = "sub-admin-1";
@@ -31,14 +31,14 @@ public sealed class AdminUsersApiTests : ApiIntegrationTestBase
             )
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         PageResult<AdminUserDto>? page = await response.Content.ReadFromJsonAsync<PageResult<AdminUserDto>>();
-        Assert.That(page, Is.Not.Null);
+        Assert.NotNull(page);
         AdminUserDto member = page!.Results.Single(u => u.Id == memberUserId);
-        Assert.That(member.Groups.Select(g => g.Name), Is.EquivalentTo(new[] { "Testers" }));
+        Assert.Equivalent(new[] { "Testers" }, member.Groups.Select(g => g.Name), strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAdminUsers_filters_by_username_search()
     {
         const string adminSub = "sub-admin-2";
@@ -60,13 +60,13 @@ public sealed class AdminUsersApiTests : ApiIntegrationTestBase
             )
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         PageResult<AdminUserDto>? page = await response.Content.ReadFromJsonAsync<PageResult<AdminUserDto>>();
-        Assert.That(page, Is.Not.Null);
-        Assert.That(page!.Results.Select(u => u.Id), Is.EquivalentTo(new[] { matchingUserId }));
+        Assert.NotNull(page);
+        Assert.Equivalent(new[] { matchingUserId }, page!.Results.Select(u => u.Id), strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAdminUserDetail_returns_the_user_for_a_permitted_caller()
     {
         const string adminSub = "sub-admin-3";
@@ -83,14 +83,14 @@ public sealed class AdminUsersApiTests : ApiIntegrationTestBase
             AuthenticatedRequest(HttpMethod.Get, $"/api/v1/user/admin/{memberUserId}", adminSub)
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         AdminUserDetailDto? detail = await response.Content.ReadFromJsonAsync<AdminUserDetailDto>();
-        Assert.That(detail, Is.Not.Null);
-        Assert.That(detail!.Username, Is.EqualTo("iris23"));
-        Assert.That(detail.Groups.Select(g => g.Name), Is.EquivalentTo(new[] { "Testers2" }));
+        Assert.NotNull(detail);
+        Assert.Equal("iris23", detail!.Username);
+        Assert.Equivalent(new[] { "Testers2" }, detail.Groups.Select(g => g.Name), strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAdminUserDetail_returns_not_found_for_an_unknown_user()
     {
         const string adminSub = "sub-admin-4";
@@ -101,10 +101,10 @@ public sealed class AdminUsersApiTests : ApiIntegrationTestBase
             AuthenticatedRequest(HttpMethod.Get, $"/api/v1/user/admin/{Guid.NewGuid()}", adminSub)
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAdminUsers_returns_forbidden_for_a_caller_without_the_permission()
     {
         const string sub = "sub-plain-1";
@@ -118,17 +118,17 @@ public sealed class AdminUsersApiTests : ApiIntegrationTestBase
             )
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    [Test]
+    [Fact]
     public async Task GetAdminUsers_returns_unauthorized_when_unauthenticated()
     {
         HttpResponseMessage response = await Client.GetAsync(
             "/api/v1/user/admin?Page=1&Size=10&Timestamp=2026-01-01T00:00:00Z"
         );
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     private async Task CreateAccountAsync(string sub, string username)
@@ -137,7 +137,7 @@ public sealed class AdminUsersApiTests : ApiIntegrationTestBase
         request.Content = JsonContent.Create(new UpsertUserRequest(username, null, null));
 
         HttpResponseMessage response = await Client.SendAsync(request);
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), await response.Content.ReadAsStringAsync());
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
     }
 
     private async Task GrantPermissionToNewGroupAsync(string sub, string permissionCode)
