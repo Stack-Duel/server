@@ -5,6 +5,8 @@ namespace StackDuel.Domain.Tests.Campaigns.Entities;
 
 public class CampaignTests
 {
+    private static readonly int[] SequentialSortOrders = [0, 1, 2];
+
     private static Campaign CreateCampaign(
         string slug = "intro-to-algorithms",
         CampaignDifficulty difficulty = CampaignDifficulty.Beginner
@@ -250,7 +252,7 @@ public class CampaignTests
         CampaignModule second = campaign.AddModule("Module 2", "");
         CampaignModule third = campaign.AddModule("Module 3", "");
 
-        Assert.That(new[] { first.SortOrder, second.SortOrder, third.SortOrder }, Is.EqualTo(new[] { 0, 1, 2 }));
+        Assert.That(new[] { first.SortOrder, second.SortOrder, third.SortOrder }, Is.EqualTo(SequentialSortOrders));
     }
 
     [Test]

@@ -52,7 +52,10 @@ public class AchievementCodeTests
     [Test]
     public void Equality_IsByValue()
     {
-        Assert.That(new AchievementCode("first-blood"), Is.EqualTo(new AchievementCode("first-blood")));
+        AchievementCode code = new("first-blood");
+        AchievementCode sameValue = new("first-blood");
+
+        Assert.That(code, Is.EqualTo(sameValue));
     }
 
     [Test]

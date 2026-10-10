@@ -129,6 +129,9 @@ public class ReasonTests
     [Test]
     public void Equality_IsByValue()
     {
-        Assert.That(new Reason("Spam."), Is.EqualTo(new Reason("Spam.")));
+        Reason reason = new("Spam.");
+        Reason sameValue = new("Spam.");
+
+        Assert.That(reason, Is.EqualTo(sameValue));
     }
 }

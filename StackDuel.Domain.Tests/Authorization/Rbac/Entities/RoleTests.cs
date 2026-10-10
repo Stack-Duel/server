@@ -29,7 +29,10 @@ public class RoleTests
     [Test]
     public void Create_GivesEachRoleADistinctId()
     {
-        Assert.That(CreateRole().Id, Is.Not.EqualTo(CreateRole().Id));
+        Role first = CreateRole();
+        Role second = CreateRole();
+
+        Assert.That(first.Id, Is.Not.EqualTo(second.Id));
     }
 
     [Test]
@@ -135,7 +138,10 @@ public class PermissionTests
     {
         PermissionCode code = new("submission:create");
 
-        Assert.That(Permission.Create(code, "desc").Id, Is.Not.EqualTo(Permission.Create(code, "desc").Id));
+        Permission first = Permission.Create(code, "desc");
+        Permission second = Permission.Create(code, "desc");
+
+        Assert.That(first.Id, Is.Not.EqualTo(second.Id));
     }
 }
 

@@ -5,6 +5,8 @@ namespace StackDuel.Domain.Tests.Campaigns.Entities;
 
 public class CampaignUnitTests
 {
+    private static readonly int[] SequentialSortOrders = [0, 1, 2];
+
     private static CampaignUnit CreateUnit(
         UnitType unitType = UnitType.Lesson,
         int estimatedMinutes = 15,
@@ -133,7 +135,7 @@ public class CampaignUnitTests
 
         unit.SetProblems([Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()]);
 
-        Assert.That(unit.Problems.Select(p => p.SortOrder), Is.EqualTo(new[] { 0, 1, 2 }));
+        Assert.That(unit.Problems.Select(p => p.SortOrder), Is.EqualTo(SequentialSortOrders));
     }
 
     [Test]

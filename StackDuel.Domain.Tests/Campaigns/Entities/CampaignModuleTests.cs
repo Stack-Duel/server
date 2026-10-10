@@ -5,6 +5,8 @@ namespace StackDuel.Domain.Tests.Campaigns.Entities;
 
 public class CampaignModuleTests
 {
+    private static readonly int[] SequentialSortOrders = [0, 1, 2];
+
     private static CampaignModule CreateModule(int sortOrder = 0) =>
         new(Guid.NewGuid(), "Module 1", "First module.", sortOrder);
 
@@ -111,7 +113,7 @@ public class CampaignModuleTests
         CampaignUnit second = module.AddUnit("Unit 2", "", UnitType.Challenge, 5);
         CampaignUnit third = module.AddUnit("Unit 3", "", UnitType.Quiz, 5);
 
-        Assert.That(new[] { first.SortOrder, second.SortOrder, third.SortOrder }, Is.EqualTo(new[] { 0, 1, 2 }));
+        Assert.That(new[] { first.SortOrder, second.SortOrder, third.SortOrder }, Is.EqualTo(SequentialSortOrders));
     }
 
     [Test]

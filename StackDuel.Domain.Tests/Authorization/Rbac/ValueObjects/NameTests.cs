@@ -35,7 +35,10 @@ public class NameTests
     [Test]
     public void Equality_IsByValue()
     {
-        Assert.That(new Name("admin"), Is.EqualTo(new Name("admin")));
+        Name name = new("admin");
+        Name sameValue = new("admin");
+
+        Assert.That(name, Is.EqualTo(sameValue));
     }
 
     [Test]
@@ -64,7 +67,10 @@ public class PermissionCodeTests
     [Test]
     public void Equality_IsByValue()
     {
-        Assert.That(new PermissionCode("game:duel:play"), Is.EqualTo(new PermissionCode("game:duel:play")));
+        PermissionCode code = new("game:duel:play");
+        PermissionCode sameValue = new("game:duel:play");
+
+        Assert.That(code, Is.EqualTo(sameValue));
     }
 
     [Test]
