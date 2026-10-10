@@ -9,6 +9,15 @@ jobs:
   build:
     name: Build and analyze
     runs-on: windows-latest
+    env:
+      # Sources with no hand-written logic to test, so a coverage requirement on them would
+      # measure nothing:
+      #   Migrations, Seeders, obj/**, *.g.cs, *.Designer.cs -- generated or static data
+      #   Program.cs, *ServiceRegistration.cs, *Options.cs   -- composition root / config binding
+      #   Dtos/**, *DbContext.cs, Persistence/Configuration  -- records and declarative EF mapping
+      # Kept in sync with coverage.runsettings. Whole-file *analysis* exclusions (migrations,
+      # seeders) live in Directory.Build.props. Written on one line: Sonar splits on commas.
+      COVERAGE_EXCLUSIONS: "**/Migrations/**/*.cs,**/Persistence/Seeders/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Program.cs,**/*ServiceRegistration.cs,**/*Options.cs,**/Dtos/**/*.cs,**/*DbContext.cs,**/Persistence/Configuration/**/*.cs,**/LoggingEventIds.cs,StackDuel.Seeder/**/*.cs"
     steps:
       - name: Set up JDK 21
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
@@ -42,7 +51,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"Stack-Duel_server" /o:"stack-duel" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
+            /k:"Stack-Duel_server" `
+            /o:"stack-duel" `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" `
+            /d:sonar.coverage.exclusions="$env:COVERAGE_EXCLUSIONS"
           dotnet build
-          dotnet test --collect:"XPlat Code Coverage" --results-directory coverage -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          dotnet test --no-build --settings coverage.runsettings --results-directory coverage
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"

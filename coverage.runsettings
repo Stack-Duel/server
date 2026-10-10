@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>opencover</Format>
+
+          <!-- Assemblies with no hand-written logic to cover. Format: [AssemblyFilter]TypeFilter -->
+          <Exclude>[StackDuel.Seeder]*</Exclude>
+
+          <!--
+            File-level exclusions: generated or data-only sources, where a coverage requirement
+            would measure nothing. Mirrored by COVERAGE_EXCLUSIONS in
+            .github/workflows/sonarqube.yml, which is the list SonarCloud actually reads.
+          -->
+          <ExcludeByFile>**/Migrations/*.cs,**/Persistence/Seeders/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs</ExcludeByFile>
+
+          <!--
+            Honour [ExcludeFromCodeCoverage]. Do NOT add GeneratedCodeAttribute here: it makes
+            coverlet drop the whole StackDuel.Infrastructure module from the report, and
+            CompilerGeneratedAttribute discards every async state machine. The file list above
+            covers generated sources without those side effects.
+          -->
+          <ExcludeByAttribute>ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

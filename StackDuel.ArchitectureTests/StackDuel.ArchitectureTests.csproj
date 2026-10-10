@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -8,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" />
+    <!--
+      No coverlet.collector here on purpose. These tests use NetArchTest to load the product
+      assemblies from disk and inspect their metadata; they execute almost no product code, so
+      they contribute no meaningful line coverage. Instrumenting this project's output rewrites
+      those assemblies and breaks the reflective load.
+    -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="xunit" />
@@ -29,5 +33,4 @@
     <ProjectReference Include="..\StackDuel.Domain\StackDuel.Domain.csproj" />
     <ProjectReference Include="..\StackDuel.Infrastructure\StackDuel.Infrastructure.csproj" />
   </ItemGroup>
-
 </Project>
