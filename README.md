@@ -1,6 +1,6 @@
 # StackDuel Server
 
-[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=coverage)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Security issues](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=software_quality_security_issues)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Maintainability issues](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=software_quality_maintainability_issues)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Reliability issues](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=software_quality_reliability_issues)](https://sonarcloud.io/summary/new_code?id=stackduel_server) [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=stackduel_server&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=stackduel_server)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Security issues](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=software_quality_security_issues)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Maintainability issues](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=software_quality_maintainability_issues)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Reliability issues](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=software_quality_reliability_issues)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server) [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Stack-Duel_server&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Stack-Duel_server)
 
 Backend for StackDuel, a competitive programming platform. Built with .NET.
 
@@ -127,17 +127,17 @@ GET /api/v1/feature-flag
 
 **Admin endpoints** — all require `[RequireUser]` + the `feature-flag:manage:admin` permission (already granted to the seeded `admin` group/role):
 
-| Method | Route                                                   | Body                        | Does                              |
-| ------ | -------------------------------------------------------- | ---------------------------- | ---------------------------------- |
-| GET    | `/api/v1/feature-flag/admin`                             | —                             | List all flags with their overrides |
-| GET    | `/api/v1/feature-flag/admin/{key}`                       | —                             | Get one flag by key                |
-| POST   | `/api/v1/feature-flag/admin`                             | `{ key, name, description, defaultEnabled }` | Create a new flag |
-| PUT    | `/api/v1/feature-flag/admin/{id}/default`                | `{ defaultEnabled }`         | **Global kill-switch** — on/off for everyone |
-| PUT    | `/api/v1/feature-flag/admin/{id}/rollout`                | `{ rolloutPercentage }` (0-100) | **Canary rollout** to a deterministic % of users |
-| PUT    | `/api/v1/feature-flag/admin/{id}/user-overrides/{userId}`  | `{ effect: "Allow" \| "Deny" }` | **Per-user override** |
-| DELETE | `/api/v1/feature-flag/admin/{id}/user-overrides/{userId}`  | —                             | Remove a per-user override         |
-| PUT    | `/api/v1/feature-flag/admin/{id}/group-overrides/{groupId}` | `{ effect: "Allow" \| "Deny" }` | **Per-group override** |
-| DELETE | `/api/v1/feature-flag/admin/{id}/group-overrides/{groupId}` | —                             | Remove a per-group override        |
+| Method | Route                                                       | Body                                         | Does                                             |
+| ------ | ----------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| GET    | `/api/v1/feature-flag/admin`                                | —                                            | List all flags with their overrides              |
+| GET    | `/api/v1/feature-flag/admin/{key}`                          | —                                            | Get one flag by key                              |
+| POST   | `/api/v1/feature-flag/admin`                                | `{ key, name, description, defaultEnabled }` | Create a new flag                                |
+| PUT    | `/api/v1/feature-flag/admin/{id}/default`                   | `{ defaultEnabled }`                         | **Global kill-switch** — on/off for everyone     |
+| PUT    | `/api/v1/feature-flag/admin/{id}/rollout`                   | `{ rolloutPercentage }` (0-100)              | **Canary rollout** to a deterministic % of users |
+| PUT    | `/api/v1/feature-flag/admin/{id}/user-overrides/{userId}`   | `{ effect: "Allow" \| "Deny" }`              | **Per-user override**                            |
+| DELETE | `/api/v1/feature-flag/admin/{id}/user-overrides/{userId}`   | —                                            | Remove a per-user override                       |
+| PUT    | `/api/v1/feature-flag/admin/{id}/group-overrides/{groupId}` | `{ effect: "Allow" \| "Deny" }`              | **Per-group override**                           |
+| DELETE | `/api/v1/feature-flag/admin/{id}/group-overrides/{groupId}` | —                                            | Remove a per-group override                      |
 
 **Evaluation precedence** (first match wins; `Deny` beats `Allow` within a layer):
 
@@ -164,19 +164,22 @@ Live diagnostics, hover, and completion in the Java editor are powered by a self
 It needs **two separate JDKs**, easy to get backwards:
 
 - **JDK 21+** to run jdtls itself — this build of jdtls refuses to start on JDK 17 (`UnsupportedClassVersionError`).
-- **JDK 17** for jdtls to *analyze* the user's code with — should match whatever JDK Judge0 actually compiles with (`JavaCodeTemplateStrategy` pins `/usr/local/jdk17/bin/javac`), so live diagnostics agree with what happens at submit time.
+- **JDK 17** for jdtls to _analyze_ the user's code with — should match whatever JDK Judge0 actually compiles with (`JavaCodeTemplateStrategy` pins `/usr/local/jdk17/bin/javac`), so live diagnostics agree with what happens at submit time.
 
 #### Local setup
 
 1. Download jdtls:
+
    ```
    ./scripts/download-jdtls.ps1   # or download-jdtls.sh
    ```
+
    Extracts jdtls into a gitignored `.tools/jdtls/` and prints the config values you need below.
 
 2. Install a JDK 21+ and a JDK 17 locally (any distribution, e.g. [Eclipse Temurin](https://adoptium.net/)).
 
 3. Set user secrets on `StackDuel.Api`:
+
    ```
    dotnet user-secrets set --project StackDuel.Api LanguageServer:Enabled true
    dotnet user-secrets set --project StackDuel.Api LanguageServer:Java:JdtlsRuntimeJavaHome "<path to JDK 21+>"
@@ -197,6 +200,7 @@ App Service deploys are a Kudu zip-deploy of a framework-dependent build (see `s
 
 1. Open the Kudu console: `https://<app-name>.scm.azurewebsites.net/DebugConsole` → PowerShell tab.
 2. Run:
+
    ```powershell
    cd D:\home
    New-Item -ItemType Directory -Force -Path tools | Out-Null
@@ -219,16 +223,18 @@ App Service deploys are a Kudu zip-deploy of a framework-dependent build (see `s
 
    (Get-ChildItem "jdtls\plugins\org.eclipse.equinox.launcher_*.jar")[0].FullName
    ```
+
    The last line prints the launcher jar path (filename has a version suffix that changes per jdtls release).
+
 3. Set these as **Application settings** (Portal → App Service → Configuration), not user secrets — Azure uses `__` instead of `:` for nested keys:
 
-   | Name | Value |
-   | --- | --- |
-   | `LanguageServer__Enabled` | `true` |
-   | `LanguageServer__Java__JdtlsRuntimeJavaHome` | `D:\home\tools\jdk21` |
-   | `LanguageServer__Java__JavaHome` | `D:\home\tools\jdk17` |
+   | Name                                         | Value                            |
+   | -------------------------------------------- | -------------------------------- |
+   | `LanguageServer__Enabled`                    | `true`                           |
+   | `LanguageServer__Java__JdtlsRuntimeJavaHome` | `D:\home\tools\jdk21`            |
+   | `LanguageServer__Java__JavaHome`             | `D:\home\tools\jdk17`            |
    | `LanguageServer__Java__JdtlsConfigDirectory` | `D:\home\tools\jdtls\config_win` |
-   | `LanguageServer__Java__JdtlsLauncherJarPath` | (path printed in step 2) |
+   | `LanguageServer__Java__JdtlsLauncherJarPath` | (path printed in step 2)         |
 
 4. **Enable WebSockets** on the App Service (Configuration → General settings → Web sockets) — off by default, and unlike the SignalR hubs this endpoint has no long-polling fallback if it's off.
 5. Restart the App Service.
@@ -286,13 +292,13 @@ The deployment script receives the following environment variables:
 
 ### Project structure
 
-| Project                    | Description                         |
-| -------------------------- | ----------------------------------- |
-| `StackDuel.Api`             | HTTP API                            |
-| `StackDuel.Application`     | Application logic and handlers      |
-| `StackDuel.Domain`          | Domain models                       |
-| `StackDuel.Infrastructure`  | EF Core, repositories, persistence  |
+| Project                       | Description                                |
+| ----------------------------- | ------------------------------------------ |
+| `StackDuel.Api`               | HTTP API                                   |
+| `StackDuel.Application`       | Application logic and handlers             |
+| `StackDuel.Domain`            | Domain models                              |
+| `StackDuel.Infrastructure`    | EF Core, repositories, persistence         |
 | `StackDuel.Application.Tests` | Unit tests — handlers, mocked repositories |
-| `StackDuel.Domain.Tests`    | Unit tests — domain models              |
-| `StackDuel.IntegrationTests` | Integration tests — real API + Postgres |
-| `StackDuel.Seeder`          | CLI for seeding static/demo data         |
+| `StackDuel.Domain.Tests`      | Unit tests — domain models                 |
+| `StackDuel.IntegrationTests`  | Integration tests — real API + Postgres    |
+| `StackDuel.Seeder`            | CLI for seeding static/demo data           |
