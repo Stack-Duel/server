@@ -17,8 +17,7 @@ public class UpdateProblemHandlerTests
     private Mock<IProblemRepository> _problemRepository = null!;
     private UpdateProblemHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpdateProblemHandlerTests()
     {
         _problemRepository = new Mock<IProblemRepository>();
         _handler = new UpdateProblemHandler(new UpdateProblemValidator(), _problemRepository.Object);
@@ -40,7 +39,7 @@ public class UpdateProblemHandlerTests
         IReadOnlyCollection<string>? tags = null
     ) => new(problemId, "Updated Title", ValidQuestion, 200, 2000, 256, tags ?? [], status);
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemRepository
@@ -49,10 +48,10 @@ public class UpdateProblemHandlerTests
 
         Result result = await _handler.Handle(ValidCommand(Guid.NewGuid()), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ValidUpdate_UpdatesContentAndPersists()
     {
         var problem = CreateProblem();
@@ -60,17 +59,14 @@ public class UpdateProblemHandlerTests
 
         Result result = await _handler.Handle(ValidCommand(problem.Id), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.Multiple(() =>
-        {
-            Assert.That(problem.Title.Value, Is.EqualTo("Updated Title"));
-            Assert.That(problem.Difficulty.Value, Is.EqualTo(200));
-            Assert.That(problem.History, Has.Count.EqualTo(1));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Updated Title", problem.Title.Value);
+        Assert.Equal(200, problem.Difficulty.Value);
+        Assert.Single(problem.History);
         _problemRepository.Verify(x => x.UpdateAsync(problem, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TagWithInvalidFormat_ReturnsInvalidResultAndDoesNotPersist()
     {
         var problem = CreateProblem();
@@ -78,11 +74,11 @@ public class UpdateProblemHandlerTests
 
         Result result = await _handler.Handle(ValidCommand(problem.Id, tags: ["invalid tag"]), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _problemRepository.Verify(x => x.UpdateAsync(It.IsAny<Problem>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_StatusTransition_DraftToPublished_Succeeds()
     {
         var problem = CreateProblem();
@@ -90,10 +86,10 @@ public class UpdateProblemHandlerTests
 
         await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
 
-        Assert.That(problem.Status, Is.EqualTo(ProblemStatus.Published));
+        Assert.Equal(ProblemStatus.Published, problem.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidStatusTransition_ReturnsInvalidAndLeavesProblemUnchanged()
     {
         var problem = CreateProblem();
@@ -105,16 +101,13 @@ public class UpdateProblemHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
-        Assert.Multiple(() =>
-        {
-            Assert.That(problem.Status, Is.EqualTo(ProblemStatus.Archived));
-            Assert.That(problem.Title.Value, Is.EqualTo("Two Sum"));
-        });
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        Assert.Equal(ProblemStatus.Archived, problem.Status);
+        Assert.Equal("Two Sum", problem.Title.Value);
         _problemRepository.Verify(x => x.UpdateAsync(It.IsAny<Problem>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AddsNewTags_ViaFindOrCreateTagsAsync()
     {
         var problem = CreateProblem();
@@ -132,10 +125,10 @@ public class UpdateProblemHandlerTests
 
         await _handler.Handle(ValidCommand(problem.Id, tags: ["arrays"]), CancellationToken.None);
 
-        Assert.That(problem.Tags, Contains.Item(createdTag));
+        Assert.Contains(createdTag, problem.Tags);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RemovesTagsNoLongerDesired()
     {
         var problem = CreateProblem();
@@ -145,10 +138,10 @@ public class UpdateProblemHandlerTests
 
         await _handler.Handle(ValidCommand(problem.Id, tags: []), CancellationToken.None);
 
-        Assert.That(problem.Tags, Does.Not.Contain(existingTag));
+        Assert.DoesNotContain(existingTag, problem.Tags);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DuplicateTagNames_DeduplicatedBeforeLookup()
     {
         var problem = CreateProblem();
@@ -170,14 +163,14 @@ public class UpdateProblemHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = ValidCommand(Guid.NewGuid()) with { Title = "" };
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _problemRepository.Verify(x => x.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

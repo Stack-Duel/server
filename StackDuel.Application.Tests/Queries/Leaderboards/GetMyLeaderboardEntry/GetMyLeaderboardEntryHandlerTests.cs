@@ -15,15 +15,14 @@ public class GetMyLeaderboardEntryHandlerTests
     private Mock<ILeaderboardReadRepository> _leaderboardReadRepository = null!;
     private GetMyLeaderboardEntryHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetMyLeaderboardEntryHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _leaderboardReadRepository = new Mock<ILeaderboardReadRepository>();
         _handler = new GetMyLeaderboardEntryHandler(_gameReadRepository.Object, _leaderboardReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -33,10 +32,10 @@ public class GetMyLeaderboardEntryHandlerTests
         var query = new GetMyLeaderboardEntryQuery("blitz", 300, Guid.NewGuid());
         Result<MyLeaderboardEntryDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoParticipantEntry_ReturnsNotFound()
     {
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
@@ -52,10 +51,10 @@ public class GetMyLeaderboardEntryHandlerTests
         var query = new GetMyLeaderboardEntryQuery("blitz", 300, userId);
         Result<MyLeaderboardEntryDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ParticipantFound_ReturnsHighScore()
     {
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
@@ -72,6 +71,6 @@ public class GetMyLeaderboardEntryHandlerTests
         var query = new GetMyLeaderboardEntryQuery("blitz", 300, userId);
         Result<MyLeaderboardEntryDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.HighScore, Is.EqualTo(42));
+        Assert.Equal(42, result.Value.HighScore);
     }
 }

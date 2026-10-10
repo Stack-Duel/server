@@ -8,39 +8,38 @@ public class ForfeitGameValidatorTests
 {
     private ForfeitGameValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public ForfeitGameValidatorTests()
     {
         _validator = new ForfeitGameValidator();
     }
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
         var command = new ForfeitGameCommand(Guid.NewGuid(), Guid.NewGuid());
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyGameId_IsInvalid()
     {
         var command = new ForfeitGameCommand(Guid.Empty, Guid.NewGuid());
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyRequestedByUserId_IsInvalid()
     {
         var command = new ForfeitGameCommand(Guid.NewGuid(), Guid.Empty);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 }

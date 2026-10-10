@@ -12,14 +12,13 @@ public class GetUserBySubHandlerTests
     private Mock<IUserReadRepository> _userReadRepository = null!;
     private GetUserBySubHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetUserBySubHandlerTests()
     {
         _userReadRepository = new Mock<IUserReadRepository>();
         _handler = new GetUserBySubHandler(_userReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
         _userReadRepository
@@ -28,10 +27,10 @@ public class GetUserBySubHandlerTests
 
         Result<UserDto> result = await _handler.Handle(new GetUserBySubQuery("auth0|missing"), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserFound_ReturnsUser()
     {
         var user = new UserDto(
@@ -50,7 +49,7 @@ public class GetUserBySubHandlerTests
 
         Result<UserDto> result = await _handler.Handle(new GetUserBySubQuery("auth0|abc"), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.SameAs(user));
+        Assert.True(result.IsSuccess);
+        Assert.Same(user, result.Value);
     }
 }

@@ -14,8 +14,7 @@ public class GetUserGameStatsHandlerTests
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private GetUserGameStatsHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetUserGameStatsHandlerTests()
     {
         _userReadRepository = new Mock<IUserReadRepository>();
         _gameReadRepository = new Mock<IGameReadRepository>();
@@ -33,7 +32,7 @@ public class GetUserGameStatsHandlerTests
     private static UserProfileDto CreateBaseProfile(Guid userId, bool isPrivate) =>
         new(userId, "alice", "bio", null, DateTime.UtcNow, isPrivate, false, null, null, null, null);
 
-    [Test]
+    [Fact]
     public async Task Handle_ProfileNotFound_ReturnsNotFound()
     {
         _userReadRepository
@@ -45,10 +44,10 @@ public class GetUserGameStatsHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PrivateProfile_NotOwner_ReturnsNullStatsWithoutFetchingGames()
     {
         var profile = CreateBaseProfile(Guid.NewGuid(), isPrivate: true);
@@ -61,19 +60,16 @@ public class GetUserGameStatsHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.IsOwnProfile, Is.False);
-            Assert.That(result.Value.GameModeStats, Is.Null);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.False(result.Value.IsOwnProfile);
+        Assert.Null(result.Value.GameModeStats);
         _gameReadRepository.Verify(
             x => x.GetCompletedGamesForUserAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PublicProfile_ReturnsGameModeStats()
     {
         var userId = Guid.NewGuid();
@@ -99,6 +95,6 @@ public class GetUserGameStatsHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.GameModeStats!.Single().GamesPlayed, Is.EqualTo(1));
+        Assert.Equal(1, result.Value.GameModeStats!.Single().GamesPlayed);
     }
 }

@@ -28,8 +28,7 @@ public class CreateSubmissionHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private CreateSubmissionHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CreateSubmissionHandlerTests()
     {
         _submissionRepository = new Mock<ISubmissionWriteRepository>();
         _submissionJobRepository = new Mock<ISubmissionJobRepository>();
@@ -87,7 +86,7 @@ public class CreateSubmissionHandlerTests
             .ReturnsAsync(pipeline);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RunType_Success_ReturnsSubmissionIdAndPersists()
     {
         SetUpRunTypeTestCases(Guid.NewGuid());
@@ -96,8 +95,8 @@ public class CreateSubmissionHandlerTests
 
         Result<Guid> result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Not.EqualTo(Guid.Empty));
+        Assert.True(result.IsSuccess);
+        Assert.NotEqual(Guid.Empty, result.Value);
         _submissionRepository.Verify(
             x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
             Times.Once
@@ -118,7 +117,7 @@ public class CreateSubmissionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_WithGameId_PersistsSubmissionWithGameId()
     {
         SetUpRunTypeTestCases(Guid.NewGuid());
@@ -133,7 +132,7 @@ public class CreateSubmissionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RunType_PassesCustomTestCaseInputsToRepository()
     {
         SetUpRunTypeTestCases(Guid.NewGuid());
@@ -156,7 +155,7 @@ public class CreateSubmissionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmitType_UsesGradingTestCaseIdsAndSkipsRunTypeLookups()
     {
         _testSuiteRepository
@@ -172,7 +171,7 @@ public class CreateSubmissionHandlerTests
 
         Result<Guid> result = await _handler.Handle(ValidCommand(type: SubmissionType.Submit), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _testSuiteRepository.Verify(
             x => x.FindPublicTestCaseIdsByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -188,14 +187,14 @@ public class CreateSubmissionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoTestCasesAvailable_ReturnsErrorAndDoesNotLookUpPipeline()
     {
         SetUpRunTypeTestCases();
 
         Result<Guid> result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+        Assert.Equal(ResultStatus.Error, result.Status);
         _testSuiteRepository.Verify(
             x => x.FindPipelineIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -206,7 +205,7 @@ public class CreateSubmissionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PipelineIdNotFound_ReturnsNotFound()
     {
         SetUpRunTypeTestCases(Guid.NewGuid());
@@ -216,14 +215,14 @@ public class CreateSubmissionHandlerTests
 
         Result<Guid> result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
         _submissionRepository.Verify(
             x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PipelineNotFound_ReturnsNotFound()
     {
         SetUpRunTypeTestCases(Guid.NewGuid());
@@ -237,10 +236,10 @@ public class CreateSubmissionHandlerTests
 
         Result<Guid> result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PipelineHasNoSteps_ReturnsError()
     {
         SetUpRunTypeTestCases(Guid.NewGuid());
@@ -248,21 +247,21 @@ public class CreateSubmissionHandlerTests
 
         Result<Guid> result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+        Assert.Equal(ResultStatus.Error, result.Status);
         _submissionRepository.Verify(
             x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepositories()
     {
         var command = ValidCommand() with { Code = "" };
 
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _testSuiteRepository.Verify(
             x => x.FindPublicTestCaseIdsByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never

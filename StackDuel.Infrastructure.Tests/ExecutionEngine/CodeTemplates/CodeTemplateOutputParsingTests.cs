@@ -4,11 +4,6 @@ using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Tests.ExecutionEngine.CodeTemplates;
 
-/// <summary>
-/// Covers the shared <see cref="ICodeTemplateStrategy"/> default implementations of
-/// <c>ParseOutput</c> and <c>BuildStdin</c>, exercised through a concrete strategy that
-/// does not override them.
-/// </summary>
 public class CodeTemplateOutputParsingTests
 {
     private static readonly ICodeTemplateStrategy Strategy = new PythonCodeTemplateStrategy();

@@ -15,8 +15,7 @@ public class GetSubmissionsByProblemSlugHandlerTests
     private Mock<ISubmissionReadRepository> _submissionReadRepository = null!;
     private GetSubmissionsByProblemSlugHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetSubmissionsByProblemSlugHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _submissionReadRepository = new Mock<ISubmissionReadRepository>();
@@ -26,7 +25,7 @@ public class GetSubmissionsByProblemSlugHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SlugNotFound_ReturnsNotFound()
     {
         _problemReadRepository
@@ -43,7 +42,7 @@ public class GetSubmissionsByProblemSlugHandlerTests
 
         Result<PageResult<ProblemSubmissionDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
         _submissionReadRepository.Verify(
             x =>
                 x.GetProblemSubmissionsPagedAsync(
@@ -58,7 +57,7 @@ public class GetSubmissionsByProblemSlugHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SlugFound_PassesResolvedProblemIdAndFiltersToRepository()
     {
         var problemId = Guid.NewGuid();
@@ -98,7 +97,7 @@ public class GetSubmissionsByProblemSlugHandlerTests
 
         Result<PageResult<ProblemSubmissionDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.SameAs(expected));
+        Assert.True(result.IsSuccess);
+        Assert.Same(expected, result.Value);
     }
 }

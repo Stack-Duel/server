@@ -6,7 +6,7 @@ namespace StackDuel.Application.Tests.Services.Users;
 
 public class AvatarRetentionPolicyTests
 {
-    [Test]
+    [Fact]
     public void SelectStale_FewerThanLimit_ReturnsNone()
     {
         var userId = Guid.NewGuid();
@@ -15,10 +15,10 @@ public class AvatarRetentionPolicyTests
 
         IReadOnlyList<UserAvatar> stale = AvatarRetentionPolicy.SelectStale([current, other], current.ImageUrl.Value);
 
-        Assert.That(stale, Is.Empty);
+        Assert.Empty(stale);
     }
 
-    [Test]
+    [Fact]
     public void SelectStale_MoreThanLimit_KeepsCurrentAndMostRecentOthers()
     {
         var userId = Guid.NewGuid();
@@ -32,10 +32,10 @@ public class AvatarRetentionPolicyTests
             newest.ImageUrl.Value
         );
 
-        Assert.That(stale, Is.EquivalentTo(new[] { oldest }));
+        Assert.Equivalent(new[] { oldest }, stale, strict: true);
     }
 
-    [Test]
+    [Fact]
     public void SelectStale_CurrentIsOlderThanTheMostRecentOthers_StillKeepsCurrent()
     {
         var userId = Guid.NewGuid();
@@ -49,10 +49,10 @@ public class AvatarRetentionPolicyTests
             selectedOlder.ImageUrl.Value
         );
 
-        Assert.That(stale, Is.EquivalentTo(new[] { third }));
+        Assert.Equivalent(new[] { third }, stale, strict: true);
     }
 
-    [Test]
+    [Fact]
     public void SelectStale_NoCurrentImageUrl_KeepsMostRecentOthersOnly()
     {
         var userId = Guid.NewGuid();
@@ -62,6 +62,6 @@ public class AvatarRetentionPolicyTests
 
         IReadOnlyList<UserAvatar> stale = AvatarRetentionPolicy.SelectStale([newest, second, third], null);
 
-        Assert.That(stale, Is.EquivalentTo(new[] { third }));
+        Assert.Equivalent(new[] { third }, stale, strict: true);
     }
 }

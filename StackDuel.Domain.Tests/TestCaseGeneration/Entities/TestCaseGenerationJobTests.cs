@@ -14,52 +14,43 @@ public class TestCaseGenerationJobTests
     private static TestCaseGenerationJob CreateJob() =>
         new(Guid.NewGuid(), "def f(n): return n", ValidParameters, "integer", targetCaseCount: 20, seed: 42);
 
-    [Test]
+    [Fact]
     public void Constructor_ValidInputs_StartsPending()
     {
         var job = CreateJob();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(job.Status, Is.EqualTo(TestCaseGenerationJobStatus.Pending));
-            Assert.That(job.TargetCaseCount, Is.EqualTo(20));
-            Assert.That(job.CompletedAt, Is.Null);
-            Assert.That(job.ResultSummary, Is.Null);
-            Assert.That(job.FailureReason, Is.Null);
-        });
+        Assert.Equal(TestCaseGenerationJobStatus.Pending, job.Status);
+        Assert.Equal(20, job.TargetCaseCount);
+        Assert.Null(job.CompletedAt);
+        Assert.Null(job.ResultSummary);
+        Assert.Null(job.FailureReason);
     }
 
-    [Test]
+    [Fact]
     public void Complete_SetsStatusAndSummary()
     {
         var job = CreateJob();
 
         job.Complete("Generated 20/20 (0 attempts skipped, 0 warnings).");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(job.Status, Is.EqualTo(TestCaseGenerationJobStatus.Completed));
-            Assert.That(job.ResultSummary, Is.EqualTo("Generated 20/20 (0 attempts skipped, 0 warnings)."));
-            Assert.That(job.CompletedAt, Is.Not.Null);
-        });
+        Assert.Equal(TestCaseGenerationJobStatus.Completed, job.Status);
+        Assert.Equal("Generated 20/20 (0 attempts skipped, 0 warnings).", job.ResultSummary);
+        Assert.NotNull(job.CompletedAt);
     }
 
-    [Test]
+    [Fact]
     public void Fail_SetsStatusAndReason()
     {
         var job = CreateJob();
 
         job.Fail("Reference solution failed the sanity check.");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(job.Status, Is.EqualTo(TestCaseGenerationJobStatus.Failed));
-            Assert.That(job.FailureReason, Is.EqualTo("Reference solution failed the sanity check."));
-            Assert.That(job.CompletedAt, Is.Not.Null);
-        });
+        Assert.Equal(TestCaseGenerationJobStatus.Failed, job.Status);
+        Assert.Equal("Reference solution failed the sanity check.", job.FailureReason);
+        Assert.NotNull(job.CompletedAt);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_NoParameters_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -67,7 +58,7 @@ public class TestCaseGenerationJobTests
         );
     }
 
-    [Test]
+    [Fact]
     public void Constructor_NonPositiveTargetCaseCount_Throws()
     {
         Assert.Throws<ArgumentException>(() =>

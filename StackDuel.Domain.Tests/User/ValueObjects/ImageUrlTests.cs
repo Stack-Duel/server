@@ -7,23 +7,25 @@ public class ImageUrlTests
 {
     private const string ValidHttpUrl = "https://example.com/avatar.png";
 
-    [Test]
+    [Fact]
     public void Constructor_AtMaxLength_Succeeds()
     {
         string path = new('a', ImageUrl.MaxLength - "https://x.co/".Length);
         string atMax = $"https://x.co/{path}";
-        Assert.DoesNotThrow(() => new ImageUrl(atMax));
+        Assert.Null(Record.Exception(() => new ImageUrl(atMax)));
     }
 
-    [Test]
-    public void Constructor_EmptyOrWhitespace_ThrowsInvalidImageUrlException(
-        [Values("", " ", "   ", null)] string? value
-    )
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Constructor_EmptyOrWhitespace_ThrowsInvalidImageUrlException(string? value)
     {
         Assert.Throws<InvalidImageUrlException>(() => new ImageUrl(value!));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_ExceedsMaxLength_ThrowsInvalidImageUrlException()
     {
         string path = new('a', ImageUrl.MaxLength);
@@ -31,64 +33,61 @@ public class ImageUrlTests
         Assert.Throws<InvalidImageUrlException>(() => new ImageUrl(tooLong));
     }
 
-    [Test]
-    public void Constructor_InvalidUrl_ThrowsInvalidImageUrlException(
-        [Values("not-a-url", "ftp://example.com/file.png", "example.com/avatar.png", "//example.com/avatar.png")]
-            string value
-    )
+    [Theory]
+    [InlineData("not-a-url")]
+    [InlineData("ftp://example.com/file.png")]
+    [InlineData("example.com/avatar.png")]
+    [InlineData("//example.com/avatar.png")]
+    public void Constructor_InvalidUrl_ThrowsInvalidImageUrlException(string value)
     {
         Assert.Throws<InvalidImageUrlException>(() => new ImageUrl(value));
     }
 
-    [Test]
-    public void Constructor_ValidUrl_SetsValue(
-        [Values(
-            "https://example.com/avatar.png",
-            "http://example.com/avatar.jpg",
-            "https://avatars.githubusercontent.com/u/12345"
-        )]
-            string value
-    )
+    [Theory]
+    [InlineData("https://example.com/avatar.png")]
+    [InlineData("http://example.com/avatar.jpg")]
+    [InlineData("https://avatars.githubusercontent.com/u/12345")]
+    public void Constructor_ValidUrl_SetsValue(string value)
     {
         var imageUrl = new ImageUrl(value);
-        Assert.That(imageUrl.Value, Is.EqualTo(value));
+        Assert.Equal(value, imageUrl.Value);
     }
 
-    [Test]
+    [Fact]
     public void Equality_DifferentValue_AreNotEqual()
     {
         var a = new ImageUrl(ValidHttpUrl);
         var b = new ImageUrl("https://example.com/other.png");
-        Assert.That(a, Is.Not.EqualTo(b));
+        Assert.NotEqual(b, a);
     }
 
-    [Test]
+    [Fact]
     public void Equality_SameValue_AreEqual()
     {
         var a = new ImageUrl(ValidHttpUrl);
         var b = new ImageUrl(ValidHttpUrl);
-        Assert.That(a, Is.EqualTo(b));
+        Assert.Equal(b, a);
     }
 
-    [Test]
+    [Fact]
     public void ImplicitOperator_ReturnsStringValue()
     {
         var imageUrl = new ImageUrl(ValidHttpUrl);
         string value = imageUrl;
-        Assert.That(value, Is.EqualTo(ValidHttpUrl));
+        Assert.Equal(ValidHttpUrl, value);
     }
 
-    [Test]
+    [Fact]
     public void ToString_MatchesImplicitOperator()
     {
         var imageUrl = new ImageUrl(ValidHttpUrl);
-        Assert.That(imageUrl.ToString(), Is.EqualTo((string)imageUrl));
+        Assert.Equal((string)imageUrl, imageUrl.ToString());
     }
 
-    [Test]
+    [Fact]
     public void ToString_ReturnsValue()
     {
         var imageUrl = new ImageUrl(ValidHttpUrl);
-        Assert.That(imageUrl.ToString(), Is.EqualTo(ValidHttpUrl));
+        Assert.Equal(ValidHttpUrl, imageUrl.ToString());
     }
 }

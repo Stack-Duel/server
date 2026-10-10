@@ -5,31 +5,31 @@ using System.Net.Http.Json;
 
 namespace StackDuel.IntegrationTests.Users;
 
-public sealed class UserProfileApiTests : ApiIntegrationTestBase
+public sealed class UserProfileApiTests(IntegrationTestEnvironment environment) : ApiIntegrationTestBase(environment)
 {
-    [Test]
+    [Fact]
     public async Task GetProfile_returns_profile_for_an_existing_username()
     {
         const string sub = "sub-henry-1";
         HttpRequestMessage createRequest = AuthenticatedRequest(HttpMethod.Put, "/api/v1/user", sub);
         createRequest.Content = JsonContent.Create(new UpsertUserRequest("henry9", null, "hello there"));
         HttpResponseMessage createResponse = await Client.SendAsync(createRequest);
-        Assert.That(createResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
 
         HttpResponseMessage response = await Client.GetAsync("/api/v1/user/profile/henry9");
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         UserProfileDto? profile = await response.Content.ReadFromJsonAsync<UserProfileDto>();
-        Assert.That(profile, Is.Not.Null);
-        Assert.That(profile!.Username, Is.EqualTo("henry9"));
-        Assert.That(profile.Bio, Is.EqualTo("hello there"));
+        Assert.NotNull(profile);
+        Assert.Equal("henry9", profile!.Username);
+        Assert.Equal("hello there", profile.Bio);
     }
 
-    [Test]
+    [Fact]
     public async Task GetProfile_returns_not_found_for_an_unknown_username()
     {
         HttpResponseMessage response = await Client.GetAsync("/api/v1/user/profile/no-such-user");
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

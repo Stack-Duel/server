@@ -7,44 +7,43 @@ public class UpdateUserGroupsValidatorTests
 {
     private UpdateUserGroupsValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpdateUserGroupsValidatorTests()
     {
         _validator = new UpdateUserGroupsValidator();
     }
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
         var command = new UpdateUserGroupsCommand(Guid.NewGuid(), [Guid.NewGuid()]);
-        Assert.That(_validator.Validate(command).IsValid, Is.True);
+        Assert.True(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyUserId_IsInvalid()
     {
         var command = new UpdateUserGroupsCommand(Guid.Empty, [Guid.NewGuid()]);
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NullGroupIds_IsInvalid()
     {
         var command = new UpdateUserGroupsCommand(Guid.NewGuid(), null!);
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_GroupIdsContainsEmptyGuid_IsInvalid()
     {
         var command = new UpdateUserGroupsCommand(Guid.NewGuid(), [Guid.Empty]);
-        Assert.That(_validator.Validate(command).IsValid, Is.False);
+        Assert.False(_validator.Validate(command).IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyGroupIdsCollection_IsValid()
     {
         var command = new UpdateUserGroupsCommand(Guid.NewGuid(), []);
-        Assert.That(_validator.Validate(command).IsValid, Is.True);
+        Assert.True(_validator.Validate(command).IsValid);
     }
 }

@@ -22,13 +22,8 @@ using StackDuel.Application.Users.Dtos;
 
 namespace StackDuel.Api.Tests.Controllers;
 
-/// <summary>Shared helpers for asserting on the <c>Ardalis.Result</c> to HTTP mapping.</summary>
 internal static class ControllerAssert
 {
-    /// <summary>
-    /// The HTTP status a controller action resolved to. A bare <c>ActionResult&lt;T&gt;.Value</c>
-    /// (no explicit result object) is ASP.NET Core's implicit 200.
-    /// </summary>
     internal static int StatusCodeOf<T>(ActionResult<T> result) =>
         result.Result switch
         {
@@ -60,12 +55,6 @@ internal static class ControllerAssert
 
     internal static UserContext AnonymousContext() => new();
 
-    /// <summary>
-    /// Gives a bare-constructed controller the ControllerContext that Ardalis.Result's
-    /// <c>ToActionResult</c> reads when mapping a Result onto an HTTP response. It needs both an
-    /// HttpContext and a <see cref="ControllerActionDescriptor"/> (which it inspects to decide
-    /// the response shape), neither of which exists outside the MVC pipeline.
-    /// </summary>
     internal static TController WithHttpContext<TController>(TController controller)
         where TController : ControllerBase
     {

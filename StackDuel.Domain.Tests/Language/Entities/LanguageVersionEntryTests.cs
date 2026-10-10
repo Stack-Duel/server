@@ -14,7 +14,7 @@ public class LanguageVersionEntryTests
 
     private static LanguageEntity CreateLanguage() => new(ValidName, ValidSlug, Guid.NewGuid());
 
-    [Test]
+    [Fact]
     public void Deprecate_SetsIsActiveToFalse()
     {
         LanguageEntity language = CreateLanguage();
@@ -22,10 +22,10 @@ public class LanguageVersionEntryTests
 
         entry.Deprecate();
 
-        Assert.That(entry.IsActive, Is.False);
+        Assert.False(entry.IsActive);
     }
 
-    [Test]
+    [Fact]
     public void Deprecate_SetsStatusToDeprecated()
     {
         LanguageEntity language = CreateLanguage();
@@ -33,33 +33,33 @@ public class LanguageVersionEntryTests
 
         entry.Deprecate();
 
-        Assert.That(entry.Status, Is.EqualTo(LanguageVersionStatus.Deprecated));
+        Assert.Equal(LanguageVersionStatus.Deprecated, entry.Status);
     }
 
-    [Test]
+    [Fact]
     public void InitialStatus_IsActive()
     {
         LanguageEntity language = CreateLanguage();
         LanguageVersionEntry entry = language.AddVersion(ValidVersion, ValidJudge0Id);
 
-        Assert.That(entry.Status, Is.EqualTo(LanguageVersionStatus.Active));
+        Assert.Equal(LanguageVersionStatus.Active, entry.Status);
     }
 
-    [Test]
+    [Fact]
     public void IsActive_WhenActive_IsTrue()
     {
         LanguageEntity language = CreateLanguage();
         LanguageVersionEntry entry = language.AddVersion(ValidVersion, ValidJudge0Id);
 
-        Assert.That(entry.IsActive, Is.True);
+        Assert.True(entry.IsActive);
     }
 
-    [Test]
+    [Fact]
     public void Version_SetCorrectly()
     {
         LanguageEntity language = CreateLanguage();
         LanguageVersionEntry entry = language.AddVersion(ValidVersion, ValidJudge0Id);
 
-        Assert.That(entry.Version, Is.EqualTo(ValidVersion));
+        Assert.Equal(ValidVersion, entry.Version);
     }
 }

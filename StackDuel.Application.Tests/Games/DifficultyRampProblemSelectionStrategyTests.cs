@@ -12,14 +12,13 @@ public class DifficultyRampProblemSelectionStrategyTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private DifficultyRampProblemSelectionStrategy _strategy = null!;
 
-    [SetUp]
-    public void SetUp()
+    public DifficultyRampProblemSelectionStrategyTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _strategy = new DifficultyRampProblemSelectionStrategy(GameModeKey, _problemReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task SelectNextProblemIdAsync_SolverAndSkipperAtSameRound_UseTheSameSelectionSeed()
     {
         var gameId = Guid.NewGuid();
@@ -51,11 +50,11 @@ public class DifficultyRampProblemSelectionStrategyTests
             new ProblemSelectionContext(gameId, poolId, GameModeKey, RoundIndex: 1, excludedProblemIds, [])
         );
 
-        Assert.That(capturedSeeds, Has.Count.EqualTo(2));
-        Assert.That(capturedSeeds[0], Is.EqualTo(capturedSeeds[1]));
+        Assert.Equal(2, capturedSeeds.Count);
+        Assert.Equal(capturedSeeds[1], capturedSeeds[0]);
     }
 
-    [Test]
+    [Fact]
     public async Task SelectNextProblemIdAsync_DifferentGames_UseDifferentSelectionSeeds()
     {
         var poolId = Guid.NewGuid();
@@ -86,11 +85,11 @@ public class DifficultyRampProblemSelectionStrategyTests
             new ProblemSelectionContext(Guid.NewGuid(), poolId, GameModeKey, RoundIndex: 1, excludedProblemIds, [])
         );
 
-        Assert.That(capturedSeeds, Has.Count.EqualTo(2));
-        Assert.That(capturedSeeds[0], Is.Not.EqualTo(capturedSeeds[1]));
+        Assert.Equal(2, capturedSeeds.Count);
+        Assert.NotEqual(capturedSeeds[1], capturedSeeds[0]);
     }
 
-    [Test]
+    [Fact]
     public async Task SelectNextProblemIdAsync_RoundIndexPastFirstBand_UsesTheNextDifficultyBand()
     {
         var poolId = Guid.NewGuid();
@@ -117,7 +116,7 @@ public class DifficultyRampProblemSelectionStrategyTests
             new ProblemSelectionContext(Guid.NewGuid(), poolId, GameModeKey, RoundIndex: 3, [], [])
         );
 
-        Assert.That(capturedRanges, Has.Count.EqualTo(1));
-        Assert.That(capturedRanges[0], Is.EqualTo((121, Difficulty.BeginnerMax)));
+        Assert.Single(capturedRanges);
+        Assert.Equal((121, Difficulty.BeginnerMax), capturedRanges[0]);
     }
 }

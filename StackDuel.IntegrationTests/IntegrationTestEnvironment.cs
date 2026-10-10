@@ -3,24 +3,27 @@ using Testcontainers.PostgreSql;
 
 namespace StackDuel.IntegrationTests;
 
-[SetUpFixture]
-public sealed class IntegrationTestEnvironment
+/// <summary>
+/// Owns the Postgres container and the API host for the whole assembly. xUnit builds one instance
+/// per test collection, so every test class that joins <see cref="IntegrationTestCollection"/>
+/// shares a single container instead of starting its own.
+/// </summary>
+public sealed class IntegrationTestEnvironment : IAsyncLifetime
 {
-    private static PostgreSqlContainer? _container;
+    private PostgreSqlContainer? _container;
 
-    private static string? _connectionString;
+    private string? _connectionString;
 
-    private static StackDuelApiFactory? _factory;
+    private StackDuelApiFactory? _factory;
 
-    public static string ConnectionString =>
+    public string ConnectionString =>
         _connectionString
         ?? throw new InvalidOperationException("The Postgres test container has not been started yet.");
 
-    public static StackDuelApiFactory Factory =>
+    public StackDuelApiFactory Factory =>
         _factory ?? throw new InvalidOperationException("The API test factory has not been started yet.");
 
-    [OneTimeSetUp]
-    public async Task StartEnvironmentAsync()
+    public async Task InitializeAsync()
     {
         _container = new PostgreSqlBuilder("postgres:17").Build();
         await _container.StartAsync();
@@ -32,8 +35,7 @@ public sealed class IntegrationTestEnvironment
         _ = _factory.Services;
     }
 
-    [OneTimeTearDown]
-    public async Task StopEnvironmentAsync()
+    public async Task DisposeAsync()
     {
         if (_factory is not null)
             await _factory.DisposeAsync();

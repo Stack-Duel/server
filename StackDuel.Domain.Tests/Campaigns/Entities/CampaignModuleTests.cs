@@ -10,101 +10,93 @@ public class CampaignModuleTests
     private static CampaignModule CreateModule(int sortOrder = 0) =>
         new(Guid.NewGuid(), "Module 1", "First module.", sortOrder);
 
-    [Test]
+    [Fact]
     public void Constructor_SetsOwnerDetailsAndSortOrder()
     {
         Guid campaignId = Guid.NewGuid();
 
         CampaignModule module = new(campaignId, "Module 1", "First module.", 3);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(module.CampaignId, Is.EqualTo(campaignId));
-            Assert.That(module.Title, Is.EqualTo("Module 1"));
-            Assert.That(module.Description, Is.EqualTo("First module."));
-            Assert.That(module.SortOrder, Is.EqualTo(3));
-            Assert.That(module.Units, Is.Empty);
-        });
+        Assert.Equal(campaignId, module.CampaignId);
+        Assert.Equal("Module 1", module.Title);
+        Assert.Equal("First module.", module.Description);
+        Assert.Equal(3, module.SortOrder);
+        Assert.Empty(module.Units);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyCampaignId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new CampaignModule(Guid.Empty, "Module 1", "desc", 0));
     }
 
-    [TestCase(null)]
-    [TestCase("")]
-    [TestCase("   ")]
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
     public void Constructor_BlankTitle_Throws(string? title)
     {
         Assert.Throws<ArgumentException>(() => new CampaignModule(Guid.NewGuid(), title!, "desc", 0));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_TrimsTitle()
     {
         CampaignModule module = new(Guid.NewGuid(), "  Padded  ", "desc", 0);
-        Assert.That(module.Title, Is.EqualTo("Padded"));
+        Assert.Equal("Padded", module.Title);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_NullDescription_Throws()
     {
         Assert.Throws<ArgumentNullException>(() => new CampaignModule(Guid.NewGuid(), "Module 1", null!, 0));
     }
 
-    [Test]
+    [Fact]
     public void UpdateDetails_ReplacesTitleAndDescription()
     {
         CampaignModule module = CreateModule();
 
         module.UpdateDetails("Renamed", "New description.");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(module.Title, Is.EqualTo("Renamed"));
-            Assert.That(module.Description, Is.EqualTo("New description."));
-        });
+        Assert.Equal("Renamed", module.Title);
+        Assert.Equal("New description.", module.Description);
     }
 
-    [Test]
+    [Fact]
     public void UpdateDetails_BlankTitle_ThrowsWithoutMutating()
     {
         CampaignModule module = CreateModule();
 
         Assert.Throws<ArgumentException>(() => module.UpdateDetails("  ", "New description."));
-        Assert.That(module.Title, Is.EqualTo("Module 1"));
+        Assert.Equal("Module 1", module.Title);
     }
 
-    [Test]
+    [Fact]
     public void UpdateDetails_KeepsSortOrder()
     {
         CampaignModule module = CreateModule(sortOrder: 4);
 
         module.UpdateDetails("Renamed", "desc");
 
-        Assert.That(module.SortOrder, Is.EqualTo(4));
+        Assert.Equal(4, module.SortOrder);
     }
 
-    [Test]
+    [Fact]
     public void AddUnit_AppendsUnitOwnedByTheModule()
     {
         CampaignModule module = CreateModule();
 
         CampaignUnit unit = module.AddUnit("Unit 1", "Lesson body.", UnitType.Lesson, 15);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(module.Units, Has.Count.EqualTo(1));
-            Assert.That(unit.CampaignModuleId, Is.EqualTo(module.Id));
-            Assert.That(unit.Title, Is.EqualTo("Unit 1"));
-            Assert.That(unit.UnitType, Is.EqualTo(UnitType.Lesson));
-            Assert.That(unit.EstimatedMinutes, Is.EqualTo(15));
-        });
+        Assert.Single(module.Units);
+        Assert.Equal(module.Id, unit.CampaignModuleId);
+        Assert.Equal("Unit 1", unit.Title);
+        Assert.Equal(UnitType.Lesson, unit.UnitType);
+        Assert.Equal(15, unit.EstimatedMinutes);
     }
 
-    [Test]
+    [Fact]
     public void AddUnit_AssignsSequentialSortOrders()
     {
         CampaignModule module = CreateModule();
@@ -113,15 +105,15 @@ public class CampaignModuleTests
         CampaignUnit second = module.AddUnit("Unit 2", "", UnitType.Challenge, 5);
         CampaignUnit third = module.AddUnit("Unit 3", "", UnitType.Quiz, 5);
 
-        Assert.That(new[] { first.SortOrder, second.SortOrder, third.SortOrder }, Is.EqualTo(SequentialSortOrders));
+        Assert.Equal(SequentialSortOrders, new[] { first.SortOrder, second.SortOrder, third.SortOrder });
     }
 
-    [Test]
+    [Fact]
     public void AddUnit_InvalidUnit_DoesNotLeaveAPartialUnitBehind()
     {
         CampaignModule module = CreateModule();
 
         Assert.Throws<ArgumentException>(() => module.AddUnit("  ", "body", UnitType.Lesson, 5));
-        Assert.That(module.Units, Is.Empty);
+        Assert.Empty(module.Units);
     }
 }

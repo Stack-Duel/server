@@ -23,8 +23,7 @@ public class UpsertUserHandlerTests
     private UserContext _userContext = null!;
     private UpsertUserHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpsertUserHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
         _usernameGenerator = new Mock<IUsernameGeneratorService>();
@@ -44,7 +43,7 @@ public class UpsertUserHandlerTests
     private static UserDto ToDto(User user) =>
         new(user.Id, user.Sub, user.Username.Value, null, null, false, null, user.CreatedAt, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_NewUser_NoUsernameProvided_GeneratesUsername()
     {
         _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -53,14 +52,14 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _userRepository.Verify(
             x => x.AddAsync(It.Is<User>(u => u.Username.Value == "generated_name42"), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NewUser_NoUsernameProvided_DoesNotCompleteSetup()
     {
         _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -75,10 +74,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(createdUser!.SetupCompletedAt, Is.Null);
+        Assert.Null(createdUser!.SetupCompletedAt);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NewUser_WithUsername_CompletesSetup()
     {
         _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -92,10 +91,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, "alice", null, null);
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(createdUser!.SetupCompletedAt, Is.Not.Null);
+        Assert.NotNull(createdUser!.SetupCompletedAt);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NewUser_DispatchesDomainEvents()
     {
         _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -109,7 +108,7 @@ public class UpsertUserHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NewUser_WithLanguageIds_SetsLanguagePreferences()
     {
         _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -124,7 +123,7 @@ public class UpsertUserHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NewUser_WithTenant_SetsTenant()
     {
         _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
@@ -138,10 +137,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, "alice", null, null, Tenant: "stackduel");
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(createdUser!.Tenant, Is.EqualTo("stackduel"));
+        Assert.Equal("stackduel", createdUser!.Tenant);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_DoesNotOverwriteTenant()
     {
         var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null, "stackduel"));
@@ -153,10 +152,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, "alice", null, null, Tenant: "some-other-tenant");
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(existingUser.Tenant, Is.EqualTo("stackduel"));
+        Assert.Equal("stackduel", existingUser.Tenant);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_ChangesUsername()
     {
         var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null));
@@ -168,11 +167,11 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, "alice", null, null);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(existingUser.Username.Value, Is.EqualTo("alice"));
+        Assert.True(result.IsSuccess);
+        Assert.Equal("alice", existingUser.Username.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_UsernameChangeWithinCooldown_ReturnsInvalid()
     {
         var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null));
@@ -186,11 +185,11 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, "dave", null, null);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _userRepository.Verify(x => x.UpdateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_UpdatesBioAndImageUrl()
     {
         var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null));
@@ -207,15 +206,12 @@ public class UpsertUserHandlerTests
         );
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(existingUser.Bio!.Value, Is.EqualTo("Competitive programmer."));
-            Assert.That(existingUser.ImageUrl!.Value, Is.EqualTo("https://example.com/avatar.png"));
-        });
+        Assert.Equal("Competitive programmer.", existingUser.Bio!.Value);
+        Assert.Equal("https://example.com/avatar.png", existingUser.ImageUrl!.Value);
         _userRepository.Verify(x => x.UpdateAsync(existingUser, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_NullBioOnUpsert_DoesNotClearBio()
     {
         var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null));
@@ -228,10 +224,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(existingUser.Bio!.Value, Is.EqualTo("Competitive programmer."));
+        Assert.Equal("Competitive programmer.", existingUser.Bio!.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_EmptyBioOnUpsert_ClearsBio()
     {
         var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null));
@@ -244,10 +240,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, null, null, "");
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(existingUser.Bio, Is.Null);
+        Assert.Null(existingUser.Bio);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_WithImageUrl_NullImageUrlOnUpsert_DoesNotClearImage()
     {
         var existingUser = new UserFactory().Create(
@@ -261,10 +257,10 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(existingUser.ImageUrl!.Value, Is.EqualTo("https://example.com/avatar.png"));
+        Assert.Equal("https://example.com/avatar.png", existingUser.ImageUrl!.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingUser_WithImageUrl_DifferentImageUrlOnUpsert_DoesNotOverwriteImage()
     {
         var existingUser = new UserFactory().Create(
@@ -278,17 +274,17 @@ public class UpsertUserHandlerTests
         var command = new UpsertUserCommand(ValidSub, null, "https://example.com/other.png", null);
         await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(existingUser.ImageUrl!.Value, Is.EqualTo("https://example.com/avatar.png"));
+        Assert.Equal("https://example.com/avatar.png", existingUser.ImageUrl!.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsValidationErrorAndDoesNotTouchRepository()
     {
         var command = new UpsertUserCommand(ValidSub, null, null, new string('a', 1000));
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _userRepository.Verify(x => x.FindBySubAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

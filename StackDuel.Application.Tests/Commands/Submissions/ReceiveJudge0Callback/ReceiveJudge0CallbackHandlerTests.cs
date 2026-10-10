@@ -12,15 +12,14 @@ public class ReceiveJudge0CallbackHandlerTests
 {
     private Mock<IMessagePublisher> _messagePublisher = null!;
 
-    [SetUp]
-    public void SetUp()
+    public ReceiveJudge0CallbackHandlerTests()
     {
         _messagePublisher = new Mock<IMessagePublisher>();
     }
 
     private ReceiveJudge0CallbackHandler CreateHandler(Judge0Options options) => new(_messagePublisher.Object, options);
 
-    [Test]
+    [Fact]
     public async Task Handle_UseCallbackDisabled_ReturnsUnauthorized()
     {
         var handler = CreateHandler(new Judge0Options { UseCallback = false, CallbackSecret = "secret" });
@@ -30,14 +29,14 @@ public class ReceiveJudge0CallbackHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Unauthorized));
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
         _messagePublisher.Verify(
             x => x.PublishAsync(It.IsAny<SubmissionJobContinuationMessage>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_WrongKey_ReturnsUnauthorized()
     {
         var handler = CreateHandler(new Judge0Options { UseCallback = true, CallbackSecret = "secret" });
@@ -47,14 +46,14 @@ public class ReceiveJudge0CallbackHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Unauthorized));
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
         _messagePublisher.Verify(
             x => x.PublishAsync(It.IsAny<SubmissionJobContinuationMessage>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MissingKey_ReturnsUnauthorized()
     {
         var handler = CreateHandler(new Judge0Options { UseCallback = true, CallbackSecret = "secret" });
@@ -64,10 +63,10 @@ public class ReceiveJudge0CallbackHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Unauthorized));
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_CorrectKey_PublishesContinuationAndSucceeds()
     {
         var handler = CreateHandler(new Judge0Options { UseCallback = true, CallbackSecret = "secret" });
@@ -78,7 +77,7 @@ public class ReceiveJudge0CallbackHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _messagePublisher.Verify(
             x =>
                 x.PublishAsync(
@@ -89,7 +88,7 @@ public class ReceiveJudge0CallbackHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyConfiguredSecret_NeverAuthorizesEvenWithEmptyKey()
     {
         var handler = CreateHandler(new Judge0Options { UseCallback = true, CallbackSecret = "" });
@@ -99,6 +98,6 @@ public class ReceiveJudge0CallbackHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Unauthorized));
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
     }
 }

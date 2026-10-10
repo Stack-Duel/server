@@ -10,38 +10,35 @@ public class UserAchievementStatsTests
 
     private static UserAchievementStats CreateStats() => new(Guid.NewGuid());
 
-    [Test]
+    [Fact]
     public void Constructor_SetsUserId()
     {
         Guid userId = Guid.NewGuid();
-        Assert.That(new UserAchievementStats(userId).UserId, Is.EqualTo(userId));
+        Assert.Equal(userId, new UserAchievementStats(userId).UserId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyUserId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UserAchievementStats(Guid.Empty));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_StartsAllCountersAtZero()
     {
         UserAchievementStats stats = CreateStats();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.AcceptedSolveCount, Is.Zero);
-            Assert.That(stats.DistinctDifficultiesSolved, Is.Zero);
-            Assert.That(stats.DistinctLanguagesUsed, Is.Zero);
-            Assert.That(stats.CurrentSolveStreak, Is.Zero);
-            Assert.That(stats.LongestSolveStreak, Is.Zero);
-            Assert.That(stats.LastSolveDateUtc, Is.Null);
-            Assert.That(stats.GamesPlayed, Is.Zero);
-            Assert.That(stats.BugReportsSubmitted, Is.Zero);
-        });
+        Assert.Equal(0, stats.AcceptedSolveCount);
+        Assert.Equal(0, stats.DistinctDifficultiesSolved);
+        Assert.Equal(0, stats.DistinctLanguagesUsed);
+        Assert.Equal(0, stats.CurrentSolveStreak);
+        Assert.Equal(0, stats.LongestSolveStreak);
+        Assert.Null(stats.LastSolveDateUtc);
+        Assert.Equal(0, stats.GamesPlayed);
+        Assert.Equal(0, stats.BugReportsSubmitted);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_IncrementsSolveCount()
     {
         UserAchievementStats stats = CreateStats();
@@ -49,10 +46,10 @@ public class UserAchievementStatsTests
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1);
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1.AddDays(1));
 
-        Assert.That(stats.AcceptedSolveCount, Is.EqualTo(2));
+        Assert.Equal(2, stats.AcceptedSolveCount);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_CountsEachDifficultyTierOnlyOnce()
     {
         UserAchievementStats stats = CreateStats();
@@ -61,10 +58,10 @@ public class UserAchievementStatsTests
         stats.RecordAcceptedSolve(DifficultyTier.Beginner, Day1);
         stats.RecordAcceptedSolve(DifficultyTier.Expert, Day1);
 
-        Assert.That(stats.DistinctDifficultiesSolved, Is.EqualTo(2));
+        Assert.Equal(2, stats.DistinctDifficultiesSolved);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_TracksEveryTierIndependently()
     {
         UserAchievementStats stats = CreateStats();
@@ -72,25 +69,22 @@ public class UserAchievementStatsTests
         foreach (DifficultyTier tier in Enum.GetValues<DifficultyTier>())
             stats.RecordAcceptedSolve(tier, Day1);
 
-        Assert.That(stats.DistinctDifficultiesSolved, Is.EqualTo(Enum.GetValues<DifficultyTier>().Length));
+        Assert.Equal(Enum.GetValues<DifficultyTier>().Length, stats.DistinctDifficultiesSolved);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_FirstSolve_StartsStreakAtOne()
     {
         UserAchievementStats stats = CreateStats();
 
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.CurrentSolveStreak, Is.EqualTo(1));
-            Assert.That(stats.LongestSolveStreak, Is.EqualTo(1));
-            Assert.That(stats.LastSolveDateUtc, Is.EqualTo(Day1));
-        });
+        Assert.Equal(1, stats.CurrentSolveStreak);
+        Assert.Equal(1, stats.LongestSolveStreak);
+        Assert.Equal(Day1, stats.LastSolveDateUtc);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_ConsecutiveDays_ExtendsStreak()
     {
         UserAchievementStats stats = CreateStats();
@@ -99,14 +93,11 @@ public class UserAchievementStatsTests
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1.AddDays(1));
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1.AddDays(2));
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.CurrentSolveStreak, Is.EqualTo(3));
-            Assert.That(stats.LongestSolveStreak, Is.EqualTo(3));
-        });
+        Assert.Equal(3, stats.CurrentSolveStreak);
+        Assert.Equal(3, stats.LongestSolveStreak);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_GapInDays_ResetsStreakToOneButKeepsLongest()
     {
         UserAchievementStats stats = CreateStats();
@@ -115,14 +106,11 @@ public class UserAchievementStatsTests
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1.AddDays(1));
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1.AddDays(5));
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.CurrentSolveStreak, Is.EqualTo(1));
-            Assert.That(stats.LongestSolveStreak, Is.EqualTo(2));
-        });
+        Assert.Equal(1, stats.CurrentSolveStreak);
+        Assert.Equal(2, stats.LongestSolveStreak);
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_SameDayAgain_DoesNotExtendStreak()
     {
         UserAchievementStats stats = CreateStats();
@@ -130,14 +118,11 @@ public class UserAchievementStatsTests
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1);
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.CurrentSolveStreak, Is.EqualTo(1));
-            Assert.That(stats.AcceptedSolveCount, Is.EqualTo(2), "the solve still counts");
-        });
+        Assert.Equal(1, stats.CurrentSolveStreak);
+        Assert.Equal(2, stats.AcceptedSolveCount); // the solve still counts
     }
 
-    [Test]
+    [Fact]
     public void RecordAcceptedSolve_BackdatedSolve_LeavesStreakAndLastSolveDateUntouched()
     {
         UserAchievementStats stats = CreateStats();
@@ -145,25 +130,22 @@ public class UserAchievementStatsTests
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1.AddDays(3));
         stats.RecordAcceptedSolve(DifficultyTier.Easy, Day1);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.CurrentSolveStreak, Is.EqualTo(1));
-            Assert.That(stats.LastSolveDateUtc, Is.EqualTo(Day1.AddDays(3)));
-        });
+        Assert.Equal(1, stats.CurrentSolveStreak);
+        Assert.Equal(Day1.AddDays(3), stats.LastSolveDateUtc);
     }
 
-    [Test]
+    [Fact]
     public void RecordLanguageUsed_FirstTime_AddsLanguage()
     {
         UserAchievementStats stats = CreateStats();
 
         stats.RecordLanguageUsed(Guid.NewGuid());
 
-        Assert.That(stats.DistinctLanguagesUsed, Is.EqualTo(1));
-        Assert.That(stats.Languages, Has.Count.EqualTo(1));
+        Assert.Equal(1, stats.DistinctLanguagesUsed);
+        Assert.Single(stats.Languages);
     }
 
-    [Test]
+    [Fact]
     public void RecordLanguageUsed_SameLanguageTwice_IsIgnoredTheSecondTime()
     {
         UserAchievementStats stats = CreateStats();
@@ -172,10 +154,10 @@ public class UserAchievementStatsTests
         stats.RecordLanguageUsed(languageId);
         stats.RecordLanguageUsed(languageId);
 
-        Assert.That(stats.DistinctLanguagesUsed, Is.EqualTo(1));
+        Assert.Equal(1, stats.DistinctLanguagesUsed);
     }
 
-    [Test]
+    [Fact]
     public void RecordLanguageUsed_DifferentLanguages_AreCountedSeparately()
     {
         UserAchievementStats stats = CreateStats();
@@ -183,26 +165,23 @@ public class UserAchievementStatsTests
         stats.RecordLanguageUsed(Guid.NewGuid());
         stats.RecordLanguageUsed(Guid.NewGuid());
 
-        Assert.That(stats.DistinctLanguagesUsed, Is.EqualTo(2));
+        Assert.Equal(2, stats.DistinctLanguagesUsed);
     }
 
-    [Test]
+    [Fact]
     public void RecordGameResult_Won_IncrementsWinsAndStreak()
     {
         UserAchievementStats stats = CreateStats();
 
         stats.RecordGameResult(GameOutcome.Won);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.GamesPlayed, Is.EqualTo(1));
-            Assert.That(stats.GamesWon, Is.EqualTo(1));
-            Assert.That(stats.CurrentWinStreak, Is.EqualTo(1));
-            Assert.That(stats.LongestWinStreak, Is.EqualTo(1));
-        });
+        Assert.Equal(1, stats.GamesPlayed);
+        Assert.Equal(1, stats.GamesWon);
+        Assert.Equal(1, stats.CurrentWinStreak);
+        Assert.Equal(1, stats.LongestWinStreak);
     }
 
-    [Test]
+    [Fact]
     public void RecordGameResult_Lost_IncrementsLossesAndBreaksWinStreak()
     {
         UserAchievementStats stats = CreateStats();
@@ -211,15 +190,12 @@ public class UserAchievementStatsTests
         stats.RecordGameResult(GameOutcome.Won);
         stats.RecordGameResult(GameOutcome.Lost);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.GamesLost, Is.EqualTo(1));
-            Assert.That(stats.CurrentWinStreak, Is.Zero);
-            Assert.That(stats.LongestWinStreak, Is.EqualTo(2), "the best run so far is remembered");
-        });
+        Assert.Equal(1, stats.GamesLost);
+        Assert.Equal(0, stats.CurrentWinStreak);
+        Assert.Equal(2, stats.LongestWinStreak); // the best run so far is remembered
     }
 
-    [Test]
+    [Fact]
     public void RecordGameResult_Drawn_CountsThePlayButLeavesTheWinStreakAlone()
     {
         UserAchievementStats stats = CreateStats();
@@ -227,15 +203,12 @@ public class UserAchievementStatsTests
         stats.RecordGameResult(GameOutcome.Won);
         stats.RecordGameResult(GameOutcome.Drawn);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.GamesPlayed, Is.EqualTo(2));
-            Assert.That(stats.GamesDrawn, Is.EqualTo(1));
-            Assert.That(stats.CurrentWinStreak, Is.EqualTo(1));
-        });
+        Assert.Equal(2, stats.GamesPlayed);
+        Assert.Equal(1, stats.GamesDrawn);
+        Assert.Equal(1, stats.CurrentWinStreak);
     }
 
-    [Test]
+    [Fact]
     public void RecordGameResult_LongestWinStreak_IsTheBestOfSeveralRuns()
     {
         UserAchievementStats stats = CreateStats();
@@ -246,14 +219,11 @@ public class UserAchievementStatsTests
         stats.RecordGameResult(GameOutcome.Lost);
         stats.RecordGameResult(GameOutcome.Won);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.CurrentWinStreak, Is.EqualTo(1));
-            Assert.That(stats.LongestWinStreak, Is.EqualTo(3));
-        });
+        Assert.Equal(1, stats.CurrentWinStreak);
+        Assert.Equal(3, stats.LongestWinStreak);
     }
 
-    [Test]
+    [Fact]
     public void RecordBugReport_IncrementsCounter()
     {
         UserAchievementStats stats = CreateStats();
@@ -261,10 +231,10 @@ public class UserAchievementStatsTests
         stats.RecordBugReport();
         stats.RecordBugReport();
 
-        Assert.That(stats.BugReportsSubmitted, Is.EqualTo(2));
+        Assert.Equal(2, stats.BugReportsSubmitted);
     }
 
-    [Test]
+    [Fact]
     public void GetStatValue_ReturnsTheMatchingCounterForEveryStat()
     {
         UserAchievementStats stats = CreateStats();
@@ -276,32 +246,26 @@ public class UserAchievementStatsTests
         stats.RecordGameResult(GameOutcome.Lost);
         stats.RecordBugReport();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(stats.GetStatValue(AchievementStat.AcceptedSolveCount), Is.EqualTo(2));
-            Assert.That(stats.GetStatValue(AchievementStat.DistinctDifficultiesSolved), Is.EqualTo(2));
-            Assert.That(stats.GetStatValue(AchievementStat.DistinctLanguagesUsed), Is.EqualTo(1));
-            Assert.That(stats.GetStatValue(AchievementStat.LongestSolveStreak), Is.EqualTo(2));
-            Assert.That(stats.GetStatValue(AchievementStat.GamesPlayed), Is.EqualTo(2));
-            Assert.That(stats.GetStatValue(AchievementStat.GamesWon), Is.EqualTo(1));
-            Assert.That(stats.GetStatValue(AchievementStat.LongestWinStreak), Is.EqualTo(1));
-            Assert.That(stats.GetStatValue(AchievementStat.BugReportsSubmitted), Is.EqualTo(1));
-        });
+        Assert.Equal(2, stats.GetStatValue(AchievementStat.AcceptedSolveCount));
+        Assert.Equal(2, stats.GetStatValue(AchievementStat.DistinctDifficultiesSolved));
+        Assert.Equal(1, stats.GetStatValue(AchievementStat.DistinctLanguagesUsed));
+        Assert.Equal(2, stats.GetStatValue(AchievementStat.LongestSolveStreak));
+        Assert.Equal(2, stats.GetStatValue(AchievementStat.GamesPlayed));
+        Assert.Equal(1, stats.GetStatValue(AchievementStat.GamesWon));
+        Assert.Equal(1, stats.GetStatValue(AchievementStat.LongestWinStreak));
+        Assert.Equal(1, stats.GetStatValue(AchievementStat.BugReportsSubmitted));
     }
 
-    [Test]
+    [Fact]
     public void GetStatValue_EveryDeclaredStatIsMapped()
     {
         UserAchievementStats stats = CreateStats();
 
-        Assert.Multiple(() =>
-        {
-            foreach (AchievementStat stat in Enum.GetValues<AchievementStat>())
-                Assert.That(() => stats.GetStatValue(stat), Throws.Nothing, $"{stat} has no mapping");
-        });
+        foreach (AchievementStat stat in Enum.GetValues<AchievementStat>())
+            Assert.True(Record.Exception(() => stats.GetStatValue(stat)) is null, $"{stat} has no mapping");
     }
 
-    [Test]
+    [Fact]
     public void GetStatValue_UnknownStat_Throws()
     {
         UserAchievementStats stats = CreateStats();
@@ -312,14 +276,14 @@ public class UserAchievementStatsTests
 
 public class UserAchievementStatLanguageTests
 {
-    [Test]
+    [Fact]
     public void Constructor_SetsLanguageId()
     {
         Guid languageId = Guid.NewGuid();
-        Assert.That(new UserAchievementStatLanguage(languageId).LanguageId, Is.EqualTo(languageId));
+        Assert.Equal(languageId, new UserAchievementStatLanguage(languageId).LanguageId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyLanguageId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UserAchievementStatLanguage(Guid.Empty));

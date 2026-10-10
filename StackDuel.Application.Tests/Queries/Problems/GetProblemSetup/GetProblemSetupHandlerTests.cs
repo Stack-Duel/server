@@ -14,8 +14,7 @@ public class GetProblemSetupHandlerTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private GetProblemSetupHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetProblemSetupHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _handler = new GetProblemSetupHandler(_problemReadRepository.Object);
@@ -31,7 +30,7 @@ public class GetProblemSetupHandlerTests
             new MemoryLimit(256)
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemReadRepository
@@ -43,10 +42,10 @@ public class GetProblemSetupHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LanguageVersionNotOnProblem_ReturnsNotFound()
     {
         var problem = CreateProblem();
@@ -60,10 +59,10 @@ public class GetProblemSetupHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MatchingSetupFound_ReturnsSetupWithEmptyTestCases()
     {
         var problem = CreateProblem();
@@ -78,12 +77,9 @@ public class GetProblemSetupHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Id, Is.EqualTo(setup.Id));
-            Assert.That(result.Value.InitialCode, Is.EqualTo("def solve(): pass"));
-            Assert.That(result.Value.TestCases, Is.Empty);
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(setup.Id, result.Value.Id);
+        Assert.Equal("def solve(): pass", result.Value.InitialCode);
+        Assert.Empty(result.Value.TestCases);
     }
 }

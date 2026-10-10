@@ -13,14 +13,13 @@ public class GetAdminUsersPageableHandlerTests
     private Mock<IUserReadRepository> _userReadRepository = null!;
     private GetAdminUsersPageableHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminUsersPageableHandlerTests()
     {
         _userReadRepository = new Mock<IUserReadRepository>();
         _handler = new GetAdminUsersPageableHandler(_userReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ReturnsPagedResultFromRepository()
     {
         var pagination = new PaginationRequest { Page = 1, Size = 50 };
@@ -41,7 +40,7 @@ public class GetAdminUsersPageableHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.SameAs(expected));
+        Assert.True(result.IsSuccess);
+        Assert.Same(expected, result.Value);
     }
 }

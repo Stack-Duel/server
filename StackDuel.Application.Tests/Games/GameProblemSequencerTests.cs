@@ -11,8 +11,7 @@ public class GameProblemSequencerTests
     private Mock<IProblemSelectionStrategy> _strategy = null!;
     private GameProblemSequencer _sequencer = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GameProblemSequencerTests()
     {
         _languageReadRepository = new Mock<ILanguageReadRepository>();
         _strategy = new Mock<IProblemSelectionStrategy>();
@@ -39,7 +38,7 @@ public class GameProblemSequencerTests
             trackLanguageIds: trackLanguageIds
         );
 
-    [Test]
+    [Fact]
     public async Task GetOrGenerateProblemAsync_PositionAlreadyInSequence_ReusesItWithoutCallingTheStrategy()
     {
         var game = CreateGame();
@@ -54,14 +53,14 @@ public class GameProblemSequencerTests
             CancellationToken.None
         );
 
-        Assert.That(result, Is.EqualTo(existingProblemId));
+        Assert.Equal(existingProblemId, result);
         _strategy.Verify(
             x => x.SelectNextProblemIdAsync(It.IsAny<ProblemSelectionContext>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task GetOrGenerateProblemAsync_PositionNotYetInSequence_GeneratesAndAppendsIt()
     {
         var game = CreateGame();
@@ -78,11 +77,11 @@ public class GameProblemSequencerTests
             CancellationToken.None
         );
 
-        Assert.That(result, Is.EqualTo(generatedProblemId));
-        Assert.That(game.ProblemIdAtPosition(0), Is.EqualTo(generatedProblemId));
+        Assert.Equal(generatedProblemId, result);
+        Assert.Equal(generatedProblemId, game.ProblemIdAtPosition(0));
     }
 
-    [Test]
+    [Fact]
     public async Task GetOrGenerateProblemAsync_StrategyReturnsNull_DoesNotAppendAndReturnsNull()
     {
         var game = CreateGame();
@@ -98,11 +97,11 @@ public class GameProblemSequencerTests
             CancellationToken.None
         );
 
-        Assert.That(result, Is.Null);
-        Assert.That(game.ProblemSequence, Is.Empty);
+        Assert.Null(result);
+        Assert.Empty(game.ProblemSequence);
     }
 
-    [Test]
+    [Fact]
     public async Task GetOrGenerateProblemAsync_ExcludesProblemsAlreadyInTheSharedSequence()
     {
         var game = CreateGame();
@@ -118,11 +117,11 @@ public class GameProblemSequencerTests
 
         await _sequencer.GetOrGenerateProblemAsync(game, 2, "solo_rush", _strategy.Object, CancellationToken.None);
 
-        Assert.That(capturedContext, Is.Not.Null);
-        Assert.That(capturedContext!.ExcludedProblemIds, Is.EquivalentTo(new[] { firstProblemId, secondProblemId }));
+        Assert.NotNull(capturedContext);
+        Assert.Equivalent(new[] { firstProblemId, secondProblemId }, capturedContext!.ExcludedProblemIds, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task GetOrGenerateProblemAsync_PassesThePositionAsTheRoundIndex()
     {
         var game = CreateGame();
@@ -134,11 +133,11 @@ public class GameProblemSequencerTests
 
         await _sequencer.GetOrGenerateProblemAsync(game, 5, "solo_rush", _strategy.Object, CancellationToken.None);
 
-        Assert.That(capturedContext, Is.Not.Null);
-        Assert.That(capturedContext!.RoundIndex, Is.EqualTo(5));
+        Assert.NotNull(capturedContext);
+        Assert.Equal(5, capturedContext!.RoundIndex);
     }
 
-    [Test]
+    [Fact]
     public async Task GetOrGenerateProblemAsync_ResolvesSelectedTrackLanguagesIntoAllowedLanguageVersionIds()
     {
         var trackId = Guid.NewGuid();
@@ -161,7 +160,7 @@ public class GameProblemSequencerTests
 
         await _sequencer.GetOrGenerateProblemAsync(game, 0, "solo_rush", _strategy.Object, CancellationToken.None);
 
-        Assert.That(capturedContext, Is.Not.Null);
-        Assert.That(capturedContext!.AllowedLanguageVersionIds, Is.EquivalentTo(new[] { versionId }));
+        Assert.NotNull(capturedContext);
+        Assert.Equivalent(new[] { versionId }, capturedContext!.AllowedLanguageVersionIds, strict: true);
     }
 }

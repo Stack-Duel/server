@@ -5,21 +5,21 @@ namespace StackDuel.Domain.Tests.Submissions.ValueObjects;
 
 public class SourceCodeTests
 {
-    [Test]
+    [Fact]
     public void Constructor_AtMaxLength_Succeeds()
     {
         string value = new('a', SourceCode.MaxLength);
 
-        Assert.That(() => new SourceCode(value), Throws.Nothing);
+        Assert.Null(Record.Exception(() => new SourceCode(value)));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyString_ThrowsInvalidSourceCodeException()
     {
         Assert.Throws<InvalidSourceCodeException>(() => new SourceCode(string.Empty));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_ExceedsMaxLength_ThrowsInvalidSourceCodeException()
     {
         string value = new('a', SourceCode.MaxLength + 1);
@@ -27,45 +27,45 @@ public class SourceCodeTests
         Assert.Throws<InvalidSourceCodeException>(() => new SourceCode(value));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WhitespaceOnly_ThrowsInvalidSourceCodeException()
     {
         Assert.Throws<InvalidSourceCodeException>(() => new SourceCode("   "));
     }
 
-    [Test]
+    [Fact]
     public void Equality_DifferentValues_AreNotEqual()
     {
         var a = new SourceCode("int main() {}");
         var b = new SourceCode("def solve(): pass");
 
-        Assert.That(a, Is.Not.EqualTo(b));
+        Assert.NotEqual(b, a);
     }
 
-    [Test]
+    [Fact]
     public void Equality_SameValue_AreEqual()
     {
         var a = new SourceCode("int main() {}");
         var b = new SourceCode("int main() {}");
 
-        Assert.That(a, Is.EqualTo(b));
+        Assert.Equal(b, a);
     }
 
-    [Test]
+    [Fact]
     public void ImplicitConversion_ReturnsValue()
     {
         var code = new SourceCode("int main() {}");
 
         string result = code;
 
-        Assert.That(result, Is.EqualTo("int main() {}"));
+        Assert.Equal("int main() {}", result);
     }
 
-    [Test]
+    [Fact]
     public void ToString_ReturnsValue()
     {
         var code = new SourceCode("int main() {}");
 
-        Assert.That(code.ToString(), Is.EqualTo("int main() {}"));
+        Assert.Equal("int main() {}", code.ToString());
     }
 }

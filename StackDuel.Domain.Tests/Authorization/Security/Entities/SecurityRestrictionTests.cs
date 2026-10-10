@@ -22,7 +22,7 @@ public class SecurityRestrictionTests
             new DetectionEventId(Guid.NewGuid())
         );
 
-    [Test]
+    [Fact]
     public void CreateDenyTemporary_SetsEveryField()
     {
         Guid id = Guid.NewGuid();
@@ -41,97 +41,95 @@ public class SecurityRestrictionTests
             detectionEventId
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(restriction.Id, Is.EqualTo(id));
-            Assert.That(restriction.UserId, Is.EqualTo(userId));
-            Assert.That(restriction.PermissionCode, Is.EqualTo(permissionCode));
-            Assert.That(restriction.ExpiresAt, Is.EqualTo(expiresAt));
-            Assert.That(restriction.Reason, Is.EqualTo(reason));
-            Assert.That(restriction.DetectionEventId, Is.EqualTo(detectionEventId));
-        });
+        Assert.Equal(id, restriction.Id);
+        Assert.Equal(userId, restriction.UserId);
+        Assert.Equal(permissionCode, restriction.PermissionCode);
+        Assert.Equal(expiresAt, restriction.ExpiresAt);
+        Assert.Equal(reason, restriction.Reason);
+        Assert.Equal(detectionEventId, restriction.DetectionEventId);
     }
 
-    [Test]
+    [Fact]
     public void CreateDenyTemporary_AlwaysUsesTheDenyEffect()
     {
-        Assert.That(CreateRestriction().Effect, Is.EqualTo(DecisionEffect.Deny));
+        Assert.Equal(DecisionEffect.Deny, CreateRestriction().Effect);
     }
 
-    [Test]
+    [Fact]
     public void CreateDenyTemporary_EmptyUserId_Throws()
     {
         Assert.Throws<ArgumentException>(() => CreateRestriction(userId: new UserId(Guid.Empty)));
     }
 
-    [Test]
+    [Fact]
     public void CreateDenyTemporary_MissingPermissionCode_Throws()
     {
         Assert.Throws<ArgumentException>(() => CreateRestriction(permissionCode: default(PermissionCode)));
     }
 
-    [Test]
+    [Fact]
     public void CreateDenyTemporary_ExpiryInThePast_Throws()
     {
         Assert.Throws<ArgumentException>(() => CreateRestriction(expiresAt: DateTimeOffset.UtcNow.AddMinutes(-1)));
     }
 
-    [Test]
+    [Fact]
     public void CreateDenyTemporary_MissingReason_Throws()
     {
         Assert.Throws<ArgumentException>(() => CreateRestriction(reason: default(Reason)));
     }
 
-    [Test]
+    [Fact]
     public void IsActiveAt_BeforeExpiry_IsTrue()
     {
         DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddHours(1);
         SecurityRestriction restriction = CreateRestriction(expiresAt: expiresAt);
 
-        Assert.That(restriction.IsActiveAt(expiresAt.AddMinutes(-1)), Is.True);
+        Assert.True(restriction.IsActiveAt(expiresAt.AddMinutes(-1)));
     }
 
-    [Test]
+    [Fact]
     public void IsActiveAt_ExactlyAtExpiry_IsStillActive()
     {
         DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddHours(1);
         SecurityRestriction restriction = CreateRestriction(expiresAt: expiresAt);
 
-        Assert.That(restriction.IsActiveAt(expiresAt), Is.True);
+        Assert.True(restriction.IsActiveAt(expiresAt));
     }
 
-    [Test]
+    [Fact]
     public void IsActiveAt_AfterExpiry_IsFalse()
     {
         DateTimeOffset expiresAt = DateTimeOffset.UtcNow.AddHours(1);
         SecurityRestriction restriction = CreateRestriction(expiresAt: expiresAt);
 
-        Assert.That(restriction.IsActiveAt(expiresAt.AddTicks(1)), Is.False);
+        Assert.False(restriction.IsActiveAt(expiresAt.AddTicks(1)));
     }
 }
 
 public class ReasonTests
 {
-    [Test]
+    [Fact]
     public void Constructor_KeepsValueVerbatim()
     {
-        Assert.That(new Reason("Cheating detected.").Value, Is.EqualTo("Cheating detected."));
+        Assert.Equal("Cheating detected.", new Reason("Cheating detected.").Value);
     }
 
-    [TestCase(null)]
-    [TestCase("")]
-    [TestCase("   ")]
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
     public void Constructor_BlankValue_Throws(string? value)
     {
         Assert.Throws<ArgumentException>(() => new Reason(value!));
     }
 
-    [Test]
+    [Fact]
     public void Equality_IsByValue()
     {
         Reason reason = new("Spam.");
         Reason sameValue = new("Spam.");
 
-        Assert.That(reason, Is.EqualTo(sameValue));
+        Assert.Equal(sameValue, reason);
     }
 }

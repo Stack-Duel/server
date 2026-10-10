@@ -22,8 +22,7 @@ public class UploadUserAvatarHandlerTests
     private Mock<IAvatarBlobStorage> _avatarBlobStorage = null!;
     private UploadUserAvatarHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UploadUserAvatarHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
         _userAvatarRepository = new Mock<IUserAvatarWriteRepository>();
@@ -41,7 +40,7 @@ public class UploadUserAvatarHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
         _userRepository
@@ -51,10 +50,10 @@ public class UploadUserAvatarHandlerTests
         var command = new UploadUserAvatarCommand(Guid.NewGuid(), ValidPngBytes);
         Result<string> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ValidUpload_UploadsSetsImageUrlAndReturnsBlobUrl()
     {
         var user = new UserFactory().Create(new CreateUserParams("alice", "auth0|abc", null));
@@ -68,12 +67,9 @@ public class UploadUserAvatarHandlerTests
         var command = new UploadUserAvatarCommand(user.Id, ValidPngBytes);
         Result<string> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value, Is.EqualTo("https://storage.example.com/avatars/abc.png"));
-            Assert.That(user.ImageUrl!.Value, Is.EqualTo("https://storage.example.com/avatars/abc.png"));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal("https://storage.example.com/avatars/abc.png", result.Value);
+        Assert.Equal("https://storage.example.com/avatars/abc.png", user.ImageUrl!.Value);
         _userAvatarRepository.Verify(
             x => x.AddAsync(It.IsAny<UserAvatar>(), It.IsAny<CancellationToken>()),
             Times.Once
@@ -81,7 +77,7 @@ public class UploadUserAvatarHandlerTests
         _userRepository.Verify(x => x.UpdateAsync(user, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_JpegSignature_UploadsWithDetectedContentType()
     {
         var user = new UserFactory().Create(new CreateUserParams("alice", "auth0|abc", null));
@@ -101,7 +97,7 @@ public class UploadUserAvatarHandlerTests
         var command = new UploadUserAvatarCommand(user.Id, ValidJpegBytes);
         Result<string> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _avatarBlobStorage.Verify(
             x =>
                 x.UploadAsync(
@@ -115,7 +111,7 @@ public class UploadUserAvatarHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MoreThanThreeAvatars_PrunesOldestBeyondThree()
     {
         var user = new UserFactory().Create(new CreateUserParams("alice", "auth0|abc", null));
@@ -151,13 +147,13 @@ public class UploadUserAvatarHandlerTests
         _userAvatarRepository.Verify(x => x.DeleteAsync(third, It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnrecognizedFileSignature_ReturnsInvalidAndDoesNotUpload()
     {
         var command = new UploadUserAvatarCommand(Guid.NewGuid(), GifBytes);
         Result<string> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _avatarBlobStorage.Verify(
             x =>
                 x.UploadAsync(
@@ -171,14 +167,14 @@ public class UploadUserAvatarHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SpoofedSignature_ReturnsInvalidAndDoesNotUpload()
     {
         byte[] htmlDisguisedAsBytes = "<script>alert(1)</script>"u8.ToArray();
         var command = new UploadUserAvatarCommand(Guid.NewGuid(), htmlDisguisedAsBytes);
         Result<string> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _avatarBlobStorage.Verify(
             x =>
                 x.UploadAsync(
@@ -192,7 +188,7 @@ public class UploadUserAvatarHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ContentTooLarge_ReturnsInvalid()
     {
         byte[] content = new byte[UploadUserAvatarValidator.MaxContentBytes + 1];
@@ -201,6 +197,6 @@ public class UploadUserAvatarHandlerTests
         var command = new UploadUserAvatarCommand(Guid.NewGuid(), content);
         Result<string> result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 }

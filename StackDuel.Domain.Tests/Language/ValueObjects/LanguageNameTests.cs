@@ -5,27 +5,27 @@ namespace StackDuel.Domain.Tests.Language.ValueObjects;
 
 public class LanguageNameTests
 {
-    [Test]
+    [Fact]
     public void Constructor_AtMaxLength_Succeeds()
     {
         string value = new('a', LanguageName.MaxLength);
 
-        Assert.That(() => new LanguageName(value), Throws.Nothing);
+        Assert.Null(Record.Exception(() => new LanguageName(value)));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_AtMinLength_Succeeds()
     {
-        Assert.That(() => new LanguageName("C"), Throws.Nothing);
+        Assert.Null(Record.Exception(() => new LanguageName("C")));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyString_ThrowsInvalidLanguageNameException()
     {
         Assert.Throws<InvalidLanguageNameException>(() => new LanguageName(string.Empty));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_ExceedsMaxLength_ThrowsInvalidLanguageNameException()
     {
         string value = new('a', LanguageName.MaxLength + 1);
@@ -33,45 +33,45 @@ public class LanguageNameTests
         Assert.Throws<InvalidLanguageNameException>(() => new LanguageName(value));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_WhitespaceOnly_ThrowsInvalidLanguageNameException()
     {
         Assert.Throws<InvalidLanguageNameException>(() => new LanguageName("   "));
     }
 
-    [Test]
+    [Fact]
     public void Equality_DifferentValues_AreNotEqual()
     {
         var a = new LanguageName("Python");
         var b = new LanguageName("JavaScript");
 
-        Assert.That(a, Is.Not.EqualTo(b));
+        Assert.NotEqual(b, a);
     }
 
-    [Test]
+    [Fact]
     public void Equality_SameValue_AreEqual()
     {
         var a = new LanguageName("Python");
         var b = new LanguageName("Python");
 
-        Assert.That(a, Is.EqualTo(b));
+        Assert.Equal(b, a);
     }
 
-    [Test]
+    [Fact]
     public void ImplicitConversion_ReturnsValue()
     {
         var name = new LanguageName("Python");
 
         string result = name;
 
-        Assert.That(result, Is.EqualTo("Python"));
+        Assert.Equal("Python", result);
     }
 
-    [Test]
+    [Fact]
     public void ToString_ReturnsValue()
     {
         var name = new LanguageName("Python");
 
-        Assert.That(name.ToString(), Is.EqualTo("Python"));
+        Assert.Equal("Python", name.ToString());
     }
 }

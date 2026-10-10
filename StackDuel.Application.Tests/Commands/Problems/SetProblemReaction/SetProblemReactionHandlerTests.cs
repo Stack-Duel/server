@@ -19,8 +19,7 @@ public class SetProblemReactionHandlerTests
 
     private static readonly ProblemReactionSummaryDto EmptySummary = new([], null);
 
-    [SetUp]
-    public void SetUp()
+    public SetProblemReactionHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _problemReactionReadRepository = new Mock<IProblemReactionReadRepository>();
@@ -43,18 +42,18 @@ public class SetProblemReactionHandlerTests
 
     private static ProblemReactionType CreateReactionType(string key) => new(key, key, null, sortOrder: 1);
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepositories()
     {
         var command = new SetProblemReactionCommand(Guid.Empty, Guid.NewGuid(), "like");
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _problemReadRepository.Verify(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemReadRepository
@@ -63,10 +62,10 @@ public class SetProblemReactionHandlerTests
 
         var result = await _handler.Handle(ValidCommand(), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnknownReactionType_ReturnsNotFound()
     {
         _problemReadRepository
@@ -78,7 +77,7 @@ public class SetProblemReactionHandlerTests
 
         var result = await _handler.Handle(ValidCommand("bogus"), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
         _problemReactionWriteRepository.Verify(
             x =>
                 x.FindByProblemUserAndTypeAsync(
@@ -91,7 +90,7 @@ public class SetProblemReactionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoExistingRow_CreatesActiveReaction()
     {
         var reactionType = CreateReactionType("like");
@@ -119,7 +118,7 @@ public class SetProblemReactionHandlerTests
 
         var result = await _handler.Handle(ValidCommand("like"), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _problemReactionWriteRepository.Verify(
             x =>
                 x.AddAsync(
@@ -134,7 +133,7 @@ public class SetProblemReactionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingActiveRowSameKindClickedAgain_Deactivates()
     {
         var reactionType = CreateReactionType("like");
@@ -159,8 +158,8 @@ public class SetProblemReactionHandlerTests
 
         var result = await _handler.Handle(ValidCommand("like"), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(existing.IsActive, Is.False);
+        Assert.True(result.IsSuccess);
+        Assert.False(existing.IsActive);
         _problemReactionWriteRepository.Verify(x => x.UpdateAsync(existing, It.IsAny<CancellationToken>()), Times.Once);
         _problemReactionWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<ProblemReaction>(), It.IsAny<CancellationToken>()),
@@ -172,7 +171,7 @@ public class SetProblemReactionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ExistingInactiveRowSameKind_Reactivates()
     {
         var reactionType = CreateReactionType("like");
@@ -203,8 +202,8 @@ public class SetProblemReactionHandlerTests
 
         var result = await _handler.Handle(ValidCommand("like"), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(existing.IsActive, Is.True);
+        Assert.True(result.IsSuccess);
+        Assert.True(existing.IsActive);
         _problemReactionWriteRepository.Verify(x => x.UpdateAsync(existing, It.IsAny<CancellationToken>()), Times.Once);
         _problemReactionWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<ProblemReaction>(), It.IsAny<CancellationToken>()),
@@ -212,7 +211,7 @@ public class SetProblemReactionHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ActivatingDifferentKindWhileAnotherIsActive_DeactivatesOldFirst()
     {
         var likeType = CreateReactionType("like");
@@ -237,8 +236,8 @@ public class SetProblemReactionHandlerTests
         var command = new SetProblemReactionCommand(problemId, userId, "like");
         var result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(activeDislike.IsActive, Is.False);
+        Assert.True(result.IsSuccess);
+        Assert.False(activeDislike.IsActive);
         _problemReactionWriteRepository.Verify(
             x => x.UpdateAsync(activeDislike, It.IsAny<CancellationToken>()),
             Times.Once

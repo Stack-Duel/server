@@ -18,8 +18,7 @@ public class GetTodaysDailyChallengeHandlerTests
     private Mock<ISubmissionReadRepository> _submissionReadRepository = null!;
     private GetTodaysDailyChallengeHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetTodaysDailyChallengeHandlerTests()
     {
         _dailyChallengeRepository = new Mock<IDailyChallengeRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
@@ -42,7 +41,7 @@ public class GetTodaysDailyChallengeHandlerTests
             new MemoryLimit(256)
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_NoChallengeToday_ReturnsNotFound()
     {
         _dailyChallengeRepository
@@ -51,10 +50,10 @@ public class GetTodaysDailyChallengeHandlerTests
 
         var result = await _handler.Handle(new GetTodaysDailyChallengeQuery(Guid.NewGuid()), CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TodaySolved_CurrentStreakIncludesToday()
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -87,16 +86,13 @@ public class GetTodaysDailyChallengeHandlerTests
 
         var result = await _handler.Handle(new GetTodaysDailyChallengeQuery(userId), CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.SolvedByCurrentUser, Is.True);
-            Assert.That(result.Value.CurrentStreak, Is.EqualTo(2));
-            Assert.That(result.Value.LongestStreak, Is.EqualTo(2));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.SolvedByCurrentUser);
+        Assert.Equal(2, result.Value.CurrentStreak);
+        Assert.Equal(2, result.Value.LongestStreak);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TodayUnsolved_DoesNotBreakExistingStreak()
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -132,16 +128,13 @@ public class GetTodaysDailyChallengeHandlerTests
 
         var result = await _handler.Handle(new GetTodaysDailyChallengeQuery(userId), CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.SolvedByCurrentUser, Is.False);
-            Assert.That(result.Value.CurrentStreak, Is.EqualTo(2));
-            Assert.That(result.Value.LongestStreak, Is.EqualTo(2));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.False(result.Value.SolvedByCurrentUser);
+        Assert.Equal(2, result.Value.CurrentStreak);
+        Assert.Equal(2, result.Value.LongestStreak);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GapInSolvedHistory_LongestStreakTracksBestRunNotJustCurrent()
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -183,15 +176,12 @@ public class GetTodaysDailyChallengeHandlerTests
 
         var result = await _handler.Handle(new GetTodaysDailyChallengeQuery(userId), CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.CurrentStreak, Is.EqualTo(1));
-            Assert.That(result.Value.LongestStreak, Is.EqualTo(3));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value.CurrentStreak);
+        Assert.Equal(3, result.Value.LongestStreak);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_FutureChallengeExists_DoesNotAffectStreakOrGetReturned()
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -226,13 +216,10 @@ public class GetTodaysDailyChallengeHandlerTests
 
         var result = await _handler.Handle(new GetTodaysDailyChallengeQuery(userId), CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.ProblemId, Is.EqualTo(problem.Id));
-            Assert.That(result.Value.CurrentStreak, Is.EqualTo(2));
-            Assert.That(result.Value.LongestStreak, Is.EqualTo(2));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(problem.Id, result.Value.ProblemId);
+        Assert.Equal(2, result.Value.CurrentStreak);
+        Assert.Equal(2, result.Value.LongestStreak);
         _submissionReadRepository.Verify(
             x =>
                 x.GetAcceptedProblemIdsForUserAsync(

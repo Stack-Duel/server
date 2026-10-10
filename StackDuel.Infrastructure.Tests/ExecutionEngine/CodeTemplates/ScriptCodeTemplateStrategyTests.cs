@@ -3,18 +3,17 @@ using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 
 namespace StackDuel.Infrastructure.Tests.ExecutionEngine.CodeTemplates;
 
-/// <summary>
-/// The script languages (Python/JavaScript/TypeScript) all wrap the submitted code in a
-/// stdin-reading harness, so they share one set of expectations.
-/// </summary>
 public class ScriptCodeTemplateStrategyTests
 {
-    public static TheoryData<ICodeTemplateStrategy, string> Strategies =>
-        new()
+    public static TheoryData<string> ScriptLanguages => ["Python", "JavaScript", "TypeScript"];
+
+    private static ICodeTemplateStrategy StrategyFor(string languageName) =>
+        languageName switch
         {
-            { new PythonCodeTemplateStrategy(), "Python" },
-            { new JavaScriptCodeTemplateStrategy(), "JavaScript" },
-            { new TypeScriptCodeTemplateStrategy(), "TypeScript" },
+            "Python" => new PythonCodeTemplateStrategy(),
+            "JavaScript" => new JavaScriptCodeTemplateStrategy(),
+            "TypeScript" => new TypeScriptCodeTemplateStrategy(),
+            _ => throw new ArgumentOutOfRangeException(nameof(languageName), languageName, null),
         };
 
     private static CodeTemplateContext Context(
@@ -23,52 +22,44 @@ public class ScriptCodeTemplateStrategyTests
     ) => new(userCode, functionName, []);
 
     [Theory]
-    [MemberData(nameof(Strategies))]
-    public void LanguageName_IsTheLanguageItRenders(ICodeTemplateStrategy strategy, string expected)
+    [MemberData(nameof(ScriptLanguages))]
+    public void LanguageName_IsTheLanguageItRenders(string languageName)
     {
-        Assert.Equal(expected, strategy.LanguageName);
+        Assert.Equal(languageName, StrategyFor(languageName).LanguageName);
     }
 
     [Theory]
-    [MemberData(nameof(Strategies))]
-    public void Render_EmbedsTheSubmittedCode(ICodeTemplateStrategy strategy, string languageName)
+    [MemberData(nameof(ScriptLanguages))]
+    public void Render_EmbedsTheSubmittedCode(string languageName)
     {
-        _ = languageName;
-
-        string rendered = strategy.Render(Context(userCode: "// MARKER_USER_CODE"));
+        string rendered = StrategyFor(languageName).Render(Context(userCode: "// MARKER_USER_CODE"));
 
         Assert.Contains("// MARKER_USER_CODE", rendered);
     }
 
     [Theory]
-    [MemberData(nameof(Strategies))]
-    public void Render_CallsTheEntryPointFunction(ICodeTemplateStrategy strategy, string languageName)
+    [MemberData(nameof(ScriptLanguages))]
+    public void Render_CallsTheEntryPointFunction(string languageName)
     {
-        _ = languageName;
-
-        string rendered = strategy.Render(Context(functionName: "twoSum"));
+        string rendered = StrategyFor(languageName).Render(Context(functionName: "twoSum"));
 
         Assert.Contains("twoSum", rendered);
     }
 
     [Theory]
-    [MemberData(nameof(Strategies))]
-    public void Render_ReadsArgumentsFromStdin(ICodeTemplateStrategy strategy, string languageName)
+    [MemberData(nameof(ScriptLanguages))]
+    public void Render_ReadsArgumentsFromStdin(string languageName)
     {
-        _ = languageName;
-
-        string rendered = strategy.Render(Context());
+        string rendered = StrategyFor(languageName).Render(Context());
 
         Assert.Contains("stdin", rendered);
     }
 
     [Theory]
-    [MemberData(nameof(Strategies))]
-    public void BuildAdditionalFiles_IsNullForScriptLanguages(ICodeTemplateStrategy strategy, string languageName)
+    [MemberData(nameof(ScriptLanguages))]
+    public void BuildAdditionalFiles_IsNullForScriptLanguages(string languageName)
     {
-        _ = languageName;
-
-        Assert.Null(strategy.BuildAdditionalFiles(Context()));
+        Assert.Null(StrategyFor(languageName).BuildAdditionalFiles(Context()));
     }
 
     [Fact]

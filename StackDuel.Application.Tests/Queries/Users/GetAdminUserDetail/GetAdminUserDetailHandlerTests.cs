@@ -12,14 +12,13 @@ public class GetAdminUserDetailHandlerTests
     private Mock<IUserReadRepository> _userReadRepository = null!;
     private GetAdminUserDetailHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminUserDetailHandlerTests()
     {
         _userReadRepository = new Mock<IUserReadRepository>();
         _handler = new GetAdminUserDetailHandler(_userReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ReturnsUserFromRepository()
     {
         Guid userId = Guid.NewGuid();
@@ -34,11 +33,11 @@ public class GetAdminUserDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.SameAs(expected));
+        Assert.True(result.IsSuccess);
+        Assert.Same(expected, result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ReturnsNotFound_WhenUserDoesNotExist()
     {
         Guid userId = Guid.NewGuid();
@@ -52,6 +51,6 @@ public class GetAdminUserDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 }

@@ -13,14 +13,13 @@ public class GetAdminSubmissionsPageableHandlerTests
     private Mock<ISubmissionReadRepository> _submissionReadRepository = null!;
     private GetAdminSubmissionsPageableHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminSubmissionsPageableHandlerTests()
     {
         _submissionReadRepository = new Mock<ISubmissionReadRepository>();
         _handler = new GetAdminSubmissionsPageableHandler(_submissionReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ReturnsPagedResultFromRepository()
     {
         var pagination = new PaginationRequest { Page = 2, Size = 10 };
@@ -42,11 +41,11 @@ public class GetAdminSubmissionsPageableHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.SameAs(expected));
+        Assert.True(result.IsSuccess);
+        Assert.Same(expected, result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NullId_PassesNullThrough()
     {
         var pagination = new PaginationRequest { Page = 1, Size = 25 };

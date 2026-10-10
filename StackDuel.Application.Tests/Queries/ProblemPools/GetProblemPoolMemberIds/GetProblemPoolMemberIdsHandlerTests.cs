@@ -12,14 +12,13 @@ public class GetProblemPoolMemberIdsHandlerTests
     private Mock<IProblemPoolRepository> _problemPoolRepository = null!;
     private GetProblemPoolMemberIdsHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetProblemPoolMemberIdsHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
         _handler = new GetProblemPoolMemberIdsHandler(_problemPoolRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolNotFound_ReturnsNotFound()
     {
         _problemPoolRepository
@@ -31,10 +30,10 @@ public class GetProblemPoolMemberIdsHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolFound_ReturnsItsProblemIds()
     {
         var pool = new ProblemPool("daily", "Daily challenge");
@@ -48,10 +47,10 @@ public class GetProblemPoolMemberIdsHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value, Is.EquivalentTo(new[] { problemId }));
+        Assert.Equivalent(new[] { problemId }, result.Value, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyPool_ReturnsEmptyList()
     {
         var pool = new ProblemPool("empty", "Empty pool");
@@ -62,6 +61,6 @@ public class GetProblemPoolMemberIdsHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value, Is.Empty);
+        Assert.Empty(result.Value);
     }
 }

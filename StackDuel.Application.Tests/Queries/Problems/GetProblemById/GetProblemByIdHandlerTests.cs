@@ -18,8 +18,7 @@ public class GetProblemByIdHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetProblemByIdHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetProblemByIdHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
@@ -40,7 +39,7 @@ public class GetProblemByIdHandlerTests
             new MemoryLimit(256)
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemReadRepository
@@ -52,10 +51,10 @@ public class GetProblemByIdHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemWithoutSetups_MapsCoreFieldsAndEmptyTestCases()
     {
         var problem = CreateProblem();
@@ -69,23 +68,20 @@ public class GetProblemByIdHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         ProblemWithSetupsDto dto = result.Value;
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.Id, Is.EqualTo(problem.Id));
-            Assert.That(dto.Slug, Is.EqualTo("two-sum"));
-            Assert.That(dto.Title, Is.EqualTo("Two Sum"));
-            Assert.That(dto.DifficultyTier, Is.EqualTo(problem.Difficulty.Tier));
-            Assert.That(dto.Question, Is.EqualTo(problem.Question.Value));
-            Assert.That(dto.Tags, Is.EquivalentTo(new[] { "arrays" }));
-            Assert.That(dto.Author, Is.Null);
-            Assert.That(dto.PublicTestCases, Is.Empty);
-            Assert.That(dto.AvailableLanguages, Is.Empty);
-        });
+        Assert.Equal(problem.Id, dto.Id);
+        Assert.Equal("two-sum", dto.Slug);
+        Assert.Equal("Two Sum", dto.Title);
+        Assert.Equal(problem.Difficulty.Tier, dto.DifficultyTier);
+        Assert.Equal(problem.Question.Value, dto.Question);
+        Assert.Equivalent(new[] { "arrays" }, dto.Tags, strict: true);
+        Assert.Null(dto.Author);
+        Assert.Empty(dto.PublicTestCases);
+        Assert.Empty(dto.AvailableLanguages);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemWithSetupButNoSampleSuites_ReturnsEmptyPublicTestCases()
     {
         var problem = CreateProblem();
@@ -99,10 +95,10 @@ public class GetProblemByIdHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.PublicTestCases, Is.Empty);
+        Assert.Empty(result.Value.PublicTestCases);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AvailableLanguages_MapsLanguageAndVersions()
     {
         var problem = CreateProblem();
@@ -123,11 +119,8 @@ public class GetProblemByIdHandlerTests
         );
 
         var mappedLanguage = result.Value.AvailableLanguages.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(mappedLanguage.Id, Is.EqualTo(language.Id));
-            Assert.That(mappedLanguage.Name, Is.EqualTo("Python"));
-            Assert.That(mappedLanguage.Versions.Single().Version, Is.EqualTo("3.12"));
-        });
+        Assert.Equal(language.Id, mappedLanguage.Id);
+        Assert.Equal("Python", mappedLanguage.Name);
+        Assert.Equal("3.12", mappedLanguage.Versions.Single().Version);
     }
 }

@@ -5,29 +5,34 @@ namespace StackDuel.Domain.Tests.Feedback.ValueObjects;
 
 public class FeedbackRatingTests
 {
-    [Test]
-    public void Constructor_WithinRange_Succeeds([Values(1, 2, 3, 4, 5)] int value)
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void Constructor_WithinRange_Succeeds(int value)
     {
-        Assert.DoesNotThrow(() => new FeedbackRating(value));
+        Assert.Null(Record.Exception(() => new FeedbackRating(value)));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_BelowMinimum_ThrowsInvalidFeedbackRatingException()
     {
         Assert.Throws<InvalidFeedbackRatingException>(() => new FeedbackRating(0));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_AboveMaximum_ThrowsInvalidFeedbackRatingException()
     {
         Assert.Throws<InvalidFeedbackRatingException>(() => new FeedbackRating(6));
     }
 
-    [Test]
+    [Fact]
     public void ImplicitOperator_ReturnsIntValue()
     {
         var rating = new FeedbackRating(4);
         int value = rating;
-        Assert.That(value, Is.EqualTo(4));
+        Assert.Equal(4, value);
     }
 }

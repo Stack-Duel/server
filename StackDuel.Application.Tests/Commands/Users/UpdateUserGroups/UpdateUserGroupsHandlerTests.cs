@@ -24,8 +24,7 @@ public class UpdateUserGroupsHandlerTests
     private UserContext _userContext = null!;
     private UpdateUserGroupsHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpdateUserGroupsHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
         _groupRepository = new Mock<IGroupReadRepository>();
@@ -45,7 +44,7 @@ public class UpdateUserGroupsHandlerTests
     private static UserDto ToDto(User user) =>
         new(user.Id, user.Sub, user.Username.Value, null, null, false, null, user.CreatedAt, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_UserNotFound_ReturnsNotFound()
     {
         _userRepository
@@ -55,10 +54,10 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(Guid.NewGuid(), [Guid.NewGuid()]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnknownGroupId_ReturnsInvalidAndDoesNotSetGroups()
     {
         var user = CreateUser();
@@ -70,7 +69,7 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(user.Id, [Guid.NewGuid()]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _userRepository.Verify(
             x =>
                 x.SetGroupsAsync(
@@ -82,7 +81,7 @@ public class UpdateUserGroupsHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AllGroupIdsValid_SetsGroupsAndSucceeds()
     {
         var user = CreateUser();
@@ -95,7 +94,7 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(user.Id, [groupId]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _userRepository.Verify(
             x =>
                 x.SetGroupsAsync(
@@ -117,7 +116,7 @@ public class UpdateUserGroupsHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyGroupIds_SetsEmptyGroupsAndSucceeds()
     {
         var user = CreateUser();
@@ -129,7 +128,7 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(user.Id, []);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _userRepository.Verify(
             x =>
                 x.SetGroupsAsync(
@@ -141,7 +140,7 @@ public class UpdateUserGroupsHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RemovingAdminGroupFromAnotherAdmin_ReturnsForbiddenAndDoesNotSetGroups()
     {
         var actingAdmin = CreateUser();
@@ -162,7 +161,7 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(targetAdmin.Id, []);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
         _userRepository.Verify(
             x =>
                 x.SetGroupsAsync(
@@ -174,7 +173,7 @@ public class UpdateUserGroupsHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AdminRemovingOwnAdminGroup_SetsGroupsAndSucceeds()
     {
         var actingAdmin = CreateUser();
@@ -194,7 +193,7 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(actingAdmin.Id, []);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _userRepository.Verify(
             x =>
                 x.SetGroupsAsync(
@@ -206,7 +205,7 @@ public class UpdateUserGroupsHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GrantingAdminGroupToNonAdmin_SetsGroupsAndSucceeds()
     {
         var actingAdmin = CreateUser();
@@ -225,7 +224,7 @@ public class UpdateUserGroupsHandlerTests
         var command = new UpdateUserGroupsCommand(targetUser.Id, [adminGroupId]);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _userRepository.Verify(
             x =>
                 x.SetGroupsAsync(
@@ -237,14 +236,14 @@ public class UpdateUserGroupsHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = new UpdateUserGroupsCommand(Guid.Empty, [Guid.NewGuid()]);
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _userRepository.Verify(x => x.FindByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

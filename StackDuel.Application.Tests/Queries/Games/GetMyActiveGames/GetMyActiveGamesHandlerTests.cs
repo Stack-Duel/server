@@ -23,8 +23,7 @@ public class GetMyActiveGamesHandlerTests
     private static UserDto MakeUser(Guid id, string username) =>
         new(id, $"auth0|{id}", username, null, null, false, null, DateTime.UtcNow, null, []);
 
-    [SetUp]
-    public void SetUp()
+    public GetMyActiveGamesHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _trackReadRepository = new Mock<ITrackReadRepository>();
@@ -42,7 +41,7 @@ public class GetMyActiveGamesHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoActiveGames_ReturnsEmptyList()
     {
         var userId = Guid.NewGuid();
@@ -52,11 +51,11 @@ public class GetMyActiveGamesHandlerTests
 
         var result = await _handler.Handle(new GetMyActiveGamesQuery(userId), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Empty);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameWithMissingGameMode_IsExcludedFromResults()
     {
         var userId = Guid.NewGuid();
@@ -71,11 +70,11 @@ public class GetMyActiveGamesHandlerTests
 
         var result = await _handler.Handle(new GetMyActiveGamesQuery(userId), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Empty);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_MapsFieldsAndSetsIsHostForLowestSeat()
     {
         var hostId = Guid.NewGuid();
@@ -103,24 +102,21 @@ public class GetMyActiveGamesHandlerTests
 
         var result = await _handler.Handle(new GetMyActiveGamesQuery(hostId), CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         MyActiveGameDto dto = result.Value.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.GameId, Is.EqualTo(game.Id));
-            Assert.That(dto.GameModeKey, Is.EqualTo("blitz"));
-            Assert.That(dto.GameModeName, Is.EqualTo("Blitz"));
-            Assert.That(dto.Status, Is.EqualTo(GameStatus.Pending));
-            Assert.That(dto.TimeLimitInSeconds, Is.EqualTo(300));
-            Assert.That(dto.ParticipantCount, Is.EqualTo(2));
-            Assert.That(dto.MaxPlayers, Is.EqualTo(4));
-            Assert.That(dto.IsHost, Is.True);
-            Assert.That(dto.HostUsername, Is.EqualTo("hostname"));
-            Assert.That(dto.TechStacks, Is.EquivalentTo(new[] { "Python" }));
-        });
+        Assert.Equal(game.Id, dto.GameId);
+        Assert.Equal("blitz", dto.GameModeKey);
+        Assert.Equal("Blitz", dto.GameModeName);
+        Assert.Equal(GameStatus.Pending, dto.Status);
+        Assert.Equal(300, dto.TimeLimitInSeconds);
+        Assert.Equal(2, dto.ParticipantCount);
+        Assert.Equal(4, dto.MaxPlayers);
+        Assert.True(dto.IsHost);
+        Assert.Equal("hostname", dto.HostUsername);
+        Assert.Equivalent(new[] { "Python" }, dto.TechStacks, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_NonHostParticipant_IsHostIsFalse()
     {
         var hostId = Guid.NewGuid();
@@ -137,6 +133,6 @@ public class GetMyActiveGamesHandlerTests
 
         var result = await _handler.Handle(new GetMyActiveGamesQuery(otherId), CancellationToken.None);
 
-        Assert.That(result.Value.Single().IsHost, Is.False);
+        Assert.False(result.Value.Single().IsHost);
     }
 }

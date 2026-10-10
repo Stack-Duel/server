@@ -19,7 +19,6 @@ public class VitestJavaScriptBatchTemplateStrategyTests
         bool caseSensitive = true
     ) => new(id, [new CodeTemplateInput("[2,7]", "integer_array")], expected, assertStrategy, tolerance, caseSensitive);
 
-    /// <summary>Builds the stdout shape the Judge0 run command produces for this strategy.</summary>
     private static string Stdout(object? outputs, object report)
     {
         string outputsJson = outputs is null ? "" : JsonSerializer.Serialize(outputs);
@@ -270,8 +269,6 @@ public class VitestJavaScriptBatchTemplateStrategyTests
     [Fact]
     public void ParseBatchOutput_MissingOutputsMarker_ReportsAParseFailureRatherThanMisreadingTheStream()
     {
-        // Without both markers the split can't be trusted, so the whole stream is treated as the
-        // report — which then fails to parse, surfacing a clear error instead of a bogus verdict.
         Guid id = Guid.NewGuid();
         string stdout = $"{VitestReportMarker}\n{JsonSerializer.Serialize(Report((id.ToString(), "passed", [], 1)))}";
 

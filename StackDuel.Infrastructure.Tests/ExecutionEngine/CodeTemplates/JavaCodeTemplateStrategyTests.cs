@@ -206,7 +206,6 @@ public class JavaCodeTemplateStrategyTests
     [Fact]
     public void BuildAdditionalFiles_OnlyMatchesWholeClassNames()
     {
-        // "MyList" must not be mistaken for a use of java.util.List.
         const string userCode = "class Solution { MyListThing solve() { return null; } }";
 
         Dictionary<string, string> bundle = ReadBundle(Strategy.BuildAdditionalFiles(Context(userCode: userCode))!);

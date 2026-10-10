@@ -23,8 +23,7 @@ public class GetAdminProblemDetailHandlerTests
     private Mock<ITrackReadRepository> _trackReadRepository = null!;
     private GetAdminProblemDetailHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminProblemDetailHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
@@ -60,7 +59,7 @@ public class GetAdminProblemDetailHandlerTests
             new MemoryLimit(256)
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemReadRepository
@@ -70,10 +69,10 @@ public class GetAdminProblemDetailHandlerTests
         var query = new GetAdminProblemDetailQuery(Guid.NewGuid());
         Result<AdminProblemDetailDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemFound_MapsCoreFields()
     {
         var problem = CreateProblem();
@@ -86,26 +85,23 @@ public class GetAdminProblemDetailHandlerTests
         var query = new GetAdminProblemDetailQuery(problem.Id);
         Result<AdminProblemDetailDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         AdminProblemDetailDto dto = result.Value;
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.Id, Is.EqualTo(problem.Id));
-            Assert.That(dto.Slug, Is.EqualTo("two-sum"));
-            Assert.That(dto.Title, Is.EqualTo("Two Sum"));
-            Assert.That(dto.DifficultyValue, Is.EqualTo(150));
-            Assert.That(dto.DifficultyTier, Is.EqualTo(DifficultyTier.Beginner));
-            Assert.That(dto.TimeLimitMs, Is.EqualTo(1000));
-            Assert.That(dto.MemoryLimitMb, Is.EqualTo(256));
-            Assert.That(dto.Status, Is.EqualTo(ProblemStatus.Draft));
-            Assert.That(dto.CreatedByUsername, Is.Null);
-            Assert.That(dto.Tags, Is.EquivalentTo(new[] { "arrays", "hash-map" }));
-            Assert.That(dto.PoolKeys, Is.Empty);
-            Assert.That(dto.Setups, Is.Empty);
-        });
+        Assert.Equal(problem.Id, dto.Id);
+        Assert.Equal("two-sum", dto.Slug);
+        Assert.Equal("Two Sum", dto.Title);
+        Assert.Equal(150, dto.DifficultyValue);
+        Assert.Equal(DifficultyTier.Beginner, dto.DifficultyTier);
+        Assert.Equal(1000, dto.TimeLimitMs);
+        Assert.Equal(256, dto.MemoryLimitMb);
+        Assert.Equal(ProblemStatus.Draft, dto.Status);
+        Assert.Null(dto.CreatedByUsername);
+        Assert.Equivalent(new[] { "arrays", "hash-map" }, dto.Tags, strict: true);
+        Assert.Empty(dto.PoolKeys);
+        Assert.Empty(dto.Setups);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemInPools_MapsPoolKeys()
     {
         var problem = CreateProblem();
@@ -121,10 +117,10 @@ public class GetAdminProblemDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.PoolKeys, Is.EquivalentTo(new[] { "daily", "interview-prep" }));
+        Assert.Equivalent(new[] { "daily", "interview-prep" }, result.Value.PoolKeys, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SetupWithKnownLanguageVersion_MapsLanguageNameAndVersion()
     {
         var problem = CreateProblem();
@@ -150,21 +146,18 @@ public class GetAdminProblemDetailHandlerTests
         );
 
         AdminProblemSetupDto setupDto = result.Value.Setups.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(setupDto.LanguageVersionId, Is.EqualTo(versionEntry.Id));
-            Assert.That(setupDto.LanguageName, Is.EqualTo("JavaScript"));
-            Assert.That(setupDto.LanguageVersion, Is.EqualTo("ES2020"));
-            Assert.That(setupDto.FunctionName, Is.EqualTo("solve"));
-            Assert.That(setupDto.InitialCode, Is.EqualTo("function solve() {}"));
-            Assert.That(setupDto.HasReferenceSolution, Is.True);
-            Assert.That(setupDto.HasGenerationSpec, Is.True);
-            Assert.That(setupDto.TestSuiteCount, Is.Zero);
-            Assert.That(setupDto.TestCaseCount, Is.Zero);
-        });
+        Assert.Equal(versionEntry.Id, setupDto.LanguageVersionId);
+        Assert.Equal("JavaScript", setupDto.LanguageName);
+        Assert.Equal("ES2020", setupDto.LanguageVersion);
+        Assert.Equal("solve", setupDto.FunctionName);
+        Assert.Equal("function solve() {}", setupDto.InitialCode);
+        Assert.True(setupDto.HasReferenceSolution);
+        Assert.True(setupDto.HasGenerationSpec);
+        Assert.Equal(0, setupDto.TestSuiteCount);
+        Assert.Equal(0, setupDto.TestCaseCount);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SetupWithUnknownLanguageVersion_FallsBackToUnknownLabels()
     {
         var problem = CreateProblem();
@@ -180,13 +173,10 @@ public class GetAdminProblemDetailHandlerTests
         );
 
         AdminProblemSetupDto setupDto = result.Value.Setups.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(setupDto.Id, Is.EqualTo(setup.Id));
-            Assert.That(setupDto.LanguageName, Is.EqualTo("Unknown"));
-            Assert.That(setupDto.LanguageVersion, Is.EqualTo("?"));
-            Assert.That(setupDto.HasReferenceSolution, Is.False);
-            Assert.That(setupDto.HasGenerationSpec, Is.False);
-        });
+        Assert.Equal(setup.Id, setupDto.Id);
+        Assert.Equal("Unknown", setupDto.LanguageName);
+        Assert.Equal("?", setupDto.LanguageVersion);
+        Assert.False(setupDto.HasReferenceSolution);
+        Assert.False(setupDto.HasGenerationSpec);
     }
 }

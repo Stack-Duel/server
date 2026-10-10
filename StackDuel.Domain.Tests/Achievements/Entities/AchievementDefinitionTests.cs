@@ -36,88 +36,81 @@ public class AchievementDefinitionTests
             customRuleKey
         );
 
-    [Test]
+    [Fact]
     public void CreateThreshold_SetsCatalogMetadata()
     {
         AchievementDefinition definition = CreateThreshold();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(definition.Code, Is.EqualTo(new AchievementCode("ten-solves")));
-            Assert.That(definition.Name, Is.EqualTo("Ten Solves"));
-            Assert.That(definition.Description, Is.EqualTo("Solve ten problems."));
-            Assert.That(definition.Category, Is.EqualTo(AchievementCategory.Solving));
-            Assert.That(definition.Tier, Is.EqualTo(AchievementTier.Bronze));
-            Assert.That(definition.IconKey, Is.EqualTo("icon-ten-solves"));
-        });
+        Assert.Equal(new AchievementCode("ten-solves"), definition.Code);
+        Assert.Equal("Ten Solves", definition.Name);
+        Assert.Equal("Solve ten problems.", definition.Description);
+        Assert.Equal(AchievementCategory.Solving, definition.Category);
+        Assert.Equal(AchievementTier.Bronze, definition.Tier);
+        Assert.Equal("icon-ten-solves", definition.IconKey);
     }
 
-    [Test]
+    [Fact]
     public void CreateThreshold_SetsThresholdCriteriaAndLeavesCustomRuleKeyUnset()
     {
         AchievementDefinition definition = CreateThreshold(AchievementStat.GamesWon, 25);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(definition.CriteriaType, Is.EqualTo(AchievementCriteriaType.Threshold));
-            Assert.That(definition.CriteriaStat, Is.EqualTo(AchievementStat.GamesWon));
-            Assert.That(definition.CriteriaThreshold, Is.EqualTo(25));
-            Assert.That(definition.CustomRuleKey, Is.Null);
-        });
+        Assert.Equal(AchievementCriteriaType.Threshold, definition.CriteriaType);
+        Assert.Equal(AchievementStat.GamesWon, definition.CriteriaStat);
+        Assert.Equal(25, definition.CriteriaThreshold);
+        Assert.Null(definition.CustomRuleKey);
     }
 
-    [Test]
+    [Fact]
     public void CreateThreshold_IsActiveByDefault()
     {
-        Assert.That(CreateThreshold().IsActive, Is.True);
+        Assert.True(CreateThreshold().IsActive);
     }
 
-    [Test]
+    [Fact]
     public void CreateThreshold_SetsCreatedAt()
     {
         DateTime before = DateTime.UtcNow;
 
         AchievementDefinition definition = CreateThreshold();
 
-        Assert.That(definition.CreatedAt, Is.GreaterThanOrEqualTo(before));
+        Assert.True(definition.CreatedAt >= before);
     }
 
-    [Test]
+    [Fact]
     public void CreateThreshold_HonoursIsSecret()
     {
-        Assert.That(CreateThreshold(isSecret: true).IsSecret, Is.True);
+        Assert.True(CreateThreshold(isSecret: true).IsSecret);
     }
 
-    [TestCase(0)]
-    [TestCase(-1)]
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
     public void CreateThreshold_NonPositiveThreshold_Throws(int threshold)
     {
         Assert.Throws<InvalidAchievementCriteriaException>(() => CreateThreshold(threshold: threshold));
     }
 
-    [Test]
+    [Fact]
     public void CreateCustom_SetsCustomCriteriaAndLeavesThresholdFieldsUnset()
     {
         AchievementDefinition definition = CreateCustom();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(definition.CriteriaType, Is.EqualTo(AchievementCriteriaType.Custom));
-            Assert.That(definition.CustomRuleKey, Is.EqualTo("flawless-duel"));
-            Assert.That(definition.CriteriaStat, Is.Null);
-            Assert.That(definition.CriteriaThreshold, Is.Null);
-        });
+        Assert.Equal(AchievementCriteriaType.Custom, definition.CriteriaType);
+        Assert.Equal("flawless-duel", definition.CustomRuleKey);
+        Assert.Null(definition.CriteriaStat);
+        Assert.Null(definition.CriteriaThreshold);
     }
 
-    [TestCase(null)]
-    [TestCase("")]
-    [TestCase("   ")]
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
     public void CreateCustom_BlankRuleKey_Throws(string? customRuleKey)
     {
         Assert.Throws<InvalidAchievementCriteriaException>(() => CreateCustom(customRuleKey!));
     }
 
-    [Test]
+    [Fact]
     public void Create_BlankName_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -135,7 +128,7 @@ public class AchievementDefinitionTests
         );
     }
 
-    [Test]
+    [Fact]
     public void Create_BlankDescription_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -153,7 +146,7 @@ public class AchievementDefinitionTests
         );
     }
 
-    [Test]
+    [Fact]
     public void Create_BlankIconKey_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
@@ -171,60 +164,51 @@ public class AchievementDefinitionTests
         );
     }
 
-    [Test]
+    [Fact]
     public void UpdateDetails_ReplacesNameDescriptionAndIcon()
     {
         AchievementDefinition definition = CreateThreshold();
 
         definition.UpdateDetails("Renamed", "New description.", "icon-renamed");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(definition.Name, Is.EqualTo("Renamed"));
-            Assert.That(definition.Description, Is.EqualTo("New description."));
-            Assert.That(definition.IconKey, Is.EqualTo("icon-renamed"));
-        });
+        Assert.Equal("Renamed", definition.Name);
+        Assert.Equal("New description.", definition.Description);
+        Assert.Equal("icon-renamed", definition.IconKey);
     }
 
-    [Test]
+    [Fact]
     public void UpdateDetails_BlankName_ThrowsAndLeavesDetailsUntouched()
     {
         AchievementDefinition definition = CreateThreshold();
 
         Assert.Throws<ArgumentException>(() => definition.UpdateDetails("", "New description.", "icon-renamed"));
-        Assert.That(definition.Name, Is.EqualTo("Ten Solves"));
+        Assert.Equal("Ten Solves", definition.Name);
     }
 
-    [Test]
+    [Fact]
     public void UpdateThresholdCriteria_ReplacesStatAndThreshold()
     {
         AchievementDefinition definition = CreateThreshold();
 
         definition.UpdateThresholdCriteria(AchievementStat.LongestWinStreak, 5);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(definition.CriteriaStat, Is.EqualTo(AchievementStat.LongestWinStreak));
-            Assert.That(definition.CriteriaThreshold, Is.EqualTo(5));
-            Assert.That(definition.CriteriaType, Is.EqualTo(AchievementCriteriaType.Threshold));
-        });
+        Assert.Equal(AchievementStat.LongestWinStreak, definition.CriteriaStat);
+        Assert.Equal(5, definition.CriteriaThreshold);
+        Assert.Equal(AchievementCriteriaType.Threshold, definition.CriteriaType);
     }
 
-    [Test]
+    [Fact]
     public void UpdateThresholdCriteria_ConvertsCustomDefinitionAndClearsRuleKey()
     {
         AchievementDefinition definition = CreateCustom();
 
         definition.UpdateThresholdCriteria(AchievementStat.GamesPlayed, 3);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(definition.CriteriaType, Is.EqualTo(AchievementCriteriaType.Threshold));
-            Assert.That(definition.CustomRuleKey, Is.Null);
-        });
+        Assert.Equal(AchievementCriteriaType.Threshold, definition.CriteriaType);
+        Assert.Null(definition.CustomRuleKey);
     }
 
-    [Test]
+    [Fact]
     public void UpdateThresholdCriteria_NonPositiveThreshold_Throws()
     {
         AchievementDefinition definition = CreateThreshold();
@@ -234,43 +218,44 @@ public class AchievementDefinitionTests
         );
     }
 
-    [Test]
+    [Fact]
     public void SetActive_TogglesFlag()
     {
         AchievementDefinition definition = CreateThreshold();
 
         definition.SetActive(false);
-        Assert.That(definition.IsActive, Is.False);
+        Assert.False(definition.IsActive);
 
         definition.SetActive(true);
-        Assert.That(definition.IsActive, Is.True);
+        Assert.True(definition.IsActive);
     }
 
-    [Test]
+    [Fact]
     public void SetSecret_TogglesFlag()
     {
         AchievementDefinition definition = CreateThreshold();
 
         definition.SetSecret(true);
-        Assert.That(definition.IsSecret, Is.True);
+        Assert.True(definition.IsSecret);
 
         definition.SetSecret(false);
-        Assert.That(definition.IsSecret, Is.False);
+        Assert.False(definition.IsSecret);
     }
 
-    [TestCase(9, false, Description = "below threshold")]
-    [TestCase(10, true, Description = "exactly at threshold")]
-    [TestCase(11, true, Description = "above threshold")]
+    [Theory]
+    [InlineData(9, false)] // below threshold
+    [InlineData(10, true)] // exactly at threshold
+    [InlineData(11, true)] // above threshold
     public void IsSatisfiedByThreshold_ComparesAgainstThresholdInclusively(int statValue, bool expected)
     {
         AchievementDefinition definition = CreateThreshold(threshold: 10);
-        Assert.That(definition.IsSatisfiedByThreshold(statValue), Is.EqualTo(expected));
+        Assert.Equal(expected, definition.IsSatisfiedByThreshold(statValue));
     }
 
-    [Test]
+    [Fact]
     public void IsSatisfiedByThreshold_CustomCriteria_IsNeverSatisfied()
     {
         AchievementDefinition definition = CreateCustom();
-        Assert.That(definition.IsSatisfiedByThreshold(int.MaxValue), Is.False);
+        Assert.False(definition.IsSatisfiedByThreshold(int.MaxValue));
     }
 }

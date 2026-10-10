@@ -15,8 +15,7 @@ public class UpdateDailyChallengeHandlerTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private UpdateDailyChallengeHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public UpdateDailyChallengeHandlerTests()
     {
         _dailyChallengeRepository = new Mock<IDailyChallengeRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
@@ -29,7 +28,7 @@ public class UpdateDailyChallengeHandlerTests
 
     private static DateOnly Tomorrow() => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
 
-    [Test]
+    [Fact]
     public async Task Handle_DateIsToday_ReturnsInvalid()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -39,10 +38,10 @@ public class UpdateDailyChallengeHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DateIsInThePast_ReturnsInvalid()
     {
         var yesterday = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
@@ -52,10 +51,10 @@ public class UpdateDailyChallengeHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoChallengeScheduledForDate_ReturnsNotFound()
     {
         var date = Tomorrow();
@@ -68,10 +67,10 @@ public class UpdateDailyChallengeHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemDoesNotExist_ReturnsInvalid()
     {
         var date = Tomorrow();
@@ -90,14 +89,14 @@ public class UpdateDailyChallengeHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _dailyChallengeRepository.Verify(
             x => x.UpdateAsync(It.IsAny<DailyChallenge>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ValidRequest_UpdatesTheChallengesProblem()
     {
         var date = Tomorrow();
@@ -116,8 +115,8 @@ public class UpdateDailyChallengeHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(challenge.ProblemId, Is.EqualTo(newProblemId));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(newProblemId, challenge.ProblemId);
         _dailyChallengeRepository.Verify(x => x.UpdateAsync(challenge, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

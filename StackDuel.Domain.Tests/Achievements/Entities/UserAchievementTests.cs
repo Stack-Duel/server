@@ -5,7 +5,7 @@ namespace StackDuel.Domain.Tests.Achievements.Entities;
 
 public class UserAchievementTests
 {
-    [Test]
+    [Fact]
     public void Constructor_SetsUserAndDefinition()
     {
         Guid userId = Guid.NewGuid();
@@ -13,36 +13,33 @@ public class UserAchievementTests
 
         UserAchievement earned = new(userId, definitionId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(earned.UserId, Is.EqualTo(userId));
-            Assert.That(earned.AchievementDefinitionId, Is.EqualTo(definitionId));
-        });
+        Assert.Equal(userId, earned.UserId);
+        Assert.Equal(definitionId, earned.AchievementDefinitionId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_StampsEarnedAt()
     {
         DateTime before = DateTime.UtcNow;
 
         UserAchievement earned = new(Guid.NewGuid(), Guid.NewGuid());
 
-        Assert.That(earned.EarnedAt, Is.GreaterThanOrEqualTo(before));
+        Assert.True(earned.EarnedAt >= before);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyUserId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UserAchievement(Guid.Empty, Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyDefinitionId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UserAchievement(Guid.NewGuid(), Guid.Empty));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_RaisesAchievementUnlockedDomainEvent()
     {
         Guid userId = Guid.NewGuid();
@@ -52,21 +49,18 @@ public class UserAchievementTests
 
         AchievementUnlockedDomainEvent unlocked = earned.DomainEvents.OfType<AchievementUnlockedDomainEvent>().Single();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(unlocked.UserId, Is.EqualTo(userId));
-            Assert.That(unlocked.AchievementDefinitionId, Is.EqualTo(definitionId));
-            Assert.That(unlocked.UserAchievementId, Is.EqualTo(earned.Id));
-            Assert.That(unlocked.EarnedAt, Is.EqualTo(earned.EarnedAt));
-        });
+        Assert.Equal(userId, unlocked.UserId);
+        Assert.Equal(definitionId, unlocked.AchievementDefinitionId);
+        Assert.Equal(earned.Id, unlocked.UserAchievementId);
+        Assert.Equal(earned.EarnedAt, unlocked.EarnedAt);
     }
 
-    [Test]
+    [Fact]
     public void PopDomainEvents_DrainsTheUnlockedEvent()
     {
         UserAchievement earned = new(Guid.NewGuid(), Guid.NewGuid());
 
-        Assert.That(earned.PopDomainEvents(), Has.Count.EqualTo(1));
-        Assert.That(earned.DomainEvents, Is.Empty);
+        Assert.Single(earned.PopDomainEvents());
+        Assert.Empty(earned.DomainEvents);
     }
 }

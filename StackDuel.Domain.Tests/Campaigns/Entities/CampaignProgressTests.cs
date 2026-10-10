@@ -5,7 +5,7 @@ namespace StackDuel.Domain.Tests.Campaigns.Entities;
 
 public class CampaignEnrollmentTests
 {
-    [Test]
+    [Fact]
     public void Constructor_SetsUserCampaignAndInProgressStatus()
     {
         Guid userId = Guid.NewGuid();
@@ -13,35 +13,32 @@ public class CampaignEnrollmentTests
 
         CampaignEnrollment enrollment = new(userId, campaignId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(enrollment.UserId, Is.EqualTo(userId));
-            Assert.That(enrollment.CampaignId, Is.EqualTo(campaignId));
-            Assert.That(enrollment.Status, Is.EqualTo(EnrollmentStatus.InProgress));
-            Assert.That(enrollment.CompletedAt, Is.Null);
-        });
+        Assert.Equal(userId, enrollment.UserId);
+        Assert.Equal(campaignId, enrollment.CampaignId);
+        Assert.Equal(EnrollmentStatus.InProgress, enrollment.Status);
+        Assert.Null(enrollment.CompletedAt);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_StampsEnrolledAt()
     {
         DateTime before = DateTime.UtcNow;
-        Assert.That(new CampaignEnrollment(Guid.NewGuid(), Guid.NewGuid()).EnrolledAt, Is.GreaterThanOrEqualTo(before));
+        Assert.True(new CampaignEnrollment(Guid.NewGuid(), Guid.NewGuid()).EnrolledAt >= before);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyUserId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new CampaignEnrollment(Guid.Empty, Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyCampaignId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new CampaignEnrollment(Guid.NewGuid(), Guid.Empty));
     }
 
-    [Test]
+    [Fact]
     public void Complete_SetsStatusAndCompletedAt()
     {
         CampaignEnrollment enrollment = new(Guid.NewGuid(), Guid.NewGuid());
@@ -49,14 +46,11 @@ public class CampaignEnrollmentTests
 
         enrollment.Complete();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(enrollment.Status, Is.EqualTo(EnrollmentStatus.Completed));
-            Assert.That(enrollment.CompletedAt, Is.GreaterThanOrEqualTo(before));
-        });
+        Assert.Equal(EnrollmentStatus.Completed, enrollment.Status);
+        Assert.True(enrollment.CompletedAt >= before);
     }
 
-    [Test]
+    [Fact]
     public void Complete_AlreadyCompleted_Throws()
     {
         CampaignEnrollment enrollment = new(Guid.NewGuid(), Guid.NewGuid());
@@ -68,7 +62,7 @@ public class CampaignEnrollmentTests
 
 public class UnitCompletionTests
 {
-    [Test]
+    [Fact]
     public void Constructor_SetsUserAndUnit()
     {
         Guid userId = Guid.NewGuid();
@@ -76,27 +70,24 @@ public class UnitCompletionTests
 
         UnitCompletion completion = new(userId, unitId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(completion.UserId, Is.EqualTo(userId));
-            Assert.That(completion.CampaignUnitId, Is.EqualTo(unitId));
-        });
+        Assert.Equal(userId, completion.UserId);
+        Assert.Equal(unitId, completion.CampaignUnitId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_StampsCompletedAt()
     {
         DateTime before = DateTime.UtcNow;
-        Assert.That(new UnitCompletion(Guid.NewGuid(), Guid.NewGuid()).CompletedAt, Is.GreaterThanOrEqualTo(before));
+        Assert.True(new UnitCompletion(Guid.NewGuid(), Guid.NewGuid()).CompletedAt >= before);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyUserId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UnitCompletion(Guid.Empty, Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyUnitId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UnitCompletion(Guid.NewGuid(), Guid.Empty));
@@ -105,7 +96,7 @@ public class UnitCompletionTests
 
 public class UnitProblemTests
 {
-    [Test]
+    [Fact]
     public void Constructor_SetsUnitProblemAndSortOrder()
     {
         Guid unitId = Guid.NewGuid();
@@ -113,21 +104,18 @@ public class UnitProblemTests
 
         UnitProblem unitProblem = new(unitId, problemId, 4);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(unitProblem.CampaignUnitId, Is.EqualTo(unitId));
-            Assert.That(unitProblem.ProblemId, Is.EqualTo(problemId));
-            Assert.That(unitProblem.SortOrder, Is.EqualTo(4));
-        });
+        Assert.Equal(unitId, unitProblem.CampaignUnitId);
+        Assert.Equal(problemId, unitProblem.ProblemId);
+        Assert.Equal(4, unitProblem.SortOrder);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyUnitId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UnitProblem(Guid.Empty, Guid.NewGuid(), 0));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyProblemId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new UnitProblem(Guid.NewGuid(), Guid.Empty, 0));
@@ -136,7 +124,7 @@ public class UnitProblemTests
 
 public class CampaignPrerequisiteTests
 {
-    [Test]
+    [Fact]
     public void Constructor_SetsBothCampaignIds()
     {
         Guid campaignId = Guid.NewGuid();
@@ -144,20 +132,17 @@ public class CampaignPrerequisiteTests
 
         CampaignPrerequisite prerequisite = new(campaignId, requiredCampaignId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(prerequisite.CampaignId, Is.EqualTo(campaignId));
-            Assert.That(prerequisite.RequiredCampaignId, Is.EqualTo(requiredCampaignId));
-        });
+        Assert.Equal(campaignId, prerequisite.CampaignId);
+        Assert.Equal(requiredCampaignId, prerequisite.RequiredCampaignId);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyCampaignId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new CampaignPrerequisite(Guid.Empty, Guid.NewGuid()));
     }
 
-    [Test]
+    [Fact]
     public void Constructor_EmptyRequiredCampaignId_Throws()
     {
         Assert.Throws<ArgumentException>(() => new CampaignPrerequisite(Guid.NewGuid(), Guid.Empty));

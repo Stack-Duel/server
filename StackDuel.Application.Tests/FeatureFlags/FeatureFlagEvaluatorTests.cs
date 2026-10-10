@@ -8,7 +8,7 @@ public class FeatureFlagEvaluatorTests
 {
     private static readonly Guid UserId = Guid.NewGuid();
 
-    [Test]
+    [Fact]
     public void Evaluate_UserDenyOverride_BeatsGroupAllowRolloutAndDefault()
     {
         var data = new FeatureFlagEvaluationData(
@@ -19,10 +19,10 @@ public class FeatureFlagEvaluatorTests
             DecisionEffect.Allow
         );
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, UserId), Is.False);
+        Assert.False(FeatureFlagEvaluator.Evaluate(data, UserId));
     }
 
-    [Test]
+    [Fact]
     public void Evaluate_UserAllowOverride_BeatsGroupDenyAndDefaultDisabled()
     {
         var data = new FeatureFlagEvaluationData(
@@ -33,10 +33,10 @@ public class FeatureFlagEvaluatorTests
             DecisionEffect.Deny
         );
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, UserId), Is.True);
+        Assert.True(FeatureFlagEvaluator.Evaluate(data, UserId));
     }
 
-    [Test]
+    [Fact]
     public void Evaluate_NoUserOverride_GroupDenyBeatsRolloutAndDefault()
     {
         var data = new FeatureFlagEvaluationData(
@@ -47,38 +47,38 @@ public class FeatureFlagEvaluatorTests
             DecisionEffect.Deny
         );
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, UserId), Is.False);
+        Assert.False(FeatureFlagEvaluator.Evaluate(data, UserId));
     }
 
-    [Test]
+    [Fact]
     public void Evaluate_NoOverrides_RolloutMatchBeatsDefaultDisabled()
     {
         var data = new FeatureFlagEvaluationData("flag", DefaultEnabled: false, RolloutPercentage: 100, null, null);
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, UserId), Is.True);
+        Assert.True(FeatureFlagEvaluator.Evaluate(data, UserId));
     }
 
-    [Test]
+    [Fact]
     public void Evaluate_NoOverrides_RolloutNonMatch_FallsThroughToDefault()
     {
         var data = new FeatureFlagEvaluationData("flag", DefaultEnabled: true, RolloutPercentage: 0, null, null);
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, UserId), Is.True);
+        Assert.True(FeatureFlagEvaluator.Evaluate(data, UserId));
     }
 
-    [Test]
+    [Fact]
     public void Evaluate_AnonymousUser_NeverTriggersRolloutRegardlessOfPercentage()
     {
         var data = new FeatureFlagEvaluationData("flag", DefaultEnabled: false, RolloutPercentage: 100, null, null);
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, userId: null), Is.False);
+        Assert.False(FeatureFlagEvaluator.Evaluate(data, userId: null));
     }
 
-    [Test]
+    [Fact]
     public void Evaluate_AnonymousUser_FallsThroughToDefaultEnabled()
     {
         var data = new FeatureFlagEvaluationData("flag", DefaultEnabled: true, RolloutPercentage: 0, null, null);
 
-        Assert.That(FeatureFlagEvaluator.Evaluate(data, userId: null), Is.True);
+        Assert.True(FeatureFlagEvaluator.Evaluate(data, userId: null));
     }
 }

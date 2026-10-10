@@ -23,8 +23,7 @@ public class GetSubmissionStatusHandlerTests
 
     private static readonly Guid TestCaseId = Guid.NewGuid();
 
-    [SetUp]
-    public void SetUp()
+    public GetSubmissionStatusHandlerTests()
     {
         _submissionRepository = new Mock<ISubmissionWriteRepository>();
         _testSuiteRepository = new Mock<ITestSuiteWriteRepository>();
@@ -51,7 +50,7 @@ public class GetSubmissionStatusHandlerTests
     private static Submission CreateSubmission(Guid userId) =>
         new(userId, Guid.NewGuid(), SubmissionType.Submit, new SourceCode("print(1)"), [TestCaseId]);
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionNotFound_ReturnsNotFound()
     {
         var submissionId = Guid.NewGuid();
@@ -64,10 +63,10 @@ public class GetSubmissionStatusHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionBelongsToDifferentUser_ReturnsNotFound()
     {
         var owner = Guid.NewGuid();
@@ -83,10 +82,10 @@ public class GetSubmissionStatusHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoJob_ReturnsDtoWithNullCurrentStepName()
     {
         var userId = Guid.NewGuid();
@@ -102,16 +101,13 @@ public class GetSubmissionStatusHandlerTests
 
         var result = await _handler.Handle(new GetSubmissionStatusQuery(submissionId, userId), CancellationToken.None);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.CurrentStepName, Is.Null);
-            Assert.That(result.Value.SubmissionId, Is.EqualTo(submission.Id));
-            Assert.That(result.Value.Results, Has.Count.EqualTo(1));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.CurrentStepName);
+        Assert.Equal(submission.Id, result.Value.SubmissionId);
+        Assert.Single(result.Value.Results);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_WithActiveJob_ResolvesCurrentStepNameFromPipeline()
     {
         var userId = Guid.NewGuid();
@@ -134,10 +130,10 @@ public class GetSubmissionStatusHandlerTests
 
         var result = await _handler.Handle(new GetSubmissionStatusQuery(submissionId, userId), CancellationToken.None);
 
-        Assert.That(result.Value.CurrentStepName, Is.EqualTo("polling judge0"));
+        Assert.Equal("polling judge0", result.Value.CurrentStepName);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MapsResultInputsAndExpectedOutputsFromTestSuiteRepository()
     {
         var userId = Guid.NewGuid();
@@ -163,12 +159,9 @@ public class GetSubmissionStatusHandlerTests
         var result = await _handler.Handle(new GetSubmissionStatusQuery(submissionId, userId), CancellationToken.None);
 
         var resultDto = result.Value.Results.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(resultDto.Input, Is.EqualTo("2 3"));
-            Assert.That(resultDto.ExpectedOutput, Is.EqualTo("5"));
-            Assert.That(resultDto.ActualOutput, Is.EqualTo("3"));
-            Assert.That(resultDto.Status, Is.EqualTo(SubmissionResultStatus.WrongAnswer));
-        });
+        Assert.Equal("2 3", resultDto.Input);
+        Assert.Equal("5", resultDto.ExpectedOutput);
+        Assert.Equal("3", resultDto.ActualOutput);
+        Assert.Equal(SubmissionResultStatus.WrongAnswer, resultDto.Status);
     }
 }

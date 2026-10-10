@@ -18,8 +18,7 @@ public class GetAdminProblemsPageableHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetAdminProblemsPageableHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminProblemsPageableHandlerTests()
     {
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
@@ -42,7 +41,7 @@ public class GetAdminProblemsPageableHandlerTests
             "alice"
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_PassesThroughPageMetadata()
     {
         var page = new PageResult<AdminProblemListRowDto>
@@ -69,21 +68,18 @@ public class GetAdminProblemsPageableHandlerTests
         var query = new GetAdminProblemsPageableQuery(pagination, "two");
         Result<PageResult<AdminProblemListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Total, Is.EqualTo(42));
-            Assert.That(result.Value.Page, Is.EqualTo(2));
-            Assert.That(result.Value.Size, Is.EqualTo(10));
-            Assert.That(result.Value.Results, Has.Count.EqualTo(1));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(42, result.Value.Total);
+        Assert.Equal(2, result.Value.Page);
+        Assert.Equal(10, result.Value.Size);
+        Assert.Single(result.Value.Results);
         _problemReadRepository.Verify(
             x => x.GetAdminProblemsPagedAsync(pagination, "two", It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_KnownLanguageVersion_MapsDisplayName()
     {
         var language = new Language(new LanguageName("Python"), new LanguageSlug("python"), Guid.NewGuid());
@@ -112,10 +108,10 @@ public class GetAdminProblemsPageableHandlerTests
         var query = new GetAdminProblemsPageableQuery(new PaginationRequest { Page = 1, Size = 20 }, null);
         Result<PageResult<AdminProblemListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results[0].Languages, Is.EquivalentTo(new[] { "Python 3.12" }));
+        Assert.Equivalent(new[] { "Python 3.12" }, result.Value.Results[0].Languages, strict: true);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnknownLanguageVersion_FallsBackToUnknown()
     {
         _problemReadRepository
@@ -142,18 +138,19 @@ public class GetAdminProblemsPageableHandlerTests
         var query = new GetAdminProblemsPageableQuery(new PaginationRequest { Page = 1, Size = 20 }, null);
         Result<PageResult<AdminProblemListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results[0].Languages, Is.EquivalentTo(new[] { "Unknown" }));
+        Assert.Equivalent(new[] { "Unknown" }, result.Value.Results[0].Languages, strict: true);
     }
 
-    [TestCase(0, DifficultyTier.Beginner)]
-    [TestCase(200, DifficultyTier.Beginner)]
-    [TestCase(201, DifficultyTier.Easy)]
-    [TestCase(500, DifficultyTier.Easy)]
-    [TestCase(501, DifficultyTier.Intermediate)]
-    [TestCase(1000, DifficultyTier.Intermediate)]
-    [TestCase(1001, DifficultyTier.Advanced)]
-    [TestCase(2000, DifficultyTier.Advanced)]
-    [TestCase(2001, DifficultyTier.Expert)]
+    [Theory]
+    [InlineData(0, DifficultyTier.Beginner)]
+    [InlineData(200, DifficultyTier.Beginner)]
+    [InlineData(201, DifficultyTier.Easy)]
+    [InlineData(500, DifficultyTier.Easy)]
+    [InlineData(501, DifficultyTier.Intermediate)]
+    [InlineData(1000, DifficultyTier.Intermediate)]
+    [InlineData(1001, DifficultyTier.Advanced)]
+    [InlineData(2000, DifficultyTier.Advanced)]
+    [InlineData(2001, DifficultyTier.Expert)]
     public async Task Handle_MapsDifficultyValueToExpectedTier(int difficultyValue, DifficultyTier expectedTier)
     {
         _problemReadRepository
@@ -180,6 +177,6 @@ public class GetAdminProblemsPageableHandlerTests
         var query = new GetAdminProblemsPageableQuery(new PaginationRequest { Page = 1, Size = 20 }, null);
         Result<PageResult<AdminProblemListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Value.Results[0].DifficultyTier, Is.EqualTo(expectedTier));
+        Assert.Equal(expectedTier, result.Value.Results[0].DifficultyTier);
     }
 }

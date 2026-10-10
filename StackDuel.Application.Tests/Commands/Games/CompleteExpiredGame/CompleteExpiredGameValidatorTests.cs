@@ -8,59 +8,58 @@ public class CompleteExpiredGameValidatorTests
 {
     private CompleteExpiredGameValidator _validator = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CompleteExpiredGameValidatorTests()
     {
         _validator = new CompleteExpiredGameValidator();
     }
 
-    [Test]
+    [Fact]
     public void Validate_ValidCommand_IsValid()
     {
         var command = new CompleteExpiredGameCommand(Guid.NewGuid(), DateTime.UtcNow, 0);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_EmptyGameId_IsInvalid()
     {
         var command = new CompleteExpiredGameCommand(Guid.Empty, DateTime.UtcNow, 0);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_DefaultExpectedStartedAt_IsInvalid()
     {
         var command = new CompleteExpiredGameCommand(Guid.NewGuid(), default, 0);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_NegativeRescheduleCount_IsInvalid()
     {
         var command = new CompleteExpiredGameCommand(Guid.NewGuid(), DateTime.UtcNow, -1);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.False);
+        Assert.False(result.IsValid);
     }
 
-    [Test]
+    [Fact]
     public void Validate_ZeroRescheduleCount_IsValid()
     {
         var command = new CompleteExpiredGameCommand(Guid.NewGuid(), DateTime.UtcNow, 0);
 
         ValidationResult result = _validator.Validate(command);
 
-        Assert.That(result.IsValid, Is.True);
+        Assert.True(result.IsValid);
     }
 }

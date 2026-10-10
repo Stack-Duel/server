@@ -19,8 +19,7 @@ public class LeaveGameHandlerTests
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private LeaveGameHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public LeaveGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -34,21 +33,21 @@ public class LeaveGameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalidAndDoesNotTouchRepository()
     {
         var command = new LeaveGameCommand(Guid.Empty, Guid.NewGuid());
 
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _gameReadRepository.Verify(
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -58,10 +57,10 @@ public class LeaveGameHandlerTests
         var command = new LeaveGameCommand(Guid.NewGuid(), Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NotParticipant_ReturnsForbidden()
     {
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], 600);
@@ -72,10 +71,10 @@ public class LeaveGameHandlerTests
         var command = new LeaveGameCommand(game.Id, Guid.NewGuid());
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotPending_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
@@ -89,10 +88,10 @@ public class LeaveGameHandlerTests
         var command = new LeaveGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_RemovesParticipantAndKeepsLobbyOpen()
     {
         var userId = Guid.NewGuid();
@@ -106,9 +105,9 @@ public class LeaveGameHandlerTests
         var command = new LeaveGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(game.Participants.Any(p => p.UserId == userId), Is.False);
-        Assert.That(game.Status, Is.EqualTo(GameStatus.Pending));
+        Assert.True(result.IsSuccess);
+        Assert.DoesNotContain(game.Participants, p => p.UserId == userId);
+        Assert.Equal(GameStatus.Pending, game.Status);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
@@ -116,7 +115,7 @@ public class LeaveGameHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LastParticipantLeaves_CancelsLobby()
     {
         var userId = Guid.NewGuid();
@@ -129,7 +128,7 @@ public class LeaveGameHandlerTests
         var command = new LeaveGameCommand(game.Id, userId);
         Result result = await _handler.Handle(command, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(game.Status, Is.EqualTo(GameStatus.Cancelled));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(GameStatus.Cancelled, game.Status);
     }
 }

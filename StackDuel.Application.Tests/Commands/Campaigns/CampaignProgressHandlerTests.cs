@@ -16,8 +16,7 @@ public class EnrollInCampaignHandlerTests
     private Mock<ICampaignEnrollmentWriteRepository> _enrollmentWriteRepository = null!;
     private EnrollInCampaignHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public EnrollInCampaignHandlerTests()
     {
         _campaignReadRepository = new Mock<ICampaignReadRepository>();
         _progressReadRepository = new Mock<ICampaignProgressReadRepository>();
@@ -45,7 +44,7 @@ public class EnrollInCampaignHandlerTests
     private Task<Result<Guid>> Handle(Guid campaignId, Guid userId) =>
         _handler.Handle(new EnrollInCampaignCommand(campaignId, userId), CancellationToken.None);
 
-    [Test]
+    [Fact]
     public async Task Handle_PublishedCampaignAndNoExistingEnrollment_EnrollsTheUser()
     {
         Campaign campaign = CreatePublishedCampaign();
@@ -59,18 +58,15 @@ public class EnrollInCampaignHandlerTests
 
         Result<Guid> result = await Handle(campaign.Id, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
-        Assert.That(added, Is.Not.Null);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value, Is.EqualTo(added!.Id));
-            Assert.That(added!.UserId, Is.EqualTo(userId));
-            Assert.That(added.CampaignId, Is.EqualTo(campaign.Id));
-            Assert.That(added.Status, Is.EqualTo(EnrollmentStatus.InProgress));
-        });
+        Assert.NotNull(added);
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.Equal(added!.Id, result.Value);
+        Assert.Equal(userId, added!.UserId);
+        Assert.Equal(campaign.Id, added.CampaignId);
+        Assert.Equal(EnrollmentStatus.InProgress, added.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_CampaignNotFound_ReturnsNotFound()
     {
         _campaignReadRepository
@@ -79,10 +75,10 @@ public class EnrollInCampaignHandlerTests
 
         Result<Guid> result = await Handle(Guid.NewGuid(), Guid.NewGuid());
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DraftCampaign_ReturnsInvalid()
     {
         Campaign campaign = new("slug", "Title", "desc", CampaignDifficulty.Beginner);
@@ -90,14 +86,14 @@ public class EnrollInCampaignHandlerTests
 
         Result<Guid> result = await Handle(campaign.Id, Guid.NewGuid());
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         _enrollmentWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<CampaignEnrollment>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ArchivedCampaign_ReturnsInvalid()
     {
         Campaign campaign = CreatePublishedCampaign();
@@ -106,10 +102,10 @@ public class EnrollInCampaignHandlerTests
 
         Result<Guid> result = await Handle(campaign.Id, Guid.NewGuid());
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AlreadyEnrolled_IsIdempotentAndReturnsTheExistingEnrollmentId()
     {
         Campaign campaign = CreatePublishedCampaign();
@@ -122,24 +118,24 @@ public class EnrollInCampaignHandlerTests
 
         Result<Guid> result = await Handle(campaign.Id, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
-        Assert.That(result.Value, Is.EqualTo(existing.Id));
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.Equal(existing.Id, result.Value);
         _enrollmentWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<CampaignEnrollment>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyCampaignId_ReturnsInvalid()
     {
-        Assert.That((await Handle(Guid.Empty, Guid.NewGuid())).Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, (await Handle(Guid.Empty, Guid.NewGuid())).Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyUserId_ReturnsInvalid()
     {
-        Assert.That((await Handle(Guid.NewGuid(), Guid.Empty)).Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, (await Handle(Guid.NewGuid(), Guid.Empty)).Status);
     }
 }
 
@@ -151,8 +147,7 @@ public class CompleteUnitHandlerTests
     private Mock<IUnitCompletionWriteRepository> _unitCompletionWriteRepository = null!;
     private CompleteUnitHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public CompleteUnitHandlerTests()
     {
         _campaignReadRepository = new Mock<ICampaignReadRepository>();
         _progressReadRepository = new Mock<ICampaignProgressReadRepository>();
@@ -167,7 +162,6 @@ public class CompleteUnitHandlerTests
         );
     }
 
-    /// <summary>A published campaign with one module holding <paramref name="unitCount"/> units.</summary>
     private static (Campaign Campaign, IReadOnlyList<CampaignUnit> Units) CreateCampaign(int unitCount)
     {
         Campaign campaign = new("slug", "Title", "desc", CampaignDifficulty.Beginner);
@@ -189,7 +183,7 @@ public class CompleteUnitHandlerTests
     private Task<Result> Handle(Guid unitId, Guid userId) =>
         _handler.Handle(new CompleteUnitCommand(unitId, userId), CancellationToken.None);
 
-    [Test]
+    [Fact]
     public async Task Handle_FirstCompletionOfOneOfSeveralUnits_RecordsItWithoutCompletingTheCampaign()
     {
         (Campaign campaign, IReadOnlyList<CampaignUnit> units) = CreateCampaign(unitCount: 2);
@@ -201,7 +195,7 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(units[0].Id, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
+        Assert.Equal(ResultStatus.Ok, result.Status);
         _unitCompletionWriteRepository.Verify(
             x =>
                 x.AddAsync(
@@ -216,7 +210,7 @@ public class CompleteUnitHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnitAlreadyCompleted_IsIdempotentAndRecordsNothing()
     {
         Guid userId = Guid.NewGuid();
@@ -227,7 +221,7 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(unitId, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
+        Assert.Equal(ResultStatus.Ok, result.Status);
         _unitCompletionWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<UnitCompletion>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -238,7 +232,7 @@ public class CompleteUnitHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UnitBelongsToNoCampaign_ReturnsNotFound()
     {
         _campaignReadRepository
@@ -247,14 +241,14 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(Guid.NewGuid(), Guid.NewGuid());
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
         _unitCompletionWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<UnitCompletion>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LastUnitAndNoEnrollmentYet_AddsACompletedEnrollment()
     {
         (Campaign campaign, IReadOnlyList<CampaignUnit> units) = CreateCampaign(unitCount: 1);
@@ -269,7 +263,7 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(units[0].Id, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
+        Assert.Equal(ResultStatus.Ok, result.Status);
         _enrollmentWriteRepository.Verify(
             x =>
                 x.AddAsync(
@@ -280,7 +274,7 @@ public class CompleteUnitHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LastUnitWithAnInProgressEnrollment_CompletesAndSavesThatEnrollment()
     {
         (Campaign campaign, IReadOnlyList<CampaignUnit> units) = CreateCampaign(unitCount: 1);
@@ -296,15 +290,15 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(units[0].Id, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
-        Assert.That(enrollment.Status, Is.EqualTo(EnrollmentStatus.Completed));
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.Equal(EnrollmentStatus.Completed, enrollment.Status);
         _enrollmentWriteRepository.Verify(
             x => x.SaveChangesAsync(enrollment, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_LastUnitWithAnAlreadyCompletedEnrollment_LeavesItAlone()
     {
         (Campaign campaign, IReadOnlyList<CampaignUnit> units) = CreateCampaign(unitCount: 1);
@@ -322,15 +316,15 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(units[0].Id, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
-        Assert.That(enrollment.CompletedAt, Is.EqualTo(completedAt));
+        Assert.Equal(ResultStatus.Ok, result.Status);
+        Assert.Equal(completedAt, enrollment.CompletedAt);
         _enrollmentWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<CampaignEnrollment>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_CampaignWithNoUnits_RecordsTheCompletionWithoutCompletingTheCampaign()
     {
         (Campaign campaign, _) = CreateCampaign(unitCount: 0);
@@ -340,14 +334,14 @@ public class CompleteUnitHandlerTests
 
         Result result = await Handle(unitId, userId);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Ok));
+        Assert.Equal(ResultStatus.Ok, result.Status);
         _enrollmentWriteRepository.Verify(
             x => x.AddAsync(It.IsAny<CampaignEnrollment>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_SomeUnitsStillOutstanding_DoesNotCompleteTheCampaign()
     {
         (Campaign campaign, IReadOnlyList<CampaignUnit> units) = CreateCampaign(unitCount: 3);
@@ -365,32 +359,33 @@ public class CompleteUnitHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyUnitId_ReturnsInvalid()
     {
-        Assert.That((await Handle(Guid.Empty, Guid.NewGuid())).Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, (await Handle(Guid.Empty, Guid.NewGuid())).Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EmptyUserId_ReturnsInvalid()
     {
-        Assert.That((await Handle(Guid.NewGuid(), Guid.Empty)).Status, Is.EqualTo(ResultStatus.Invalid));
+        Assert.Equal(ResultStatus.Invalid, (await Handle(Guid.NewGuid(), Guid.Empty)).Status);
     }
 }
 
 public class UnitTypeXpTests
 {
-    [TestCase(UnitType.Lesson, 10)]
-    [TestCase(UnitType.Quiz, 15)]
-    [TestCase(UnitType.Challenge, 25)]
+    [Theory]
+    [InlineData(UnitType.Lesson, 10)]
+    [InlineData(UnitType.Quiz, 15)]
+    [InlineData(UnitType.Challenge, 25)]
     public void For_ReturnsTheXpAwardedForEachUnitType(UnitType unitType, int expectedXp)
     {
-        Assert.That(UnitTypeXp.For(unitType), Is.EqualTo(expectedXp));
+        Assert.Equal(expectedXp, UnitTypeXp.For(unitType));
     }
 
-    [Test]
+    [Fact]
     public void For_UnknownUnitType_FallsBackToTheLessonAward()
     {
-        Assert.That(UnitTypeXp.For((UnitType)99), Is.EqualTo(10));
+        Assert.Equal(10, UnitTypeXp.For((UnitType)99));
     }
 }

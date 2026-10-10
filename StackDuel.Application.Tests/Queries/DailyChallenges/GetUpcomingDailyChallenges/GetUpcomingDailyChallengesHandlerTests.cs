@@ -15,8 +15,7 @@ public class GetUpcomingDailyChallengesHandlerTests
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private GetUpcomingDailyChallengesHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetUpcomingDailyChallengesHandlerTests()
     {
         _dailyChallengeRepository = new Mock<IDailyChallengeRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
@@ -26,7 +25,7 @@ public class GetUpcomingDailyChallengesHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoUpcomingChallenges_ReturnsEmptyWithoutQueryingProblems()
     {
         _dailyChallengeRepository
@@ -35,14 +34,14 @@ public class GetUpcomingDailyChallengesHandlerTests
 
         var result = await _handler.Handle(new GetUpcomingDailyChallengesQuery(), CancellationToken.None);
 
-        Assert.That(result.Value, Is.Empty);
+        Assert.Empty(result.Value);
         _problemReadRepository.Verify(
             x => x.FindByIdsAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_UpcomingChallengesExist_MapsProblemDetails()
     {
         var problemId = Guid.NewGuid();
@@ -72,17 +71,14 @@ public class GetUpcomingDailyChallengesHandlerTests
         var result = await _handler.Handle(new GetUpcomingDailyChallengesQuery(), CancellationToken.None);
 
         var dto = result.Value.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.Date, Is.EqualTo(date));
-            Assert.That(dto.ProblemId, Is.EqualTo(problemId));
-            Assert.That(dto.ProblemSlug, Is.EqualTo("two-sum"));
-            Assert.That(dto.ProblemTitle, Is.EqualTo("Two Sum"));
-            Assert.That(dto.Status, Is.EqualTo(ProblemStatus.Published));
-        });
+        Assert.Equal(date, dto.Date);
+        Assert.Equal(problemId, dto.ProblemId);
+        Assert.Equal("two-sum", dto.ProblemSlug);
+        Assert.Equal("Two Sum", dto.ProblemTitle);
+        Assert.Equal(ProblemStatus.Published, dto.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ProblemNoLongerExists_FallsBackToPlaceholder()
     {
         var problemId = Guid.NewGuid();
@@ -97,10 +93,7 @@ public class GetUpcomingDailyChallengesHandlerTests
         var result = await _handler.Handle(new GetUpcomingDailyChallengesQuery(), CancellationToken.None);
 
         var dto = result.Value.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.ProblemTitle, Is.EqualTo("(problem no longer exists)"));
-            Assert.That(dto.Status, Is.EqualTo(ProblemStatus.Archived));
-        });
+        Assert.Equal("(problem no longer exists)", dto.ProblemTitle);
+        Assert.Equal(ProblemStatus.Archived, dto.Status);
     }
 }

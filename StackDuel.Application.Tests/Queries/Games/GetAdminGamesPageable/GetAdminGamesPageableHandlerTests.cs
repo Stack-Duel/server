@@ -18,8 +18,7 @@ public class GetAdminGamesPageableHandlerTests
     private Mock<IUserReadRepository> _userReadRepository = null!;
     private GetAdminGamesPageableHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminGamesPageableHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _userReadRepository = new Mock<IUserReadRepository>();
@@ -29,7 +28,7 @@ public class GetAdminGamesPageableHandlerTests
     private static UserDto MakeUser(Guid id, string username) =>
         new(id, $"auth0|{id}", username, null, null, false, null, DateTime.UtcNow, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_PassesStatusAndPaginationToRepository()
     {
         var paginationRequest = new PaginationRequest { Page = 2, Size = 10 };
@@ -53,14 +52,14 @@ public class GetAdminGamesPageableHandlerTests
         var query = new GetAdminGamesPageableQuery(GameStatus.Completed, paginationRequest);
         Result<PageResult<AdminGameListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _gameReadRepository.Verify(
             r => r.GetAdminGamesPagedAsync(GameStatus.Completed, paginationRequest, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_ResolvesGameModeNamesAndParticipantUsernames()
     {
         var userId = Guid.NewGuid();
@@ -89,19 +88,16 @@ public class GetAdminGamesPageableHandlerTests
         var query = new GetAdminGamesPageableQuery(null, paginationRequest);
         Result<PageResult<AdminGameListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         AdminGameListItemDto item = result.Value.Results.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(item.GameId, Is.EqualTo(game.Id));
-            Assert.That(item.GameModeKey, Is.EqualTo("duel"));
-            Assert.That(item.GameModeName, Is.EqualTo("Duel"));
-            Assert.That(item.Participants, Has.Count.EqualTo(1));
-            Assert.That(item.Participants[0].Username, Is.EqualTo("riva"));
-        });
+        Assert.Equal(game.Id, item.GameId);
+        Assert.Equal("duel", item.GameModeKey);
+        Assert.Equal("Duel", item.GameModeName);
+        Assert.Single(item.Participants);
+        Assert.Equal("riva", item.Participants[0].Username);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_MissingGameMode_FallsBackToUnknown()
     {
         var userId = Guid.NewGuid();
@@ -130,7 +126,7 @@ public class GetAdminGamesPageableHandlerTests
         Result<PageResult<AdminGameListItemDto>> result = await _handler.Handle(query, CancellationToken.None);
 
         AdminGameListItemDto item = result.Value.Results.Single();
-        Assert.That(item.GameModeKey, Is.EqualTo("unknown"));
-        Assert.That(item.GameModeName, Is.EqualTo("Unknown"));
+        Assert.Equal("unknown", item.GameModeKey);
+        Assert.Equal("Unknown", item.GameModeName);
     }
 }

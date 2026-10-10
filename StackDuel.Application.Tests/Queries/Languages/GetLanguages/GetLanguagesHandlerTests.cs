@@ -14,14 +14,13 @@ public class GetLanguagesHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetLanguagesHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetLanguagesHandlerTests()
     {
         _languageReadRepository = new Mock<ILanguageReadRepository>();
         _handler = new GetLanguagesHandler(_languageReadRepository.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoLanguages_ReturnsEmptyList()
     {
         _languageReadRepository.Setup(x => x.GetActiveLanguagesAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
@@ -31,11 +30,11 @@ public class GetLanguagesHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(result.Value, Is.Empty);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_MapsNameAndOnlyActiveVersions()
     {
         var language = new Language(new LanguageName("Python"), new LanguageSlug("python"), Guid.NewGuid());
@@ -52,15 +51,12 @@ public class GetLanguagesHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         LanguageDto dto = result.Value.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.Id, Is.EqualTo(language.Id));
-            Assert.That(dto.Name, Is.EqualTo("Python"));
-            Assert.That(dto.Versions, Has.Count.EqualTo(1));
-            Assert.That(dto.Versions.Single().Id, Is.EqualTo(activeVersion.Id));
-            Assert.That(dto.Versions.Single().Version, Is.EqualTo("3.12"));
-        });
+        Assert.Equal(language.Id, dto.Id);
+        Assert.Equal("Python", dto.Name);
+        Assert.Single(dto.Versions);
+        Assert.Equal(activeVersion.Id, dto.Versions.Single().Id);
+        Assert.Equal("3.12", dto.Versions.Single().Version);
     }
 }

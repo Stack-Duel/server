@@ -14,8 +14,7 @@ public class GetDuelHeadToHeadRecordHandlerTests
     private GetDuelHeadToHeadRecordHandler _handler = null!;
     private readonly GameMode _duelMode = new("duel", "Duel", "Head to head", true, 2, 2, Guid.NewGuid());
 
-    [SetUp]
-    public void SetUp()
+    public GetDuelHeadToHeadRecordHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _handler = new GetDuelHeadToHeadRecordHandler(_gameReadRepository.Object);
@@ -36,7 +35,7 @@ public class GetDuelHeadToHeadRecordHandlerTests
         return game;
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_DuelModeNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -48,10 +47,10 @@ public class GetDuelHeadToHeadRecordHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_TalliesWinsLossesAndDrawsAgainstThatSpecificOpponentOnly()
     {
         var userId = Guid.NewGuid();
@@ -73,16 +72,13 @@ public class GetDuelHeadToHeadRecordHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Wins, Is.EqualTo(1));
-            Assert.That(result.Value.Losses, Is.EqualTo(1));
-            Assert.That(result.Value.Draws, Is.EqualTo(1));
-            Assert.That(result.Value.GamesPlayed, Is.EqualTo(3));
-        });
+        Assert.Equal(1, result.Value.Wins);
+        Assert.Equal(1, result.Value.Losses);
+        Assert.Equal(1, result.Value.Draws);
+        Assert.Equal(3, result.Value.GamesPlayed);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoSharedGames_ReturnsAllZeroes()
     {
         _gameReadRepository
@@ -94,6 +90,6 @@ public class GetDuelHeadToHeadRecordHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.GamesPlayed, Is.EqualTo(0));
+        Assert.Equal(0, result.Value.GamesPlayed);
     }
 }

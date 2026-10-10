@@ -8,34 +8,31 @@ public class RoleTests
 {
     private static Role CreateRole(string name = "admin") => Role.Create(new Name(name));
 
-    [Test]
+    [Fact]
     public void Create_SetsNameAndAssignsAnId()
     {
         Role role = CreateRole("moderator");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(role.Name.Value, Is.EqualTo("moderator"));
-            Assert.That(role.Id.Value, Is.Not.EqualTo(Guid.Empty));
-        });
+        Assert.Equal("moderator", role.Name.Value);
+        Assert.NotEqual(Guid.Empty, role.Id.Value);
     }
 
-    [Test]
+    [Fact]
     public void Create_StartsWithNoPermissions()
     {
-        Assert.That(CreateRole().Permissions, Is.Empty);
+        Assert.Empty(CreateRole().Permissions);
     }
 
-    [Test]
+    [Fact]
     public void Create_GivesEachRoleADistinctId()
     {
         Role first = CreateRole();
         Role second = CreateRole();
 
-        Assert.That(first.Id, Is.Not.EqualTo(second.Id));
+        Assert.NotEqual(second.Id, first.Id);
     }
 
-    [Test]
+    [Fact]
     public void GrantPermission_AddsAnAllowEntry()
     {
         Role role = CreateRole();
@@ -44,14 +41,11 @@ public class RoleTests
         role.GrantPermission(permissionId);
 
         RolePermission granted = role.Permissions.Single();
-        Assert.Multiple(() =>
-        {
-            Assert.That(granted.PermissionId, Is.EqualTo(permissionId));
-            Assert.That(granted.Effect, Is.EqualTo(DecisionEffect.Allow));
-        });
+        Assert.Equal(permissionId, granted.PermissionId);
+        Assert.Equal(DecisionEffect.Allow, granted.Effect);
     }
 
-    [Test]
+    [Fact]
     public void DenyPermission_AddsADenyEntry()
     {
         Role role = CreateRole();
@@ -59,10 +53,10 @@ public class RoleTests
 
         role.DenyPermission(permissionId);
 
-        Assert.That(role.Permissions.Single().Effect, Is.EqualTo(DecisionEffect.Deny));
+        Assert.Equal(DecisionEffect.Deny, role.Permissions.Single().Effect);
     }
 
-    [Test]
+    [Fact]
     public void GrantPermission_DifferentPermissions_AreKeptSeparately()
     {
         Role role = CreateRole();
@@ -70,10 +64,10 @@ public class RoleTests
         role.GrantPermission(new PermissionId(Guid.NewGuid()));
         role.GrantPermission(new PermissionId(Guid.NewGuid()));
 
-        Assert.That(role.Permissions, Has.Count.EqualTo(2));
+        Assert.Equal(2, role.Permissions.Count);
     }
 
-    [Test]
+    [Fact]
     public void DenyPermission_AfterGrant_FlipsTheEffectInPlaceRatherThanDuplicating()
     {
         Role role = CreateRole();
@@ -82,14 +76,11 @@ public class RoleTests
         role.GrantPermission(permissionId);
         role.DenyPermission(permissionId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(role.Permissions, Has.Count.EqualTo(1));
-            Assert.That(role.Permissions.Single().Effect, Is.EqualTo(DecisionEffect.Deny));
-        });
+        Assert.Single(role.Permissions);
+        Assert.Equal(DecisionEffect.Deny, role.Permissions.Single().Effect);
     }
 
-    [Test]
+    [Fact]
     public void GrantPermission_AfterDeny_FlipsTheEffectBack()
     {
         Role role = CreateRole();
@@ -98,14 +89,11 @@ public class RoleTests
         role.DenyPermission(permissionId);
         role.GrantPermission(permissionId);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(role.Permissions, Has.Count.EqualTo(1));
-            Assert.That(role.Permissions.Single().Effect, Is.EqualTo(DecisionEffect.Allow));
-        });
+        Assert.Single(role.Permissions);
+        Assert.Equal(DecisionEffect.Allow, role.Permissions.Single().Effect);
     }
 
-    [Test]
+    [Fact]
     public void GrantPermission_SamePermissionTwice_DoesNotDuplicate()
     {
         Role role = CreateRole();
@@ -114,26 +102,23 @@ public class RoleTests
         role.GrantPermission(permissionId);
         role.GrantPermission(permissionId);
 
-        Assert.That(role.Permissions, Has.Count.EqualTo(1));
+        Assert.Single(role.Permissions);
     }
 }
 
 public class PermissionTests
 {
-    [Test]
+    [Fact]
     public void Create_SetsCodeDescriptionAndAssignsAnId()
     {
         Permission permission = Permission.Create(new PermissionCode("submission:create"), "Create a submission.");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(permission.Code.Value, Is.EqualTo("submission:create"));
-            Assert.That(permission.Description, Is.EqualTo("Create a submission."));
-            Assert.That(permission.Id.Value, Is.Not.EqualTo(Guid.Empty));
-        });
+        Assert.Equal("submission:create", permission.Code.Value);
+        Assert.Equal("Create a submission.", permission.Description);
+        Assert.NotEqual(Guid.Empty, permission.Id.Value);
     }
 
-    [Test]
+    [Fact]
     public void Create_GivesEachPermissionADistinctId()
     {
         PermissionCode code = new("submission:create");
@@ -141,7 +126,7 @@ public class PermissionTests
         Permission first = Permission.Create(code, "desc");
         Permission second = Permission.Create(code, "desc");
 
-        Assert.That(first.Id, Is.Not.EqualTo(second.Id));
+        Assert.NotEqual(second.Id, first.Id);
     }
 }
 
@@ -149,25 +134,22 @@ public class GroupTests
 {
     private static Group CreateGroup(string name = "admin") => Group.Create(new Name(name));
 
-    [Test]
+    [Fact]
     public void Create_SetsNameAndAssignsAnId()
     {
         Group group = CreateGroup("default-user");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(group.Name.Value, Is.EqualTo("default-user"));
-            Assert.That(group.Id.Value, Is.Not.EqualTo(Guid.Empty));
-        });
+        Assert.Equal("default-user", group.Name.Value);
+        Assert.NotEqual(Guid.Empty, group.Id.Value);
     }
 
-    [Test]
+    [Fact]
     public void Create_StartsWithNoRoleGrants()
     {
-        Assert.That(CreateGroup().RoleGrants, Is.Empty);
+        Assert.Empty(CreateGroup().RoleGrants);
     }
 
-    [Test]
+    [Fact]
     public void GrantRole_AddsTheRole()
     {
         Group group = CreateGroup();
@@ -175,10 +157,10 @@ public class GroupTests
 
         group.GrantRole(role);
 
-        Assert.That(group.RoleGrants.Single(), Is.SameAs(role));
+        Assert.Same(role, group.RoleGrants.Single());
     }
 
-    [Test]
+    [Fact]
     public void GrantRole_SameRoleTwice_IsStoredOnce()
     {
         Group group = CreateGroup();
@@ -187,10 +169,10 @@ public class GroupTests
         group.GrantRole(role);
         group.GrantRole(role);
 
-        Assert.That(group.RoleGrants, Has.Count.EqualTo(1));
+        Assert.Single(group.RoleGrants);
     }
 
-    [Test]
+    [Fact]
     public void GrantRole_DistinctRoles_AreBothKept()
     {
         Group group = CreateGroup();
@@ -198,10 +180,10 @@ public class GroupTests
         group.GrantRole(Role.Create(new Name("admin")));
         group.GrantRole(Role.Create(new Name("moderator")));
 
-        Assert.That(group.RoleGrants, Has.Count.EqualTo(2));
+        Assert.Equal(2, group.RoleGrants.Count);
     }
 
-    [Test]
+    [Fact]
     public void GrantRole_Null_Throws()
     {
         Group group = CreateGroup();
@@ -209,7 +191,7 @@ public class GroupTests
         Assert.Throws<ArgumentNullException>(() => group.GrantRole(null!));
     }
 
-    [Test]
+    [Fact]
     public void RevokeRole_RemovesAGrantedRole()
     {
         Group group = CreateGroup();
@@ -218,10 +200,10 @@ public class GroupTests
 
         group.RevokeRole(role);
 
-        Assert.That(group.RoleGrants, Is.Empty);
+        Assert.Empty(group.RoleGrants);
     }
 
-    [Test]
+    [Fact]
     public void RevokeRole_NotGranted_IsANoOp()
     {
         Group group = CreateGroup();
@@ -229,10 +211,10 @@ public class GroupTests
 
         group.RevokeRole(Role.Create(new Name("moderator")));
 
-        Assert.That(group.RoleGrants, Has.Count.EqualTo(1));
+        Assert.Single(group.RoleGrants);
     }
 
-    [Test]
+    [Fact]
     public void RoleGrants_IsASnapshotThatDoesNotTrackLaterGrants()
     {
         Group group = CreateGroup();
@@ -240,6 +222,6 @@ public class GroupTests
 
         group.GrantRole(Role.Create(new Name("admin")));
 
-        Assert.That(snapshot, Is.Empty);
+        Assert.Empty(snapshot);
     }
 }

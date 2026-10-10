@@ -18,8 +18,7 @@ public class GetProblemPoolMembersPagedHandlerTests
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
     private GetProblemPoolMembersPagedHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetProblemPoolMembersPagedHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
@@ -51,7 +50,7 @@ public class GetProblemPoolMembersPagedHandlerTests
             null
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolNotFound_ReturnsNotFound()
     {
         _problemPoolRepository
@@ -63,10 +62,10 @@ public class GetProblemPoolMembersPagedHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_PoolFound_PassesThroughPageMetadataFromRepository()
     {
         var pool = new ProblemPool("daily", "Daily challenge");
@@ -91,13 +90,10 @@ public class GetProblemPoolMembersPagedHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Value.Total, Is.EqualTo(42));
-            Assert.That(result.Value.Page, Is.EqualTo(2));
-            Assert.That(result.Value.Size, Is.EqualTo(10));
-            Assert.That(result.Value.Results, Has.Count.EqualTo(1));
-        });
+        Assert.Equal(42, result.Value.Total);
+        Assert.Equal(2, result.Value.Page);
+        Assert.Equal(10, result.Value.Size);
+        Assert.Single(result.Value.Results);
         _problemReadRepository.Verify(
             x => x.GetPoolMembersPagedAsync(pool.Id, pagination, It.IsAny<CancellationToken>()),
             Times.Once

@@ -26,8 +26,7 @@ public class GetGameStateHandlerTests
     private Mock<ITrackReadRepository> _trackReadRepository = null!;
     private GetGameStateHandler _handler = null!;
 
-    [SetUp]
-    public void SetUp()
+    public GetGameStateHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
@@ -52,7 +51,7 @@ public class GetGameStateHandlerTests
     private static UserDto MakeUser(Guid id, string username, string? imageUrl = null) =>
         new(id, $"auth0|{id}", username, imageUrl, null, false, null, DateTime.UtcNow, null, []);
 
-    [Test]
+    [Fact]
     public async Task Handle_GameNotFound_ReturnsNotFound()
     {
         _gameReadRepository
@@ -62,10 +61,10 @@ public class GetGameStateHandlerTests
         var query = new GetGameStateQuery(Guid.NewGuid(), Guid.NewGuid());
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RequestedByNonParticipant_ReturnsForbidden()
     {
         var participantId = Guid.NewGuid();
@@ -76,10 +75,10 @@ public class GetGameStateHandlerTests
         var query = new GetGameStateQuery(game.Id, Guid.NewGuid());
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Forbidden));
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_GameModeMissing_ReturnsError()
     {
         var participantId = Guid.NewGuid();
@@ -93,10 +92,10 @@ public class GetGameStateHandlerTests
         var query = new GetGameStateQuery(game.Id, participantId);
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.Error));
+        Assert.Equal(ResultStatus.Error, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_EveryoneStopped_SelfHealsCompletionAndCancelsScheduledExpiry()
     {
         var participantAId = Guid.NewGuid();
@@ -107,11 +106,8 @@ public class GetGameStateHandlerTests
         foreach (GameParticipant participant in game.Participants)
             participant.Forfeit();
 
-        Assert.That(
-            game.Status,
-            Is.EqualTo(GameStatus.Running),
-            "sanity: race simulated by forfeiting without Game.Forfeit's own self-heal"
-        );
+        // sanity: race simulated by forfeiting without Game.Forfeit's own self-heal
+        Assert.Equal(GameStatus.Running, game.Status);
 
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
 
@@ -126,9 +122,9 @@ public class GetGameStateHandlerTests
         var query = new GetGameStateQuery(game.Id, participantAId);
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
-        Assert.That(game.Status, Is.EqualTo(GameStatus.Completed));
-        Assert.That(result.Value.Status, Is.EqualTo(GameStatus.Completed));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(GameStatus.Completed, game.Status);
+        Assert.Equal(GameStatus.Completed, result.Value.Status);
 
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
@@ -138,7 +134,7 @@ public class GetGameStateHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_RunningGame_DoesNotPersistWhenNothingChanged()
     {
         var participantId = Guid.NewGuid();
@@ -158,7 +154,7 @@ public class GetGameStateHandlerTests
         var query = new GetGameStateQuery(game.Id, participantId);
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -169,7 +165,7 @@ public class GetGameStateHandlerTests
         );
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_Success_MapsParticipantsAndFallsBackForMissingUsers()
     {
         var knownUserId = Guid.NewGuid();
@@ -202,39 +198,30 @@ public class GetGameStateHandlerTests
         var query = new GetGameStateQuery(game.Id, knownUserId);
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
-        Assert.That(result.IsSuccess, Is.True);
+        Assert.True(result.IsSuccess);
         GameStateDto dto = result.Value;
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(dto.GameId, Is.EqualTo(game.Id));
-            Assert.That(dto.GameModeId, Is.EqualTo(game.GameModeId));
-            Assert.That(dto.GameModeKey, Is.EqualTo("blitz"));
-            Assert.That(dto.Status, Is.EqualTo(GameStatus.Running));
-            Assert.That(dto.TimeLimitInSeconds, Is.EqualTo(600));
-            Assert.That(dto.EndedAt, Is.Null);
-            Assert.That(dto.Participants, Has.Count.EqualTo(2));
-            Assert.That(dto.TechStacks, Is.EquivalentTo(new[] { "Python" }));
-        });
+        Assert.Equal(game.Id, dto.GameId);
+        Assert.Equal(game.GameModeId, dto.GameModeId);
+        Assert.Equal("blitz", dto.GameModeKey);
+        Assert.Equal(GameStatus.Running, dto.Status);
+        Assert.Equal(600, dto.TimeLimitInSeconds);
+        Assert.Null(dto.EndedAt);
+        Assert.Equal(2, dto.Participants.Count);
+        Assert.Equivalent(new[] { "Python" }, dto.TechStacks, strict: true);
 
         GameParticipantDto knownDto = dto.Participants.Single(p => p.UserId == knownUserId);
-        Assert.Multiple(() =>
-        {
-            Assert.That(knownDto.Username, Is.EqualTo("alice"));
-            Assert.That(knownDto.ImageUrl, Is.EqualTo("https://example.com/a.png"));
-            Assert.That(knownDto.Score, Is.EqualTo(1));
-            Assert.That(knownDto.CurrentProblem, Is.Not.Null);
-            Assert.That(knownDto.CurrentProblem!.ProblemId, Is.EqualTo(initialProblemId));
-            Assert.That(knownDto.HasForfeited, Is.False);
-            Assert.That(knownDto.HasFinishedProblems, Is.False);
-        });
+        Assert.Equal("alice", knownDto.Username);
+        Assert.Equal("https://example.com/a.png", knownDto.ImageUrl);
+        Assert.Equal(1, knownDto.Score);
+        Assert.NotNull(knownDto.CurrentProblem);
+        Assert.Equal(initialProblemId, knownDto.CurrentProblem!.ProblemId);
+        Assert.False(knownDto.HasForfeited);
+        Assert.False(knownDto.HasFinishedProblems);
 
         GameParticipantDto unknownDto = dto.Participants.Single(p => p.UserId == unknownUserId);
-        Assert.Multiple(() =>
-        {
-            Assert.That(unknownDto.Username, Is.EqualTo(string.Empty));
-            Assert.That(unknownDto.ImageUrl, Is.Null);
-            Assert.That(unknownDto.CurrentProblem, Is.Null);
-        });
+        Assert.Equal(string.Empty, unknownDto.Username);
+        Assert.Null(unknownDto.ImageUrl);
+        Assert.Null(unknownDto.CurrentProblem);
     }
 }

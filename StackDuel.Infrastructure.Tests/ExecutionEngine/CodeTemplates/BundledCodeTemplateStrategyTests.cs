@@ -247,7 +247,6 @@ public class ReactCodeTemplateStrategyTests
         return entries;
     }
 
-    /// <summary>A transpiler that passes source through, so assertions can see the wrapped source.</summary>
     private static Mock<IJsxTranspiler> PassThroughTranspiler()
     {
         Mock<IJsxTranspiler> transpiler = new();

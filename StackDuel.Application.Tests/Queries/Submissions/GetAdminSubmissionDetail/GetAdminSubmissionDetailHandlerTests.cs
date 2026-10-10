@@ -25,8 +25,7 @@ public class GetAdminSubmissionDetailHandlerTests
 
     private static readonly Guid TestCaseId = Guid.NewGuid();
 
-    [SetUp]
-    public void SetUp()
+    public GetAdminSubmissionDetailHandlerTests()
     {
         _submissionRepository = new Mock<ISubmissionWriteRepository>();
         _submissionReadRepository = new Mock<ISubmissionReadRepository>();
@@ -76,7 +75,7 @@ public class GetAdminSubmissionDetailHandlerTests
             submission.ExecutionTime
         );
 
-    [Test]
+    [Fact]
     public async Task Handle_SubmissionNotFound_ReturnsNotFound()
     {
         var submissionId = Guid.NewGuid();
@@ -89,10 +88,10 @@ public class GetAdminSubmissionDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_AdminContextNotFound_ReturnsNotFound()
     {
         var submissionId = Guid.NewGuid();
@@ -110,10 +109,10 @@ public class GetAdminSubmissionDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Status, Is.EqualTo(ResultStatus.NotFound));
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_NoJob_ReturnsDtoWithNullJobAndMappedResults()
     {
         var submissionId = Guid.NewGuid();
@@ -135,20 +134,17 @@ public class GetAdminSubmissionDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.IsSuccess, Is.True);
-            Assert.That(result.Value.Job, Is.Null);
-            Assert.That(result.Value.Id, Is.EqualTo(submission.Id));
-            Assert.That(result.Value.ProblemTitle, Is.EqualTo("Two Sum"));
-            Assert.That(result.Value.MemoryUsage, Is.EqualTo(256));
-            Assert.That(result.Value.ExecutionTime, Is.EqualTo(12));
-            Assert.That(result.Value.Results, Has.Count.EqualTo(1));
-            Assert.That(result.Value.Results[0].Status, Is.EqualTo(SubmissionResultStatus.Accepted));
-        });
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Job);
+        Assert.Equal(submission.Id, result.Value.Id);
+        Assert.Equal("Two Sum", result.Value.ProblemTitle);
+        Assert.Equal(256, result.Value.MemoryUsage);
+        Assert.Equal(12, result.Value.ExecutionTime);
+        Assert.Single(result.Value.Results);
+        Assert.Equal(SubmissionResultStatus.Accepted, result.Value.Results[0].Status);
     }
 
-    [Test]
+    [Fact]
     public async Task Handle_WithJob_DerivesStepStatusesForPendingRunningSucceededAndFailedSteps()
     {
         var submissionId = Guid.NewGuid();
@@ -186,17 +182,14 @@ public class GetAdminSubmissionDetailHandlerTests
             CancellationToken.None
         );
 
-        Assert.That(result.Value.Job, Is.Not.Null);
+        Assert.NotNull(result.Value.Job);
         var steps = result.Value.Job!.Steps;
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(steps[0].Status, Is.EqualTo(AdminSubmissionJobStepStatus.Succeeded));
-            Assert.That(steps[1].Status, Is.EqualTo(AdminSubmissionJobStepStatus.Failed));
-            Assert.That(steps[2].Status, Is.EqualTo(AdminSubmissionJobStepStatus.Pending));
-            Assert.That(steps[1].IsCurrent, Is.True);
-            Assert.That(steps[0].AttemptCount, Is.EqualTo(1));
-            Assert.That(steps[2].AttemptCount, Is.EqualTo(0));
-        });
+        Assert.Equal(AdminSubmissionJobStepStatus.Succeeded, steps[0].Status);
+        Assert.Equal(AdminSubmissionJobStepStatus.Failed, steps[1].Status);
+        Assert.Equal(AdminSubmissionJobStepStatus.Pending, steps[2].Status);
+        Assert.True(steps[1].IsCurrent);
+        Assert.Equal(1, steps[0].AttemptCount);
+        Assert.Equal(0, steps[2].AttemptCount);
     }
 }

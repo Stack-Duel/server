@@ -23,46 +23,43 @@ public class FeedbackSubmissionTests
             "Mozilla/5.0"
         );
 
-    [Test]
+    [Fact]
     public void Constructor_SetsStatusToNew()
     {
         var feedback = CreateFeedback();
-        Assert.That(feedback.Status, Is.EqualTo(FeedbackStatus.New));
+        Assert.Equal(FeedbackStatus.New, feedback.Status);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_SetsCreatedAt()
     {
         var before = DateTime.UtcNow;
         var feedback = CreateFeedback();
         var after = DateTime.UtcNow;
 
-        Assert.That(feedback.CreatedAt, Is.InRange(before, after));
+        Assert.InRange(feedback.CreatedAt, before, after);
     }
 
-    [Test]
+    [Fact]
     public void Constructor_UpdatedAtIsNull()
     {
         var feedback = CreateFeedback();
-        Assert.That(feedback.UpdatedAt, Is.Null);
+        Assert.Null(feedback.UpdatedAt);
     }
 
-    [Test]
+    [Fact]
     public void UpdateStatus_SetsStatusAndAdminNoteAndUpdatedAt()
     {
         var feedback = CreateFeedback();
 
         feedback.UpdateStatus(FeedbackStatus.Triaged, "Looking into it.");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(feedback.Status, Is.EqualTo(FeedbackStatus.Triaged));
-            Assert.That(feedback.AdminNote, Is.EqualTo("Looking into it."));
-            Assert.That(feedback.UpdatedAt, Is.Not.Null);
-        });
+        Assert.Equal(FeedbackStatus.Triaged, feedback.Status);
+        Assert.Equal("Looking into it.", feedback.AdminNote);
+        Assert.NotNull(feedback.UpdatedAt);
     }
 
-    [Test]
+    [Fact]
     public void UpdateStatus_NullAdminNote_ClearsAdminNote()
     {
         var feedback = CreateFeedback();
@@ -70,6 +67,6 @@ public class FeedbackSubmissionTests
 
         feedback.UpdateStatus(FeedbackStatus.Resolved, null);
 
-        Assert.That(feedback.AdminNote, Is.Null);
+        Assert.Null(feedback.AdminNote);
     }
 }
