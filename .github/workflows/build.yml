@@ -11,6 +11,14 @@ on:
         required: false
         type: boolean
         default: true
+      upload-artifact:
+        required: false
+        type: boolean
+        default: false
+      upload-migration-artifacts:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -38,3 +46,50 @@ jobs:
       - name: Run tests
         if: ${{ inputs.verify }}
         run: dotnet test StackDuel.slnx --configuration Release --no-build --verbosity normal
+
+      - name: Publish API
+        if: ${{ inputs.upload-artifact }}
+        run: dotnet publish StackDuel.Api/StackDuel.Api.csproj --configuration Release --no-build --output ./publish
+
+      - name: Upload API artifact
+        if: ${{ inputs.upload-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp
+          path: ./publish
+          if-no-files-found: error
+
+      - name: Install EF Core tools
+        if: ${{ inputs.upload-migration-artifacts }}
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Create migrations bundle
+        if: ${{ inputs.upload-migration-artifacts }}
+        run: |
+          dotnet ef migrations bundle \
+            --configuration Release \
+            --context StackDuelDbContext \
+            --project StackDuel.Infrastructure \
+            --startup-project StackDuel.Api \
+            --output ./migrations-bundle/efbundle \
+            --force
+
+      - name: Upload migrations bundle artifact
+        if: ${{ inputs.upload-migration-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: migrations-bundle
+          path: ./migrations-bundle
+          if-no-files-found: error
+
+      - name: Publish seeder
+        if: ${{ inputs.upload-migration-artifacts }}
+        run: dotnet publish StackDuel.Seeder/StackDuel.Seeder.csproj --configuration Release --output ./seeder-publish
+
+      - name: Upload seeder artifact
+        if: ${{ inputs.upload-migration-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: seeder
+          path: ./seeder-publish
+          if-no-files-found: error
