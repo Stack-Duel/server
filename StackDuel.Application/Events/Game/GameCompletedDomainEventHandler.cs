@@ -19,6 +19,8 @@ internal sealed partial class GameCompletedDomainEventHandler(
 
         try
         {
+            // call the PlayerGameRankingService to calculate the gained/lost player mmr.
+
             await gameNotificationService.NotifyGameCompletedAsync(e.GameId, e.Status, e.EndedAt, cancellationToken);
         }
         catch (Exception ex)
