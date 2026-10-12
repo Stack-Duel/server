@@ -1,10 +1,10 @@
-using System.Net;
-using System.Net.Http.Json;
 using StackDuel.Api.Requests.User;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Users.Dtos.Admin;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Authorization.Rbac.Enums;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace StackDuel.IntegrationTests.Users;
 
