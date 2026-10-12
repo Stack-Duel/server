@@ -202,7 +202,7 @@ internal sealed partial class RabbitMqConsumerService(
         if (
             result.IsSuccess
             && result.Value.Outcome == CompleteExpiredGameOutcome.NotYetExpired_Rescheduled
-            && result.Value.RescheduleForUtc is { } rescheduleFor
+            && result.Value.RescheduleForUtc.HasValue
         )
         {
             var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
@@ -211,7 +211,7 @@ internal sealed partial class RabbitMqConsumerService(
                 {
                     RescheduleCount = message.RescheduleCount + 1,
                 },
-                rescheduleFor,
+                result.Value.RescheduleForUtc.Value,
                 cancellationToken
             );
         }

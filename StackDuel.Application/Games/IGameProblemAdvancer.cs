@@ -4,7 +4,7 @@ namespace StackDuel.Application.Games;
 
 /// <summary>
 /// Resolves and applies a participant's next problem for a game mode — shared by
-/// CompleteProblemHandler and SkipProblemHandler, which differ only in which participant
+/// GameSubmissionProgressApplier and SkipProblemHandler, which differ only in which participant
 /// transition to apply on success and whether running out of problems also consumes a skip.
 /// </summary>
 public interface IGameProblemAdvancer

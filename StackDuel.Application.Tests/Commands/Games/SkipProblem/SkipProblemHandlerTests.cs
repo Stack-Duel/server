@@ -325,7 +325,7 @@ public class SkipProblemHandlerTests
     }
 
     [Fact]
-    public async Task Handle_SaveChangesThrowsPositionConflictOnce_RetriesWithAFreshReadAndSucceeds()
+    public async Task Handle_SaveChangesThrowsPositionConflictOnce_RetriesWithReloadedGameAndSucceeds()
     {
         var userId = Guid.NewGuid();
         var problemId = Guid.NewGuid();
@@ -341,10 +341,14 @@ public class SkipProblemHandlerTests
             return g;
         }
 
+        Game reloadedGame = BuildReadyGame();
+
         _gameReadRepository
-            .SetupSequence(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(BuildReadyGame())
+            .Setup(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildReadyGame());
+        _gameWriteRepository
+            .Setup(x => x.ReloadAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reloadedGame);
         _gameReadRepository
             .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
@@ -371,8 +375,10 @@ public class SkipProblemHandlerTests
         Assert.Equal(winningProblemId, result.Value.NextProblemId);
         _gameReadRepository.Verify(
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
+            Times.Once
         );
+        _gameWriteRepository.Verify(x => x.ReloadAsync(gameId, It.IsAny<CancellationToken>()), Times.Once);
+        _gameWriteRepository.Verify(x => x.SaveChangesAsync(reloadedGame, It.IsAny<CancellationToken>()), Times.Once);
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2)
@@ -396,8 +402,10 @@ public class SkipProblemHandlerTests
         }
 
         _gameReadRepository
-            .SetupSequence(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(BuildReadyGame())
+            .Setup(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildReadyGame());
+        _gameWriteRepository
+            .Setup(x => x.ReloadAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(BuildReadyGame());
         _gameReadRepository
             .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

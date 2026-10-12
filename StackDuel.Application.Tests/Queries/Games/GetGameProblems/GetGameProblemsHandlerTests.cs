@@ -2,7 +2,10 @@ using Ardalis.Result;
 using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
+using StackDuel.Application.Submissions;
+using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.Submissions.Enums;
 using GetGameProblemsHandler = StackDuel.Application.Queries.Games.GetGameProblems.GetGameProblemsHandler;
 using GetGameProblemsQuery = StackDuel.Application.Queries.Games.GetGameProblems.GetGameProblemsQuery;
 
@@ -11,12 +14,17 @@ namespace StackDuel.Application.Tests.Queries.Games.GetGameProblems;
 public class GetGameProblemsHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
+    private Mock<ISubmissionReadRepository> _submissionReadRepository = null!;
     private GetGameProblemsHandler _handler = null!;
 
     public GetGameProblemsHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _handler = new GetGameProblemsHandler(_gameReadRepository.Object);
+        _submissionReadRepository = new Mock<ISubmissionReadRepository>();
+        _submissionReadRepository
+            .Setup(x => x.GetLatestGameProblemSubmissionsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        _handler = new GetGameProblemsHandler(_gameReadRepository.Object, _submissionReadRepository.Object);
     }
 
     [Fact]
@@ -78,9 +86,20 @@ public class GetGameProblemsHandlerTests
         GameParticipant requester = game.Participants.Single(p => p.UserId == requesterId);
         requester.InitializeProblemSession(initialProblemId);
         requester.ProblemSession!.AddSolvedProblem(solvedProblemId);
-        requester.ProblemSession!.RecordSolvedSubmission(solvedProblemId, submissionId);
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
+        _submissionReadRepository
+            .Setup(x => x.GetLatestGameProblemSubmissionsAsync(game.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([
+                new GameProblemSubmissionDto(
+                    submissionId,
+                    game.Id,
+                    requesterId,
+                    solvedProblemId,
+                    SubmissionStatus.Accepted,
+                    DateTime.UtcNow
+                ),
+            ]);
 
         var query = new GetGameProblemsQuery(game.Id, requesterId);
         Result<IReadOnlyList<GameProblemHistoryDto>> result = await _handler.Handle(query, CancellationToken.None);

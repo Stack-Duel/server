@@ -65,4 +65,33 @@ public interface ISubmissionReadRepository
         IReadOnlyCollection<Guid> problemIds,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// The submission as a game problem solve attempt, or null when it isn't one — a submission
+    /// that doesn't exist, wasn't made inside a game, or is a "Run" rather than a "Submit".
+    /// </summary>
+    Task<GameProblemSubmissionDto?> FindGameProblemSubmissionAsync(
+        Guid submissionId,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// The most recent "Submit"-type submission per (user, problem) pair made inside a game.
+    /// </summary>
+    Task<IReadOnlyList<GameProblemSubmissionDto>> GetLatestGameProblemSubmissionsAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// The user's most recent "Submit"-type submission against one problem in a game, or null when
+    /// they have not submitted against it yet. Callers read its status to decide whether a further
+    /// submission is allowed.
+    /// </summary>
+    Task<GameProblemSubmissionDto?> FindLatestGameProblemSubmissionAsync(
+        Guid gameId,
+        Guid userId,
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    );
 }

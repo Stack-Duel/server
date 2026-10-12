@@ -79,8 +79,10 @@ public sealed class UserAchievementStats : Entity
 
     private void UpdateSolveStreak(DateOnly solvedOnUtc)
     {
-        if (LastSolveDateUtc is { } last)
+        if (LastSolveDateUtc.HasValue)
         {
+            DateOnly last = LastSolveDateUtc.Value;
+
             if (solvedOnUtc <= last)
                 return;
 

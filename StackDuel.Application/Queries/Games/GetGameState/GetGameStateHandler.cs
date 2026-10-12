@@ -2,6 +2,8 @@ using Ardalis.Result;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
+using StackDuel.Application.Submissions;
+using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Application.Tracks;
 using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
@@ -15,11 +17,27 @@ internal sealed class GetGameStateHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
     IGameExpiryCanceller gameExpiryCanceller,
+    IGameSubmissionProgressApplier gameSubmissionProgressApplier,
     IDomainEventDispatcher domainEventDispatcher,
     IUserReadRepository userReadRepository,
-    ITrackReadRepository trackReadRepository
+    ITrackReadRepository trackReadRepository,
+    ISubmissionReadRepository submissionReadRepository
 ) : IQueryHandler<GetGameStateQuery, GameStateDto>
 {
+    /// <summary>
+    /// Persists a completion reached by every participant stopping rather than by the clock, so the
+    /// now-moot scheduled expiry is cancelled alongside it.
+    /// </summary>
+    private async Task PersistEarlyCompletionAndCancelScheduledExpiryAsync(
+        Game game,
+        CancellationToken cancellationToken
+    )
+    {
+        await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
+        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
+    }
+
     public async Task<Result<GameStateDto>> Handle(GetGameStateQuery request, CancellationToken cancellationToken)
     {
         Game? game = await gameReadRepository.FindGameByIdAsync(request.GameId, cancellationToken);
@@ -38,14 +56,23 @@ internal sealed class GetGameStateHandler(
         }
         else if (game.CompleteIfEveryoneStopped())
         {
-            // Self-healing for the race where two participants stop playing (forfeit/finish) via
-            // concurrent requests and each writes before seeing the other's — neither call
-            // completes the game, so it's left Running with nobody left to act in it until the
-            // next read notices. Early completion (not via the clock), so cancel the now-moot
-            // scheduled expiry too, same as Forfeit/CompleteProblem do for their own completions.
-            await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
-            await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
+            await PersistEarlyCompletionAndCancelScheduledExpiryAsync(game, cancellationToken);
+        }
+
+        IReadOnlyList<GameProblemSubmissionDto> latestSubmissions =
+            await submissionReadRepository.GetLatestGameProblemSubmissionsAsync(request.GameId, cancellationToken);
+
+        GamePendingProgressOutcome pendingProgress = await gameSubmissionProgressApplier.ApplyPendingAsync(
+            game,
+            latestSubmissions,
+            cancellationToken
+        );
+
+        if (pendingProgress == GamePendingProgressOutcome.ConflictedNeedsReload)
+        {
+            game = await gameReadRepository.FindGameByIdAsync(request.GameId, cancellationToken);
+            if (game is null)
+                return Result<GameStateDto>.NotFound();
         }
 
         GameMode? gameMode = await gameReadRepository.FindGameModeByIdIncludingInactiveAsync(
@@ -67,13 +94,34 @@ internal sealed class GetGameStateHandler(
         );
         Dictionary<Guid, string> trackNamesById = tracks.ToDictionary(t => t.Id, t => t.Name);
 
+        GameProblemSubmissionStateDto? OwnLatestSubmissionOnCurrentProblem(GameParticipant participant)
+        {
+            if (participant.UserId != request.RequestedByUserId || participant.ProblemSession is null)
+                return null;
+
+            Guid currentProblemId = participant.ProblemSession.CurrentProblemId;
+
+            GameProblemSubmissionDto? latest = latestSubmissions.FirstOrDefault(s =>
+                s.UserId == participant.UserId && s.ProblemId == currentProblemId
+            );
+
+            return latest is null
+                ? null
+                : new GameProblemSubmissionStateDto(latest.SubmissionId, latest.Status, latest.CreatedAt);
+        }
+
         var participants = game
             .Participants.Select(p =>
             {
                 userMap.TryGetValue(p.UserId, out UserDto? user);
 
                 GameCurrentProblemDto? currentProblem =
-                    p.ProblemSession != null ? new GameCurrentProblemDto(p.ProblemSession.CurrentProblemId) : null;
+                    p.ProblemSession != null
+                        ? new GameCurrentProblemDto(
+                            p.ProblemSession.CurrentProblemId,
+                            OwnLatestSubmissionOnCurrentProblem(p)
+                        )
+                        : null;
 
                 return new GameParticipantDto(
                     p.UserId,

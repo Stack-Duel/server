@@ -95,8 +95,10 @@ internal sealed class UpdateProblemHandler(
 
     private static Result? ValidateStatusTransition(ProblemStatus currentStatus, ProblemStatus? targetStatus)
     {
-        if (targetStatus is not { } status || status == currentStatus)
+        if (!targetStatus.HasValue || targetStatus.Value == currentStatus)
             return null;
+
+        ProblemStatus status = targetStatus.Value;
 
         bool isValidTransition =
             (currentStatus == ProblemStatus.Draft && status == ProblemStatus.Published)
@@ -131,8 +133,10 @@ internal sealed class UpdateProblemHandler(
 
     private static void ApplyStatusTransition(Problem problem, ProblemStatus? newStatus)
     {
-        if (newStatus is not { } status || status == problem.Status)
+        if (!newStatus.HasValue || newStatus.Value == problem.Status)
             return;
+
+        ProblemStatus status = newStatus.Value;
 
         if (status == ProblemStatus.Published)
             problem.Publish();

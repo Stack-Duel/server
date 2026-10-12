@@ -180,8 +180,8 @@ public sealed class Game : AggregateRoot
 
     /// <summary>
     /// Completes the game if it has expired, returning whether it did. Callers that mutate
-    /// state on a Running game (submit, complete-problem) or read it (get game state) should
-    /// call this first so an expired game is always finalized before anything else happens,
+    /// state on a Running game (submit, apply-submission-progress) or read it (get game state)
+    /// should call this first so an expired game is always finalized before anything else happens,
     /// regardless of whether the message-bus expiry path has caught up yet.
     /// </summary>
     public bool CompleteIfExpired(DateTime nowUtc)
@@ -224,10 +224,10 @@ public sealed class Game : AggregateRoot
     }
 
     /// <summary>
-    /// Everything CompleteProblemHandler and SkipProblemHandler need to know before touching a
-    /// participant's current problem, in one call: is there such a participant, did the game just
+    /// Everything GameSubmissionProgressApplier and SkipProblemHandler need to know before touching
+    /// a participant's current problem, in one call: is there such a participant, did the game just
     /// auto-complete because its clock ran out (checked here, before the running-check, exactly
-    /// like the two handlers used to do it independently), and — if it's still running — is this
+    /// like the two callers used to do it independently), and — if it's still running — is this
     /// participant actually eligible to attempt <paramref name="action"/> against
     /// <paramref name="problemId"/>. Forfeit isn't covered here: it doesn't target a problem, so it
     /// only ever needed <see cref="GameParticipant.CanPerform"/>.

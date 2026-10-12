@@ -28,9 +28,9 @@ internal sealed class GameProblemAdvancer(
             cancellationToken
         );
 
-        if (nextProblemId is { } problemId)
+        if (nextProblemId.HasValue)
         {
-            onAdvance(problemId);
+            onAdvance(nextProblemId.Value);
         }
         else
         {

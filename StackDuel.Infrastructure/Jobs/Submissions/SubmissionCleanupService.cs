@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Jobs.Submissions;
+using StackDuel.Application.Submissions;
 using StackDuel.Domain.SubmissionJobs.Enums;
 using StackDuel.Infrastructure.Persistence;
 
@@ -8,23 +9,31 @@ namespace StackDuel.Infrastructure.Jobs.Submissions;
 
 internal sealed partial class SubmissionCleanupService(
     StackDuelDbContext context,
+    ISubmissionFailureService submissionFailureService,
     ILogger<SubmissionCleanupService> logger
 ) : ISubmissionCleanupService
 {
-    // Jobs stuck in Pending/Running longer than this are considered abandoned.
-    private static readonly TimeSpan StaleThreshold = TimeSpan.FromMinutes(30);
-
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         LogRunning();
 
-        var cutoff = DateTime.UtcNow - StaleThreshold;
+        DateTime cutoff = DateTime.UtcNow - SubmissionGradingWindow.StaleAfter;
 
-        int count = await context
+        var staleJobs = await context
             .SubmissionJobs.Where(j =>
                 (j.Status == SubmissionJobStatus.Pending || j.Status == SubmissionJobStatus.Running)
                 && j.CreatedAt < cutoff
             )
+            .Select(j => new { j.Id, j.SubmissionId })
+            .ToListAsync(cancellationToken);
+
+        if (staleJobs.Count == 0)
+            return;
+
+        Guid[] staleJobIds = [.. staleJobs.Select(j => j.Id)];
+
+        int count = await context
+            .SubmissionJobs.Where(j => staleJobIds.Contains(j.Id))
             .ExecuteUpdateAsync(
                 s =>
                     s.SetProperty(j => j.Status, SubmissionJobStatus.Failed)
@@ -38,6 +47,9 @@ internal sealed partial class SubmissionCleanupService(
 
         if (count > 0)
             LogAbandoned(count);
+
+        foreach (Guid submissionId in staleJobs.Select(j => j.SubmissionId).Distinct())
+            await submissionFailureService.MarkFailedAsync(submissionId, cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Running submission cleanup")]

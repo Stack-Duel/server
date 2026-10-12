@@ -17,6 +17,7 @@ using StackDuel.Application.Services.Leaderboards;
 using StackDuel.Application.Services.Problems;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Services.Users;
+using StackDuel.Application.Submissions;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.Factories;
 using StackDuel.Domain.SeedWork;
@@ -93,6 +94,8 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IGameProblemSequencer, GameProblemSequencer>();
         services.AddScoped<IGameExpiryCanceller, GameExpiryCanceller>();
         services.AddScoped<IGameProblemAdvancer, GameProblemAdvancer>();
+        services.AddScoped<IGameSubmissionProgressApplier, GameSubmissionProgressApplier>();
+        services.AddScoped<ISubmissionFailureService, SubmissionFailureService>();
 
         return services;
     }

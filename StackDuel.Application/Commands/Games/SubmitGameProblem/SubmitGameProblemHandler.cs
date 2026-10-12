@@ -4,6 +4,8 @@ using MediatR;
 using StackDuel.Application.Commands.Submissions.CreateSubmission;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
+using StackDuel.Application.Submissions;
+using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Submissions.Enums;
@@ -14,6 +16,7 @@ internal sealed class SubmitGameProblemHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
     IDomainEventDispatcher domainEventDispatcher,
+    ISubmissionReadRepository submissionReadRepository,
     IMediator mediator,
     IValidator<SubmitGameProblemCommand> validator
 ) : AbstractCommandHandler<SubmitGameProblemCommand, Guid>(validator)
@@ -65,7 +68,10 @@ internal sealed class SubmitGameProblemHandler(
                 )
             );
 
-        // Create the grade submission through the existing submission pipeline.
+        Result<Guid>? rejection = await RejectIfProblemNotOpenForSubmissionAsync(request, cancellationToken);
+        if (rejection is not null)
+            return rejection;
+
         var submissionResult = await mediator.Send(
             new CreateSubmissionCommand(
                 request.ProblemSetupId,
@@ -81,10 +87,47 @@ internal sealed class SubmitGameProblemHandler(
         if (!submissionResult.IsSuccess)
             return Result<Guid>.Error("Failed to create submission.");
 
-        // Stamp the submission ID on the session so completeProblem can verify it came from here.
-        participant.SetActiveSubmission(submissionResult.Value);
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
-
         return Result<Guid>.Success(submissionResult.Value);
     }
+
+    private async Task<Result<Guid>?> RejectIfProblemNotOpenForSubmissionAsync(
+        SubmitGameProblemCommand request,
+        CancellationToken cancellationToken
+    )
+    {
+        GameProblemSubmissionDto? latest = await submissionReadRepository.FindLatestGameProblemSubmissionAsync(
+            request.GameId,
+            request.RequestedByUserId,
+            request.ProblemId,
+            cancellationToken
+        );
+
+        if (latest is null)
+            return null;
+
+        if (latest.Status == SubmissionStatus.Accepted)
+            return Result<Guid>.Invalid(
+                new ValidationError(nameof(request.ProblemId), "You have already solved this problem.")
+            );
+
+        if (IsStillBeingGraded(latest))
+            return Result<Guid>.Invalid(
+                new ValidationError(
+                    nameof(request.ProblemId),
+                    "Your previous submission for this problem is still being graded."
+                )
+            );
+
+        return null;
+    }
+
+    /// <summary>
+    /// A non-terminal submission only blocks further attempts while it is young enough that grading
+    /// could still plausibly finish. Past <see cref="SubmissionGradingWindow.StaleAfter"/> the
+    /// cleanup sweep owns it, and continuing to block would strand the player on a problem they can
+    /// neither finish nor retry.
+    /// </summary>
+    private static bool IsStillBeingGraded(GameProblemSubmissionDto submission) =>
+        submission.Status is SubmissionStatus.Queued or SubmissionStatus.Running
+        && submission.CreatedAt > DateTime.UtcNow - SubmissionGradingWindow.StaleAfter;
 }

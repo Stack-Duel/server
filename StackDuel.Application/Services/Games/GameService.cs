@@ -1,7 +1,6 @@
 using Ardalis.Result;
 using MediatR;
 using StackDuel.Application.Commands.Games.CloseLobby;
-using StackDuel.Application.Commands.Games.CompleteProblem;
 using StackDuel.Application.Commands.Games.CreateGame;
 using StackDuel.Application.Commands.Games.ForfeitGame;
 using StackDuel.Application.Commands.Games.JoinGame;
@@ -49,13 +48,6 @@ public interface IGameService
         Guid problemId,
         Guid problemSetupId,
         string code,
-        Guid userId,
-        CancellationToken cancellationToken
-    );
-    Task<Result<CompleteProblemResultDto>> CompleteProblemAsync(
-        Guid gameId,
-        Guid problemId,
-        Guid submissionId,
         Guid userId,
         CancellationToken cancellationToken
     );
@@ -162,20 +154,6 @@ internal sealed class GameService(IMediator mediator) : IGameService
     {
         return await mediator.Send(
             new SubmitGameProblemCommand(gameId, problemId, problemSetupId, code, userId),
-            cancellationToken
-        );
-    }
-
-    public async Task<Result<CompleteProblemResultDto>> CompleteProblemAsync(
-        Guid gameId,
-        Guid problemId,
-        Guid submissionId,
-        Guid userId,
-        CancellationToken cancellationToken
-    )
-    {
-        return await mediator.Send(
-            new CompleteProblemCommand(gameId, problemId, submissionId, userId),
             cancellationToken
         );
     }
