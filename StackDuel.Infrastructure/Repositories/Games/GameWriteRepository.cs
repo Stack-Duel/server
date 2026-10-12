@@ -22,6 +22,21 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
         return await context.Games.Include(g => g.Participants).FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
     }
 
+    public async Task<Game?> ReloadAsync(Guid gameId, CancellationToken cancellationToken = default)
+    {
+        Game? tracked = context.Games.Local.FirstOrDefault(g => g.Id == gameId);
+        if (tracked != null)
+            DetachGraph(tracked);
+
+        return await context
+            .Games.AsSplitQuery()
+            .Include(g => g.Participants)
+            .Include(g => g.Tracks)
+                .ThenInclude(t => t.Languages)
+            .Include(g => g.ProblemSequence)
+            .FirstOrDefaultAsync(g => g.Id == gameId, cancellationToken);
+    }
+
     public async Task SaveChangesAsync(Game entity, CancellationToken cancellationToken = default)
     {
         // Every Entity subclass gets its Id assigned client-side (Entity's constructor calls
@@ -88,6 +103,11 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
         foreach (GameProblem problem in entity.ProblemSequence)
             context.Entry(problem).State = EntityState.Detached;
         foreach (GameTrack track in entity.Tracks)
+        {
+            foreach (GameTrackLanguage language in track.Languages)
+                context.Entry(language).State = EntityState.Detached;
+
             context.Entry(track).State = EntityState.Detached;
+        }
     }
 }

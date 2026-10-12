@@ -1,13 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using StackDuel.Application.Events;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
+using StackDuel.Application.Submissions;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.SubmissionJobs.Enums;
-using StackDuel.Domain.Submissions;
 
 namespace StackDuel.Infrastructure.Jobs.Submissions;
 
@@ -93,8 +92,7 @@ internal sealed partial class SubmissionJobProcessorService(
             var pipelineRepository = sp.GetRequiredService<IExecutionPipelineRepository>();
             var handlerRegistry = sp.GetRequiredService<IStepHandlerRegistry>();
             var messagePublisher = sp.GetRequiredService<IMessagePublisher>();
-            var submissionRepository = sp.GetRequiredService<ISubmissionWriteRepository>();
-            var domainEventDispatcher = sp.GetRequiredService<IDomainEventDispatcher>();
+            var submissionFailureService = sp.GetRequiredService<ISubmissionFailureService>();
 
             var job = await jobRepository.FindByIdAsync(jobId, ct);
             if (job is null)
@@ -115,8 +113,7 @@ internal sealed partial class SubmissionJobProcessorService(
                 pipelineRepository,
                 handlerRegistry,
                 messagePublisher,
-                submissionRepository,
-                domainEventDispatcher,
+                submissionFailureService,
                 ct
             );
         }
@@ -132,8 +129,7 @@ internal sealed partial class SubmissionJobProcessorService(
         IExecutionPipelineRepository pipelineRepository,
         IStepHandlerRegistry handlerRegistry,
         IMessagePublisher messagePublisher,
-        ISubmissionWriteRepository submissionRepository,
-        IDomainEventDispatcher domainEventDispatcher,
+        ISubmissionFailureService submissionFailureService,
         CancellationToken ct
     )
     {
@@ -149,7 +145,7 @@ internal sealed partial class SubmissionJobProcessorService(
         {
             job.Fail($"Pipeline {job.PipelineId} not found.");
             await jobRepository.UpdateAsync(job, ct);
-            await FailSubmissionAsync(job.SubmissionId, submissionRepository, domainEventDispatcher, ct);
+            await submissionFailureService.MarkFailedAsync(job.SubmissionId, ct);
             return;
         }
 
@@ -158,7 +154,7 @@ internal sealed partial class SubmissionJobProcessorService(
         {
             job.Fail($"Step {job.CurrentStepId} not found in pipeline {job.PipelineId}.");
             await jobRepository.UpdateAsync(job, ct);
-            await FailSubmissionAsync(job.SubmissionId, submissionRepository, domainEventDispatcher, ct);
+            await submissionFailureService.MarkFailedAsync(job.SubmissionId, ct);
             return;
         }
 
@@ -167,7 +163,7 @@ internal sealed partial class SubmissionJobProcessorService(
         {
             job.Fail($"Step '{step.Name}' exceeded max attempts ({step.MaxAttempts}).");
             await jobRepository.UpdateAsync(job, ct);
-            await FailSubmissionAsync(job.SubmissionId, submissionRepository, domainEventDispatcher, ct);
+            await submissionFailureService.MarkFailedAsync(job.SubmissionId, ct);
             return;
         }
 
@@ -185,7 +181,7 @@ internal sealed partial class SubmissionJobProcessorService(
             attempt.Fail(ex.Message);
             job.Fail(ex.Message);
             await jobRepository.UpdateAsync(job, ct);
-            await FailSubmissionAsync(job.SubmissionId, submissionRepository, domainEventDispatcher, ct);
+            await submissionFailureService.MarkFailedAsync(job.SubmissionId, ct);
             return;
         }
 
@@ -233,7 +229,7 @@ internal sealed partial class SubmissionJobProcessorService(
                 job.Fail($"Step '{step.Name}' failed after {step.MaxAttempts} attempt(s): {result.Error}");
                 LogStepFailed(job.Id, step.Name, result.Error);
                 await jobRepository.UpdateAsync(job, ct);
-                await FailSubmissionAsync(job.SubmissionId, submissionRepository, domainEventDispatcher, ct);
+                await submissionFailureService.MarkFailedAsync(job.SubmissionId, ct);
                 return;
             }
             else
@@ -264,38 +260,6 @@ internal sealed partial class SubmissionJobProcessorService(
             }
 
             await messagePublisher.PublishAsync(new SubmissionJobContinuationMessage(job.SubmissionId), ct);
-        }
-    }
-
-    /// <summary>
-    /// Marks all non-terminal submission results as <see cref="SubmissionResultStatus.RuntimeError"/>
-    /// and transitions the submission to a terminal state so the client stops polling.
-    /// </summary>
-    private async Task FailSubmissionAsync(
-        Guid submissionId,
-        ISubmissionWriteRepository submissionRepository,
-        IDomainEventDispatcher domainEventDispatcher,
-        CancellationToken ct
-    )
-    {
-        try
-        {
-            var submission = await submissionRepository.FindByIdAsync(submissionId, ct);
-            if (
-                submission is null
-                || submission.Status
-                    is Domain.Submissions.Enums.SubmissionStatus.Accepted
-                        or Domain.Submissions.Enums.SubmissionStatus.WrongAnswer
-            )
-                return;
-
-            submission.Fail();
-            await submissionRepository.UpdateAsync(submission, ct);
-            await domainEventDispatcher.DispatchAsync(submission.PopDomainEvents(), CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to mark submission {SubmissionId} as failed after job failure.", submissionId);
         }
     }
 

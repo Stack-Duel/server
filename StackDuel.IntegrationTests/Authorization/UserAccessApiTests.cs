@@ -1,8 +1,8 @@
+using System.Net;
+using System.Net.Http.Json;
 using StackDuel.Api.Requests.User;
 using StackDuel.Api.Responses.User;
 using StackDuel.Domain.Authorization.Rbac.Enums;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace StackDuel.IntegrationTests.Authorization;
 

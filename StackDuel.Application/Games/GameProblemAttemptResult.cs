@@ -6,7 +6,7 @@ namespace StackDuel.Application.Games;
 
 /// <summary>
 /// Translates a <see cref="GameProblemAttempt"/> that failed eligibility into the Result each
-/// handler needs to return — shared by CompleteProblemHandler and SkipProblemHandler so the four
+/// caller needs to return — shared by GameSubmissionProgressApplier and SkipProblemHandler so the four
 /// failure messages live in exactly one place instead of copy-pasted in both.
 /// </summary>
 internal static class GameProblemAttemptResult

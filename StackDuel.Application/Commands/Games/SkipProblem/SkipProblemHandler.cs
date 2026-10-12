@@ -20,18 +20,13 @@ internal sealed class SkipProblemHandler(
         CancellationToken cancellationToken
     )
     {
-        // Retried once: GetOrGenerateProblemAsync (via gameProblemAdvancer) can race another
-        // participant who's also first to reach this position (see GameProblemConfiguration's
-        // (game_id, position) unique index). The loser gets GameProblemPositionConflictException
-        // out of SaveChangesAsync — re-fetching from scratch picks up the winner's already-persisted
-        // problem via Game.ProblemIdAtPosition instead of generating a conflicting second one.
+        var game = await gameReadRepository.FindGameByIdAsync(request.GameId, cancellationToken);
+        if (game is null)
+            return GameNotFound(request.GameId);
+
         int saveAttempt = 0;
         while (true)
         {
-            var game = await gameReadRepository.FindGameByIdAsync(request.GameId, cancellationToken);
-            if (game is null)
-                return Result<SkipProblemResultDto>.NotFound($"Game '{request.GameId}' was not found.");
-
             var attempt = game.EvaluateProblemAttempt(
                 request.RequestedByUserId,
                 request.ProblemId,
@@ -39,8 +34,6 @@ internal sealed class SkipProblemHandler(
                 DateTime.UtcNow
             );
 
-            // The expiry check inside EvaluateProblemAttempt may have just completed the game —
-            // that must be persisted regardless of whether this request itself goes on to succeed.
             if (attempt.GameJustExpired)
             {
                 await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
@@ -82,6 +75,11 @@ internal sealed class SkipProblemHandler(
             catch (GameProblemPositionConflictException) when (saveAttempt == 0)
             {
                 saveAttempt++;
+
+                game = await gameWriteRepository.ReloadAsync(request.GameId, cancellationToken);
+                if (game is null)
+                    return GameNotFound(request.GameId);
+
                 continue;
             }
 
@@ -92,4 +90,7 @@ internal sealed class SkipProblemHandler(
             );
         }
     }
+
+    private static Result<SkipProblemResultDto> GameNotFound(Guid gameId) =>
+        Result<SkipProblemResultDto>.NotFound($"Game '{gameId}' was not found.");
 }

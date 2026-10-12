@@ -304,6 +304,108 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<GameProblemSubmissionDto?> FindGameProblemSubmissionAsync(
+        Guid submissionId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await ProjectToGameProblemSubmission(
+                context.Submissions.AsNoTracking().Where(s => s.Id == submissionId)
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<GameProblemSubmissionDto>> GetLatestGameProblemSubmissionsAsync(
+        Guid gameId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        List<GameProblemSubmissionDto> newestFirst = await ProjectToGameProblemSubmissionNewestFirst(
+                context.Submissions.AsNoTracking().Where(s => s.GameId == gameId)
+            )
+            .ToListAsync(cancellationToken);
+
+        HashSet<(Guid UserId, Guid ProblemId)> seen = [];
+        List<GameProblemSubmissionDto> latestPerUserAndProblem = [];
+
+        foreach (GameProblemSubmissionDto submission in newestFirst)
+        {
+            if (seen.Add((submission.UserId, submission.ProblemId)))
+                latestPerUserAndProblem.Add(submission);
+        }
+
+        return latestPerUserAndProblem;
+    }
+
+    public async Task<GameProblemSubmissionDto?> FindLatestGameProblemSubmissionAsync(
+        Guid gameId,
+        Guid userId,
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await ProjectToGameProblemSubmissionNewestFirst(
+                context.Submissions.AsNoTracking().Where(s => s.GameId == gameId && s.UserId == userId),
+                problemId
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Orders and filters on the underlying columns rather than on the projected
+    /// <see cref="GameProblemSubmissionDto"/>, because EF Core cannot translate a sort or predicate
+    /// applied to an already-projected constructor expression.
+    /// </summary>
+    private IQueryable<GameProblemSubmissionDto> ProjectToGameProblemSubmissionNewestFirst(
+        IQueryable<Submission> submissions,
+        Guid? problemId = null
+    )
+    {
+        IQueryable<ProblemSetup> setups = context.Set<ProblemSetup>().AsNoTracking();
+
+        if (problemId.HasValue)
+            setups = setups.Where(setup => EF.Property<Guid>(setup, "problem_id") == problemId.Value);
+
+        return submissions
+            .Where(s => s.GameId != null && s.Type == SubmissionType.Submit)
+            .Join(
+                setups,
+                submission => submission.ProblemSetupId,
+                setup => setup.Id,
+                (submission, setup) => new { Submission = submission, Setup = setup }
+            )
+            .OrderByDescending(pair => pair.Submission.CreatedAt)
+            .ThenBy(pair => pair.Submission.Id)
+            .Select(pair => new GameProblemSubmissionDto(
+                pair.Submission.Id,
+                pair.Submission.GameId!.Value,
+                pair.Submission.UserId,
+                EF.Property<Guid>(pair.Setup, "problem_id"),
+                pair.Submission.Status,
+                pair.Submission.CreatedAt
+            ));
+    }
+
+    private IQueryable<GameProblemSubmissionDto> ProjectToGameProblemSubmission(IQueryable<Submission> submissions)
+    {
+        return submissions
+            .Where(s => s.GameId != null && s.Type == SubmissionType.Submit)
+            .Join(
+                context.Set<ProblemSetup>().AsNoTracking(),
+                submission => submission.ProblemSetupId,
+                setup => setup.Id,
+                (submission, setup) =>
+                    new GameProblemSubmissionDto(
+                        submission.Id,
+                        submission.GameId!.Value,
+                        submission.UserId,
+                        EF.Property<Guid>(setup, "problem_id"),
+                        submission.Status,
+                        submission.CreatedAt
+                    )
+            );
+    }
+
     private IQueryable<AdminSubmissionListItemDto> ProjectToAdminSubmissionListItem(IQueryable<Submission> submissions)
     {
         var languageVersions = context

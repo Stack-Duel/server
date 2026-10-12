@@ -7,7 +7,6 @@ using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Game;
 using StackDuel.Application;
-using StackDuel.Application.Commands.Games.CompleteProblem;
 using StackDuel.Application.Commands.Games.SkipProblem;
 using StackDuel.Application.Games;
 using StackDuel.Application.Games.Dtos;
@@ -180,34 +179,6 @@ public sealed class GameController(IGameService gameService, UserContext userCon
                 cancellationToken
             )
         );
-    }
-
-    [HttpPost("{gameId:guid}/problems/{problemId:guid}/complete")]
-    [RequireUser]
-    [ProducesResponseType(typeof(CompleteProblemResultDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CompleteProblemResultDto>> CompleteProblem(
-        Guid gameId,
-        Guid problemId,
-        [FromBody] CompleteProblemRequest request,
-        CancellationToken cancellationToken
-    )
-    {
-        if (userContext.User is null)
-            return this.ToActionResult(Result<CompleteProblemResultDto>.Unauthorized());
-
-        var result = await gameService.CompleteProblemAsync(
-            gameId,
-            problemId,
-            request.SubmissionId,
-            userContext.User.Id,
-            cancellationToken
-        );
-
-        return this.ToActionResult(result);
     }
 
     [HttpPost("{gameId:guid}/problems/{problemId:guid}/skip")]

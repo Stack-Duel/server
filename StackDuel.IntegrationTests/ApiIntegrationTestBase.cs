@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using StackDuel.IntegrationTests.Infrastructure;
 
@@ -41,11 +42,19 @@ public abstract class ApiIntegrationTestBase(IntegrationTestEnvironment environm
                 users,
                 groups,
                 roles,
-                permissions
+                permissions,
+                games,
+                game_modes,
+                problem_pools,
+                problems,
+                tracks,
+                execution_pipelines
             RESTART IDENTITY CASCADE
             """;
         await command.ExecuteNonQueryAsync();
     }
+
+    protected IServiceScope CreateServiceScope() => environment.Factory.Services.CreateScope();
 
     protected static HttpRequestMessage AuthenticatedRequest(HttpMethod method, string requestUri, string sub)
     {

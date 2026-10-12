@@ -90,8 +90,8 @@ internal sealed class CodeFoundationsCampaignSeeder(
             15
         );
 
-        if (helloOrGoodbyeProblemId is { } helloId)
-            controlFlowPractice.SetProblems([helloId]);
+        if (helloOrGoodbyeProblemId.HasValue)
+            controlFlowPractice.SetProblems([helloOrGoodbyeProblemId.Value]);
 
         CampaignModule functions = campaign.AddModule("Functions", "Package up logic so you can reuse it.");
 
@@ -111,8 +111,8 @@ internal sealed class CodeFoundationsCampaignSeeder(
             20
         );
 
-        if (twoSumProblemId is { } twoSumId)
-            functionsPractice.SetProblems([twoSumId]);
+        if (twoSumProblemId.HasValue)
+            functionsPractice.SetProblems([twoSumProblemId.Value]);
 
         functions.AddUnit(
             "Foundations Check",

@@ -1,7 +1,7 @@
-using StackDuel.Api.Requests.User;
-using StackDuel.Application.Users.Dtos;
 using System.Net;
 using System.Net.Http.Json;
+using StackDuel.Api.Requests.User;
+using StackDuel.Application.Users.Dtos;
 
 namespace StackDuel.IntegrationTests.Users;
 

@@ -85,8 +85,8 @@ public sealed class GameParticipant : Entity
 
     /// <summary>
     /// Whether this participant may currently attempt <paramref name="action"/>. The single table
-    /// CompleteProblemHandler, SkipProblemHandler, and ForfeitGameHandler all check against, instead
-    /// of each re-deriving "has this participant stopped playing" independently.
+    /// GameSubmissionProgressApplier, SkipProblemHandler, and ForfeitGameHandler all check
+    /// against, instead of each re-deriving "has this participant stopped playing" independently.
     /// </summary>
     public bool CanPerform(ParticipantAction action) => AllowedActions[PlayState].Contains(action);
 
@@ -144,46 +144,9 @@ public sealed class GameParticipant : Entity
         Score++;
     }
 
-    public void SetActiveSubmission(Guid submissionId)
-    {
-        if (ProblemSession is null)
-            throw new InvalidOperationException("Problem session is not initialized.");
-
-        // Replace reference so EF Core detects the change (jsonb value conversion snapshot issue).
-        var next = new GameProblemSession(ProblemSession.CurrentProblemId);
-        foreach (var solvedId in ProblemSession.SolvedProblemIds)
-            next.AddSolvedProblem(solvedId);
-        foreach (var skippedId in ProblemSession.SkippedProblemIds)
-            next.AddSkippedProblem(skippedId);
-        foreach (var (problemId, recordedSubmissionId) in ProblemSession.SolvedProblemSubmissionIds)
-            next.RecordSolvedSubmission(problemId, recordedSubmissionId);
-        next.SetActiveSubmission(submissionId);
-        ProblemSession = next;
-    }
-
     public void AdvanceProblem(Guid nextProblemId)
     {
-        if (ProblemSession is null)
-            throw new InvalidOperationException("Problem session is not initialized.");
-
-        // Build a new GameProblemSession instance rather than mutating in place.
-        // ProblemSession is stored as a jsonb column with a value conversion;
-        // EF Core's snapshot points to the same object reference, so in-place
-        // mutations are invisible to change detection. Replacing the reference
-        // guarantees the property is detected as changed and saved.
-        var next = new GameProblemSession(nextProblemId);
-        foreach (var solvedId in ProblemSession.SolvedProblemIds)
-            next.AddSolvedProblem(solvedId);
-        next.AddSolvedProblem(ProblemSession.CurrentProblemId);
-        foreach (var skippedId in ProblemSession.SkippedProblemIds)
-            next.AddSkippedProblem(skippedId);
-
-        foreach (var (problemId, recordedSubmissionId) in ProblemSession.SolvedProblemSubmissionIds)
-            next.RecordSolvedSubmission(problemId, recordedSubmissionId);
-        if (ProblemSession.ActiveSubmissionId is { } activeSubmissionId)
-            next.RecordSolvedSubmission(ProblemSession.CurrentProblemId, activeSubmissionId);
-
-        ProblemSession = next;
+        ProblemSession = RebuildSessionForChangeTracking(nextProblemId, solvedCurrentProblem: true);
     }
 
     public void SkipToProblem(Guid nextProblemId)
@@ -193,21 +156,28 @@ public sealed class GameParticipant : Entity
 
         UseSkip();
 
-        // Same rebuild-rather-than-mutate approach as AdvanceProblem (jsonb value
-        // conversion snapshot issue). The skipped problem goes to SkippedProblemIds
-        // instead of SolvedProblemIds, so it's excluded from future selection without
-        // counting toward the participant's score.
+        ProblemSession = RebuildSessionForChangeTracking(nextProblemId, solvedCurrentProblem: false);
+    }
+
+    private GameProblemSession RebuildSessionForChangeTracking(Guid nextProblemId, bool solvedCurrentProblem)
+    {
+        if (ProblemSession is null)
+            throw new InvalidOperationException("Problem session is not initialized.");
+
         var next = new GameProblemSession(nextProblemId);
+
         foreach (var solvedId in ProblemSession.SolvedProblemIds)
             next.AddSolvedProblem(solvedId);
+
         foreach (var skippedId in ProblemSession.SkippedProblemIds)
             next.AddSkippedProblem(skippedId);
-        next.AddSkippedProblem(ProblemSession.CurrentProblemId);
 
-        foreach (var (problemId, recordedSubmissionId) in ProblemSession.SolvedProblemSubmissionIds)
-            next.RecordSolvedSubmission(problemId, recordedSubmissionId);
+        if (solvedCurrentProblem)
+            next.AddSolvedProblem(ProblemSession.CurrentProblemId);
+        else
+            next.AddSkippedProblem(ProblemSession.CurrentProblemId);
 
-        ProblemSession = next;
+        return next;
     }
 
     public void UseSkip()

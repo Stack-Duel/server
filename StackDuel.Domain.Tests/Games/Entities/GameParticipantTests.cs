@@ -116,17 +116,6 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void SetActiveSubmission_PreservesPreviouslySkippedProblems()
-    {
-        var participant = CreateParticipantWithProblem(out Guid skippedProblemId);
-        participant.SkipToProblem(Guid.NewGuid());
-
-        participant.SetActiveSubmission(Guid.NewGuid());
-
-        Assert.Contains(skippedProblemId, participant.ProblemSession!.SkippedProblemIds);
-    }
-
-    [Fact]
     public void UseSkip_DecrementsSkipsRemaining()
     {
         var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);

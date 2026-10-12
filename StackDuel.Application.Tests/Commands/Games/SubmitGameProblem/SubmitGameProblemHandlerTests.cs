@@ -4,9 +4,12 @@ using Moq;
 using StackDuel.Application.Commands.Submissions.CreateSubmission;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
+using StackDuel.Application.Submissions;
+using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.Submissions.Enums;
 using SubmitGameProblemCommand = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemCommand;
 using SubmitGameProblemHandler = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemHandler;
 using SubmitGameProblemValidator = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemValidator;
@@ -19,6 +22,7 @@ public class SubmitGameProblemHandlerTests
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private Mock<IMediator> _mediator = null!;
+    private Mock<ISubmissionReadRepository> _submissionReadRepository = null!;
     private SubmitGameProblemHandler _handler = null!;
 
     public SubmitGameProblemHandlerTests()
@@ -27,11 +31,13 @@ public class SubmitGameProblemHandlerTests
         _gameWriteRepository = new Mock<IGameWriteRepository>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
         _mediator = new Mock<IMediator>();
+        _submissionReadRepository = new Mock<ISubmissionReadRepository>();
 
         _handler = new SubmitGameProblemHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
             _domainEventDispatcher.Object,
+            _submissionReadRepository.Object,
             _mediator.Object,
             new SubmitGameProblemValidator()
         );
@@ -194,38 +200,10 @@ public class SubmitGameProblemHandlerTests
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Error, result.Status);
-        Assert.Null(participant.ProblemSession!.ActiveSubmissionId);
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-    }
-
-    [Fact]
-    public async Task Handle_Success_SetsActiveSubmissionAndPersists()
-    {
-        var userId = Guid.NewGuid();
-        var problemId = Guid.NewGuid();
-        var submissionId = Guid.NewGuid();
-        var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
-        game.Start();
-        var participant = game.Participants.Single();
-        participant.InitializeProblemSession(problemId);
-
-        _gameReadRepository
-            .Setup(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(game);
-        _mediator
-            .Setup(x => x.Send(It.IsAny<CreateSubmissionCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<Guid>.Success(submissionId));
-
-        var command = CreateCommand(game.Id, problemId, userId);
-        Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(submissionId, result.Value);
-        Assert.Equal(submissionId, participant.ProblemSession!.ActiveSubmissionId);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -250,6 +228,164 @@ public class SubmitGameProblemHandlerTests
 
         _mediator.Verify(
             x => x.Send(It.Is<CreateSubmissionCommand>(c => c.GameId == game.Id), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    private static Game CreateRunningGameOnProblem(Guid problemId, Guid userId)
+    {
+        var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
+        game.Start();
+        game.Participants.Single().InitializeProblemSession(problemId);
+        return game;
+    }
+
+    private void GivenGame(Game game) =>
+        _gameReadRepository
+            .Setup(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(game);
+
+    private void GivenLatestSubmission(GameProblemSubmissionDto? latest) =>
+        _submissionReadRepository
+            .Setup(x =>
+                x.FindLatestGameProblemSubmissionAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(latest);
+
+    private void GivenSubmissionCreationSucceeds(Guid createdSubmissionId) =>
+        _mediator
+            .Setup(x => x.Send(It.IsAny<CreateSubmissionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<Guid>.Success(createdSubmissionId));
+
+    private void VerifyNoSubmissionCreated() =>
+        _mediator.Verify(x => x.Send(It.IsAny<CreateSubmissionCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    private void VerifySubmissionCreatedOnce() =>
+        _mediator.Verify(x => x.Send(It.IsAny<CreateSubmissionCommand>(), It.IsAny<CancellationToken>()), Times.Once);
+
+    [Fact]
+    public async Task Handle_ProblemAlreadyAccepted_ReturnsInvalidAndCreatesNoSubmission()
+    {
+        var userId = Guid.NewGuid();
+        var problemId = Guid.NewGuid();
+        Game game = CreateRunningGameOnProblem(problemId, userId);
+
+        GivenGame(game);
+        GivenLatestSubmission(
+            new GameProblemSubmissionDto(
+                Guid.NewGuid(),
+                game.Id,
+                userId,
+                problemId,
+                SubmissionStatus.Accepted,
+                DateTime.UtcNow
+            )
+        );
+
+        Result<Guid> result = await _handler.Handle(CreateCommand(game.Id, problemId, userId), CancellationToken.None);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        Assert.Contains("already solved", result.ValidationErrors.Single().ErrorMessage);
+        VerifyNoSubmissionCreated();
+    }
+
+    [Theory]
+    [InlineData(SubmissionStatus.Queued)]
+    [InlineData(SubmissionStatus.Running)]
+    public async Task Handle_PreviousSubmissionStillGrading_ReturnsInvalidAndCreatesNoSubmission(
+        SubmissionStatus status
+    )
+    {
+        var userId = Guid.NewGuid();
+        var problemId = Guid.NewGuid();
+        Game game = CreateRunningGameOnProblem(problemId, userId);
+
+        GivenGame(game);
+        GivenLatestSubmission(
+            new GameProblemSubmissionDto(Guid.NewGuid(), game.Id, userId, problemId, status, DateTime.UtcNow)
+        );
+
+        Result<Guid> result = await _handler.Handle(CreateCommand(game.Id, problemId, userId), CancellationToken.None);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        Assert.Contains("still being graded", result.ValidationErrors.Single().ErrorMessage);
+        VerifyNoSubmissionCreated();
+    }
+
+    [Fact]
+    public async Task Handle_PreviousSubmissionWedgedPastTheGradingWindow_AllowsAnotherAttempt()
+    {
+        var userId = Guid.NewGuid();
+        var problemId = Guid.NewGuid();
+        var createdSubmissionId = Guid.NewGuid();
+        Game game = CreateRunningGameOnProblem(problemId, userId);
+        DateTime wedgedAt = DateTime.UtcNow - SubmissionGradingWindow.StaleAfter - TimeSpan.FromMinutes(1);
+
+        GivenGame(game);
+        GivenLatestSubmission(
+            new GameProblemSubmissionDto(Guid.NewGuid(), game.Id, userId, problemId, SubmissionStatus.Queued, wedgedAt)
+        );
+        GivenSubmissionCreationSucceeds(createdSubmissionId);
+
+        Result<Guid> result = await _handler.Handle(CreateCommand(game.Id, problemId, userId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(createdSubmissionId, result.Value);
+        VerifySubmissionCreatedOnce();
+    }
+
+    [Fact]
+    public async Task Handle_PreviousSubmissionWasWrongAnswer_AllowsAnotherAttempt()
+    {
+        var userId = Guid.NewGuid();
+        var problemId = Guid.NewGuid();
+        var createdSubmissionId = Guid.NewGuid();
+        Game game = CreateRunningGameOnProblem(problemId, userId);
+
+        GivenGame(game);
+        GivenLatestSubmission(
+            new GameProblemSubmissionDto(
+                Guid.NewGuid(),
+                game.Id,
+                userId,
+                problemId,
+                SubmissionStatus.WrongAnswer,
+                DateTime.UtcNow
+            )
+        );
+        GivenSubmissionCreationSucceeds(createdSubmissionId);
+
+        Result<Guid> result = await _handler.Handle(CreateCommand(game.Id, problemId, userId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(createdSubmissionId, result.Value);
+        VerifySubmissionCreatedOnce();
+    }
+
+    [Fact]
+    public async Task Handle_NoPreviousSubmissionForTheProblem_AllowsTheAttempt()
+    {
+        var userId = Guid.NewGuid();
+        var problemId = Guid.NewGuid();
+        var createdSubmissionId = Guid.NewGuid();
+        Game game = CreateRunningGameOnProblem(problemId, userId);
+
+        GivenGame(game);
+        GivenLatestSubmission(null);
+        GivenSubmissionCreationSucceeds(createdSubmissionId);
+
+        Result<Guid> result = await _handler.Handle(CreateCommand(game.Id, problemId, userId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(createdSubmissionId, result.Value);
+        VerifySubmissionCreatedOnce();
+        _submissionReadRepository.Verify(
+            x => x.FindLatestGameProblemSubmissionAsync(game.Id, userId, problemId, It.IsAny<CancellationToken>()),
             Times.Once
         );
     }

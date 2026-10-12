@@ -13,7 +13,8 @@ internal sealed class GameProblemSequencer(ILanguageReadRepository languageReadR
         CancellationToken cancellationToken = default
     )
     {
-        if (game.ProblemIdAtPosition(position) is { } existingProblemId)
+        Guid? existingProblemId = game.ProblemIdAtPosition(position);
+        if (existingProblemId.HasValue)
             return existingProblemId;
 
         Guid[] selectedLanguageIds = [.. game.Tracks.SelectMany(t => t.Languages).Select(l => l.LanguageId).Distinct()];
@@ -34,8 +35,8 @@ internal sealed class GameProblemSequencer(ILanguageReadRepository languageReadR
         );
 
         Guid? generatedProblemId = await strategy.SelectNextProblemIdAsync(context, cancellationToken);
-        if (generatedProblemId is { } newProblemId)
-            game.AppendProblem(newProblemId);
+        if (generatedProblemId.HasValue)
+            game.AppendProblem(generatedProblemId.Value);
 
         return generatedProblemId;
     }

@@ -245,10 +245,6 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
                 session.CurrentProblemId,
                 SolvedProblemIds = session.SolvedProblemIds.ToList(),
                 SkippedProblemIds = session.SkippedProblemIds.ToList(),
-                session.ActiveSubmissionId,
-                SolvedProblemSubmissions = session
-                    .SolvedProblemSubmissionIds.Select(kvp => new { ProblemId = kvp.Key, SubmissionId = kvp.Value })
-                    .ToList(),
             },
             options
         );
@@ -284,34 +280,6 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
                 foreach (var skippedId in ParseGuidArray(root, "skippedProblemIds"))
                     session.AddSkippedProblem(skippedId);
-
-                if (
-                    root.TryGetProperty("activeSubmissionId", out var activeSubEl)
-                    && activeSubEl.ValueKind != System.Text.Json.JsonValueKind.Null
-                    && activeSubEl.TryGetGuid(out var activeSubId)
-                )
-                {
-                    session.SetActiveSubmission(activeSubId);
-                }
-
-                if (
-                    root.TryGetProperty("solvedProblemSubmissions", out var submissionsElement)
-                    && submissionsElement.ValueKind == System.Text.Json.JsonValueKind.Array
-                )
-                {
-                    foreach (var item in submissionsElement.EnumerateArray())
-                    {
-                        if (
-                            item.TryGetProperty("problemId", out var problemIdEl)
-                            && problemIdEl.TryGetGuid(out var solvedProblemId)
-                            && item.TryGetProperty("submissionId", out var submissionIdEl)
-                            && submissionIdEl.TryGetGuid(out var solvedSubmissionId)
-                        )
-                        {
-                            session.RecordSolvedSubmission(solvedProblemId, solvedSubmissionId);
-                        }
-                    }
-                }
 
                 return session;
             }
