@@ -38,12 +38,19 @@ public interface IGameService
         bool skipsEnabled,
         CancellationToken cancellationToken
     );
+
     Task<Result> StartGameAsync(Guid gameId, Guid userId, CancellationToken cancellationToken);
+
     Task<Result> JoinGameAsync(Guid gameId, Guid userId, CancellationToken cancellationToken);
+
     Task<Result<Guid>> JoinGameByCodeAsync(string joinCode, Guid userId, CancellationToken cancellationToken);
+
     Task<Result> LeaveGameAsync(Guid gameId, Guid userId, CancellationToken cancellationToken);
+
     Task<Result> CloseLobbyAsync(Guid gameId, Guid userId, CancellationToken cancellationToken);
+
     Task<Result> ForfeitGameAsync(Guid gameId, Guid userId, CancellationToken cancellationToken);
+
     Task<Result<Guid>> SubmitGameProblemAsync(
         Guid gameId,
         Guid problemId,
@@ -52,6 +59,7 @@ public interface IGameService
         Guid userId,
         CancellationToken cancellationToken
     );
+
     Task<Result<CompleteProblemResultDto>> CompleteProblemAsync(
         Guid gameId,
         Guid problemId,
@@ -59,40 +67,51 @@ public interface IGameService
         Guid userId,
         CancellationToken cancellationToken
     );
+
     Task<Result<SkipProblemResultDto>> SkipProblemAsync(
         Guid gameId,
         Guid problemId,
         Guid userId,
         CancellationToken cancellationToken
     );
+
     Task<Result<GameStateDto>> GetGameStateAsync(Guid gameId, Guid userId, CancellationToken cancellationToken);
+
     Task<Result<IReadOnlyList<GameProblemHistoryDto>>> GetGameProblemsAsync(
         Guid gameId,
         Guid userId,
         CancellationToken cancellationToken
     );
+
     Task<Result<IReadOnlyList<GameModeDto>>> GetGameModesAsync(CancellationToken cancellationToken);
+
     Task<Result<IReadOnlyList<TrackDto>>> GetTracksAsync(CancellationToken cancellationToken);
+
     Task<Result<PageResult<GameLobbySummaryDto>>> GetOpenGamesAsync(
         string? gameModeKey,
         PaginationRequest paginationRequest,
         Guid? userId,
         CancellationToken cancellationToken
     );
+
     Task<Result<IReadOnlyList<MyActiveGameDto>>> GetMyActiveGamesAsync(
         Guid userId,
         CancellationToken cancellationToken
     );
+
     Task<Result<PageResult<AdminGameListItemDto>>> GetAdminGamesPageableAsync(
         GameStatus? status,
         PaginationRequest paginationRequest,
         CancellationToken cancellationToken
     );
+
     Task<Result<GameStateDto>> GetAdminGameDetailAsync(Guid gameId, CancellationToken cancellationToken);
+
     Task<Result<IReadOnlyList<AdminGamePlayerHistoryDto>>> GetAdminGamePlayerHistoryAsync(
         Guid gameId,
         CancellationToken cancellationToken
     );
+
     Task<Result<DuelHeadToHeadRecordDto>> GetDuelHeadToHeadRecordAsync(
         Guid userId,
         Guid opponentId,
