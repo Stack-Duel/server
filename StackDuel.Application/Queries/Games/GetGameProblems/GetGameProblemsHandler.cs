@@ -29,28 +29,30 @@ internal sealed class GetGameProblemsHandler(IGameReadRepository gameReadReposit
         var problemHistories = game
             .Participants.Select(p =>
             {
-                List<GameRoundParticipant> solvedRounds =
+                List<GameRoundResult> solvedRounds =
                 [
-                    .. p.RoundProgress.Where(roundProgress => roundProgress.Outcome == GameRoundOutcome.Solved),
+                    .. p.RoundResults.Where(result => result.Outcome == GameRoundOutcome.Solved),
                 ];
 
                 List<Guid> solvedProblemIds =
                 [
                     .. solvedRounds
-                        .Where(roundProgress => problemIdByRoundId.ContainsKey(roundProgress.RoundId))
-                        .Select(roundProgress => problemIdByRoundId[roundProgress.RoundId]),
+                        .Where(result => problemIdByRoundId.ContainsKey(result.RoundId))
+                        .Select(result => problemIdByRoundId[result.RoundId]),
                 ];
 
+                // A solved round always carries its solving submission, so the HasValue filter only
+                // bites if the Solution navigation wasn't loaded — in which case dropping the entry
+                // is safer than surfacing a wrong one.
                 List<SolvedProblemSubmissionDto> solvedProblemSubmissions =
                 [
                     .. solvedRounds
-                        .Where(roundProgress =>
-                            roundProgress.SubmissionId.HasValue
-                            && problemIdByRoundId.ContainsKey(roundProgress.RoundId)
+                        .Where(result =>
+                            result.SolvingSubmissionId.HasValue && problemIdByRoundId.ContainsKey(result.RoundId)
                         )
-                        .Select(roundProgress => new SolvedProblemSubmissionDto(
-                            problemIdByRoundId[roundProgress.RoundId],
-                            roundProgress.SubmissionId!.Value
+                        .Select(result => new SolvedProblemSubmissionDto(
+                            problemIdByRoundId[result.RoundId],
+                            result.SolvingSubmissionId!.Value
                         )),
                 ];
 

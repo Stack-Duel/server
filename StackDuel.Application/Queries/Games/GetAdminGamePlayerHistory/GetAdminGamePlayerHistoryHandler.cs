@@ -33,9 +33,11 @@ internal sealed class GetAdminGamePlayerHistoryHandler(
 
         Dictionary<Guid, Guid> problemIdByRoundId = game.Rounds.ToDictionary(r => r.Id, r => r.ProblemId);
 
-        // A skip carries no timestamp of its own in the domain model (a GameRoundParticipant row
-        // only records that the round was skipped), and titles for a problem skipped with zero
-        // attempts never appear in the submissions join above, so both are resolved separately here.
+        // Titles for a problem skipped with zero attempts never appear in the submissions join
+        // above, so they are resolved separately here.
+        // NOTE: skips now DO carry their own timestamp — GameRoundResult.CompletedAt is required —
+        // so the fabricated ordering below could read the real one instead. Left alone because that
+        // would change the timestamps this admin DTO reports.
         HashSet<Guid> skippedProblemIds =
         [
             .. game.Participants.SelectMany(p => SkippedProblemIdsFor(p, problemIdByRoundId)),
@@ -67,9 +69,9 @@ internal sealed class GetAdminGamePlayerHistoryHandler(
         IReadOnlyDictionary<Guid, Guid> problemIdByRoundId
     ) =>
         participant
-            .RoundProgress.Where(roundProgress => roundProgress.Outcome == GameRoundOutcome.Skipped)
-            .Where(roundProgress => problemIdByRoundId.ContainsKey(roundProgress.RoundId))
-            .Select(roundProgress => problemIdByRoundId[roundProgress.RoundId]);
+            .RoundResults.Where(result => result.Outcome == GameRoundOutcome.Skipped)
+            .Where(result => problemIdByRoundId.ContainsKey(result.RoundId))
+            .Select(result => problemIdByRoundId[result.RoundId]);
 
     private static AdminGamePlayerHistoryDto BuildHistory(
         GameParticipant participant,

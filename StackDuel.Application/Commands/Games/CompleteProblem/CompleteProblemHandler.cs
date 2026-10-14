@@ -17,6 +17,7 @@ internal sealed class CompleteProblemHandler(
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,
     ISubmissionWriteRepository submissionRepository,
+    IGameRoundSubmissionReadRepository gameRoundSubmissionReadRepository,
     IValidator<CompleteProblemCommand> validator
 ) : AbstractCommandHandler<CompleteProblemCommand, CompleteProblemResultDto>(validator)
 {
@@ -75,7 +76,11 @@ internal sealed class CompleteProblemHandler(
                     participant,
                     gameMode.Key,
                     onAdvance: nextProblemId =>
-                        game.SolveCurrentRoundAndAdvance(request.RequestedByUserId, nextProblemId),
+                        game.SolveCurrentRoundAndAdvance(
+                            request.RequestedByUserId,
+                            nextProblemId,
+                            request.SubmissionId
+                        ),
                     onFinish: null,
                     cancellationToken
                 );
@@ -131,7 +136,26 @@ internal sealed class CompleteProblemHandler(
         CancellationToken cancellationToken
     )
     {
-        if (!game.HasSubmissionFor(participant.UserId, request.SubmissionId))
+        // The round's attempts live in game_round_submissions rather than on the Game aggregate, so
+        // this is a read rather than an in-memory check. Only the participant's latest attempt
+        // qualifies — a superseded one must not stay eligible to complete the round.
+        Guid? currentRoundId = participant.CurrentRoundId;
+        if (!currentRoundId.HasValue)
+            return (
+                Result<CompleteProblemResultDto>.Invalid(
+                    new ValidationError(nameof(request.SubmissionId), "Participant is not on a round.")
+                ),
+                null
+            );
+
+        bool isLatestAttempt = await gameRoundSubmissionReadRepository.IsLatestAttemptAsync(
+            participant.Id,
+            currentRoundId.Value,
+            request.SubmissionId,
+            cancellationToken
+        );
+
+        if (!isLatestAttempt)
             return (
                 Result<CompleteProblemResultDto>.Invalid(
                     new ValidationError(nameof(request.SubmissionId), "Submission was not created through the game.")

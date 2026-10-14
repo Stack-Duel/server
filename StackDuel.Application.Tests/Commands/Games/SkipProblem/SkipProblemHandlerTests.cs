@@ -247,8 +247,8 @@ public class SkipProblemHandlerTests
         Assert.Equal(nextProblemId, game.CurrentProblemIdFor(userId));
         Guid skippedRoundId = game.Rounds.First(r => r.ProblemId == problemId).Id;
         Assert.Contains(
-            participant.RoundProgress,
-            roundProgress => roundProgress.RoundId == skippedRoundId && roundProgress.Outcome == GameRoundOutcome.Skipped
+            participant.RoundResults,
+            result => result.RoundId == skippedRoundId && result.Outcome == GameRoundOutcome.Skipped
         );
         Assert.Equal(0, participant.Score);
         _gameExpiryCanceller.Verify(

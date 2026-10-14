@@ -228,7 +228,10 @@ public class SubmitGameProblemHandlerTests
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Error, result.Status);
-        Assert.Null(participant.CurrentRound?.SubmissionId);
+        _gameRoundSubmissionWriteRepository.Verify(
+            x => x.AddAsync(It.IsAny<GameRoundSubmission>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         _gameWriteRepository.Verify(
             x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -236,14 +239,13 @@ public class SubmitGameProblemHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Success_SetsActiveSubmissionAndPersists()
+    public async Task Handle_Success_RecordsTheAttemptAgainstTheRound()
     {
         var userId = Guid.NewGuid();
         var problemId = Guid.NewGuid();
         var submissionId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
         game.Start();
-        var participant = game.Participants.Single();
         StartParticipantOnProblem(game, userId, problemId);
         SetupMatchingProblemSetup(problemId);
 
@@ -259,8 +261,18 @@ public class SubmitGameProblemHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(submissionId, result.Value);
-        Assert.Equal(submissionId, participant.CurrentRound?.SubmissionId);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+
+        // The attempt is recorded in game_round_submissions rather than stamped onto the aggregate,
+        // and CompleteProblemHandler reads that table to decide whether a submission may complete
+        // the round — so this write is the whole observable effect of a successful submit.
+        _gameRoundSubmissionWriteRepository.Verify(
+            x =>
+                x.AddAsync(
+                    It.Is<GameRoundSubmission>(roundSubmission => roundSubmission.SubmissionId == submissionId),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 
     [Fact]

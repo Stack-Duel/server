@@ -115,11 +115,7 @@ internal sealed partial class SubmitGameProblemHandler(
         if (!submissionResult.IsSuccess)
             return Result<Guid>.Error("Failed to create submission.");
 
-        // Stamp the submission ID on the round so completeProblem can verify it came from here.
-        game.AttachSubmissionFor(request.RequestedByUserId, submissionResult.Value);
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
-
-        await RecordRoundSubmissionAsync(
+        return await RecordRoundSubmissionAsync(
             roundId.Value,
             participant.Id,
             request,
@@ -128,18 +124,22 @@ internal sealed partial class SubmitGameProblemHandler(
             participant.UserId,
             cancellationToken
         );
-
-        return Result<Guid>.Success(submissionResult.Value);
     }
 
     /// <summary>
-    /// Mirrors the accepted submission into <c>game_round_submissions</c>, the relational successor
-    /// to the <c>problem_session</c> jsonb. Nothing reads that table yet, so a failure here must not
-    /// fail a submission that has already been created and queued for execution — it is logged and
-    /// swallowed, leaving only a gap in attempt history. Once reads move over, this write belongs in
-    /// the same transaction as the game save and a failure should become fatal.
+    /// Records the attempt in <c>game_round_submissions</c>, which is now the only place a game
+    /// submission is registered against its round — CompleteProblemHandler reads it to verify the
+    /// submission being completed really is this participant's latest attempt. A failure here is
+    /// therefore fatal rather than cosmetic: without the row the participant could never complete
+    /// the round, so the caller is told the submit failed.
     /// </summary>
-    private async Task RecordRoundSubmissionAsync(
+    /// <remarks>
+    /// The submission itself has already been created and queued by this point, so a failure leaves
+    /// code executing for an attempt the client was told failed. Closing that window properly needs
+    /// the submission and this row written in one transaction, which the current
+    /// mediator-per-aggregate split doesn't allow.
+    /// </remarks>
+    private async Task<Result<Guid>> RecordRoundSubmissionAsync(
         Guid roundId,
         Guid participantId,
         SubmitGameProblemCommand request,
@@ -166,12 +166,15 @@ internal sealed partial class SubmitGameProblemHandler(
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             LogRoundSubmissionFailed(exception, submissionId, roundId);
+            return Result<Guid>.Error("Failed to record the submission against this round.");
         }
+
+        return Result<Guid>.Success(submissionId);
     }
 
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "Failed to record submission {SubmissionId} against round {RoundId}; the submission itself was accepted, so attempt history for this round is incomplete."
+        Message = "Failed to record submission {SubmissionId} against round {RoundId}; the submission was created but cannot be completed without this row."
     )]
     private partial void LogRoundSubmissionFailed(Exception exception, Guid submissionId, Guid roundId);
 }

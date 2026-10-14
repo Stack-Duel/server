@@ -25,6 +25,7 @@ public class CompleteProblemHandlerTests
     private Mock<IProblemSelectionStrategy> _strategy = null!;
     private Mock<IGameProblemSequencer> _gameProblemSequencer = null!;
     private Mock<ISubmissionWriteRepository> _submissionRepository = null!;
+    private Mock<IGameRoundSubmissionReadRepository> _gameRoundSubmissionReadRepository = null!;
     private CompleteProblemHandler _handler = null!;
 
     public CompleteProblemHandlerTests()
@@ -37,6 +38,7 @@ public class CompleteProblemHandlerTests
         _strategy = new Mock<IProblemSelectionStrategy>();
         _gameProblemSequencer = new Mock<IGameProblemSequencer>();
         _submissionRepository = new Mock<ISubmissionWriteRepository>();
+        _gameRoundSubmissionReadRepository = new Mock<IGameRoundSubmissionReadRepository>();
 
         _strategyResolver.Setup(x => x.Resolve(It.IsAny<string>())).Returns(_strategy.Object);
 
@@ -52,9 +54,29 @@ public class CompleteProblemHandlerTests
             _domainEventDispatcher.Object,
             gameProblemAdvancer,
             _submissionRepository.Object,
+            _gameRoundSubmissionReadRepository.Object,
             new CompleteProblemValidator()
         );
     }
+
+    /// <summary>
+    /// The attempt the handler will accept as the participant's latest for their current round.
+    /// Replaces the old <c>game.AttachSubmissionFor(...)</c> setup — attempts now live in
+    /// game_round_submissions, so eligibility is a repository read rather than aggregate state.
+    /// Unstubbed submissions resolve to false, which keeps the "not created through the game" path
+    /// the default rather than something a test has to opt into.
+    /// </summary>
+    private void AllowSubmission(Guid submissionId) =>
+        _gameRoundSubmissionReadRepository
+            .Setup(x =>
+                x.IsLatestAttemptAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    submissionId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
 
     private static Submission CreateAcceptedSubmission(Guid userId)
     {
@@ -191,7 +213,7 @@ public class CompleteProblemHandlerTests
         var problemId = Guid.NewGuid();
         var submissionId = Guid.NewGuid();
         StartParticipantOnProblem(game, userId, problemId);
-        game.AttachSubmissionFor(userId, submissionId);
+        AllowSubmission(submissionId);
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionRepository
             .Setup(x => x.FindByIdAsync(submissionId, It.IsAny<CancellationToken>()))
@@ -212,7 +234,7 @@ public class CompleteProblemHandlerTests
         var problemId = Guid.NewGuid();
         StartParticipantOnProblem(game, userId, problemId);
         var submission = CreateAcceptedSubmission(Guid.NewGuid());
-        game.AttachSubmissionFor(userId, submission.Id);
+        AllowSubmission(submission.Id);
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionRepository
             .Setup(x => x.FindByIdAsync(submission.Id, It.IsAny<CancellationToken>()))
@@ -233,7 +255,7 @@ public class CompleteProblemHandlerTests
         var problemId = Guid.NewGuid();
         StartParticipantOnProblem(game, userId, problemId);
         var submission = new Submission(userId, Guid.NewGuid(), SubmissionType.Submit, new SourceCode("print(1)"), []);
-        game.AttachSubmissionFor(userId, submission.Id);
+        AllowSubmission(submission.Id);
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionRepository
             .Setup(x => x.FindByIdAsync(submission.Id, It.IsAny<CancellationToken>()))
@@ -254,7 +276,7 @@ public class CompleteProblemHandlerTests
         var problemId = Guid.NewGuid();
         StartParticipantOnProblem(game, userId, problemId);
         var submission = CreateAcceptedSubmission(userId);
-        game.AttachSubmissionFor(userId, submission.Id);
+        AllowSubmission(submission.Id);
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionRepository
             .Setup(x => x.FindByIdAsync(submission.Id, It.IsAny<CancellationToken>()))
@@ -279,7 +301,7 @@ public class CompleteProblemHandlerTests
         var problemId = Guid.NewGuid();
         StartParticipantOnProblem(game, userId, problemId);
         var submission = CreateAcceptedSubmission(userId);
-        game.AttachSubmissionFor(userId, submission.Id);
+        AllowSubmission(submission.Id);
         var nextProblemId = Guid.NewGuid();
         game.AppendRound(nextProblemId);
         var gameMode = CreateGameMode();
@@ -343,7 +365,7 @@ public class CompleteProblemHandlerTests
         game.SkipCurrentRoundAndAdvance(userId, thirdProblemId);
         var problemId = game.CurrentProblemIdFor(userId)!.Value;
         var submission = CreateAcceptedSubmission(userId);
-        game.AttachSubmissionFor(userId, submission.Id);
+        AllowSubmission(submission.Id);
         var gameMode = CreateGameMode();
         int? capturedPosition = null;
 
@@ -386,7 +408,7 @@ public class CompleteProblemHandlerTests
         var problemId = Guid.NewGuid();
         StartParticipantOnProblem(game, userId, problemId);
         var submission = CreateAcceptedSubmission(userId);
-        game.AttachSubmissionFor(userId, submission.Id);
+        AllowSubmission(submission.Id);
         var gameMode = CreateGameMode();
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
@@ -432,7 +454,7 @@ public class CompleteProblemHandlerTests
             g.Start();
             g.AppendRound(problemId);
             g.StartRoundFor(userId, problemId);
-            g.AttachSubmissionFor(userId, submission.Id);
+            AllowSubmission(submission.Id);
             // The next round must already exist for SolveCurrentRoundAndAdvance to find it — the
             // real GameProblemSequencer would append it itself, but it's mocked here, so the fixture
             // appends the same winning problem it stubs the mock to return.
@@ -497,7 +519,7 @@ public class CompleteProblemHandlerTests
             g.Start();
             g.AppendRound(problemId);
             g.StartRoundFor(userId, problemId);
-            g.AttachSubmissionFor(userId, submission.Id);
+            AllowSubmission(submission.Id);
             return g;
         }
 

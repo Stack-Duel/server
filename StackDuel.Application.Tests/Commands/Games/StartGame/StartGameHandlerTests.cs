@@ -203,7 +203,7 @@ public class StartGameHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Success_StartsGameAndInitializesProblemSessions()
+    public async Task Handle_Success_StartsGameAndPutsEveryParticipantOnTheFirstRound()
     {
         var hostId = Guid.NewGuid();
         var otherId = Guid.NewGuid();

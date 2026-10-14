@@ -79,7 +79,9 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
 
     public DbSet<GameRound> GameRounds { get; init; }
 
-    public DbSet<GameRoundParticipant> GameRoundParticipants { get; init; }
+    public DbSet<GameRoundResult> GameRoundResults { get; init; }
+
+    public DbSet<GameRoundSolution> GameRoundSolutions { get; init; }
 
     public DbSet<GameRoundSubmission> GameRoundSubmissions { get; init; }
 

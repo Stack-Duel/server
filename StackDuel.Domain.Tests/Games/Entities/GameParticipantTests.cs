@@ -12,10 +12,9 @@ public class GameParticipantTests
     /// <summary>
     /// A running two-participant game with <paramref name="userId"/>'s participant already on a
     /// round; the second participant exists only so forfeiting the first doesn't auto-complete the
-    /// game. Problem-session behaviour (<c>InitializeProblemSession</c>/<c>SkipToProblem</c>/
-    /// <c>AdvanceProblem</c>/etc.) used to live directly on <see cref="GameParticipant"/>; it is now
-    /// driven through <see cref="Game"/>, since only the aggregate root can resolve a round to its
-    /// problem id.
+    /// game. Round progression is driven through <see cref="Game"/> rather than the participant,
+    /// since only the aggregate root can resolve a round to its problem id — and the participant's
+    /// own mutators are internal to it for that reason.
     /// </summary>
     private static (Game Game, Guid UserId, Guid ProblemId) CreateRunningGameWithActiveRound()
     {
@@ -30,10 +29,10 @@ public class GameParticipantTests
         return (game, userId, problemId);
     }
 
-    private static GameRoundParticipant RoundProgressFor(Game game, GameParticipant participant, Guid problemId)
+    private static GameRoundResult RoundResultFor(Game game, GameParticipant participant, Guid problemId)
     {
         Guid roundId = game.Rounds.Single(round => round.ProblemId == problemId).Id;
-        return participant.RoundProgress.Single(progress => progress.RoundId == roundId);
+        return participant.RoundResults.Single(result => result.RoundId == roundId);
     }
 
     /// <summary>
@@ -76,7 +75,7 @@ public class GameParticipantTests
 
         game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
-        GameRoundParticipant progress = RoundProgressFor(game, participant, problemId);
+        GameRoundResult progress = RoundResultFor(game, participant, problemId);
         Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
     }
 
@@ -160,26 +159,41 @@ public class GameParticipantTests
         Guid solvedProblemId = AppendNextRound(game);
         game.SkipCurrentRoundAndAdvance(userId, solvedProblemId);
 
-        game.AttachSubmissionFor(userId, Guid.NewGuid());
-        game.SolveCurrentRoundAndAdvance(userId, AppendNextRound(game));
+        game.SolveCurrentRoundAndAdvance(userId, AppendNextRound(game), Guid.NewGuid());
 
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
-        GameRoundParticipant progress = RoundProgressFor(game, participant, skippedProblemId);
+        GameRoundResult progress = RoundResultFor(game, participant, skippedProblemId);
         Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
     }
 
     /// <summary>
-    /// Solving is only reachable through a submission, so the round must already carry one. Skipping
-    /// deliberately has no such requirement — see
+    /// A solved round always names the submission that solved it, so there is no way to record one
+    /// without a usable id. Skipping deliberately has no such requirement — see
     /// <see cref="SkipCurrentRoundAndAdvance_WithNoSubmission_IsAllowed"/>.
     /// </summary>
     [Fact]
-    public void SolveCurrentRoundAndAdvance_WithNoSubmissionAttached_Throws()
+    public void SolveCurrentRoundAndAdvance_WithEmptySubmissionId_Throws()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         Guid nextProblemId = AppendNextRound(game);
 
-        Assert.Throws<InvalidOperationException>(() => game.SolveCurrentRoundAndAdvance(userId, nextProblemId));
+        Assert.Throws<ArgumentException>(() =>
+            game.SolveCurrentRoundAndAdvance(userId, nextProblemId, Guid.Empty)
+        );
+    }
+
+    [Fact]
+    public void SolveCurrentRoundAndAdvance_RecordsTheSolvingSubmission()
+    {
+        var (game, userId, solvedProblemId) = CreateRunningGameWithActiveRound();
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
+        var submissionId = Guid.NewGuid();
+
+        game.SolveCurrentRoundAndAdvance(userId, AppendNextRound(game), submissionId);
+
+        GameRoundResult result = RoundResultFor(game, participant, solvedProblemId);
+        Assert.Equal(GameRoundOutcome.Solved, result.Outcome);
+        Assert.Equal(submissionId, result.SolvingSubmissionId);
     }
 
     [Fact]
@@ -190,22 +204,9 @@ public class GameParticipantTests
 
         game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
-        GameRoundParticipant progress = RoundProgressFor(game, participant, skippedProblemId);
+        GameRoundResult progress = RoundResultFor(game, participant, skippedProblemId);
         Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
-        Assert.Null(progress.SubmissionId);
-    }
-
-    [Fact]
-    public void AttachSubmissionFor_PreservesPreviouslySkippedProblems()
-    {
-        var (game, userId, skippedProblemId) = CreateRunningGameWithActiveRound();
-        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
-
-        game.AttachSubmissionFor(userId, Guid.NewGuid());
-
-        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
-        GameRoundParticipant progress = RoundProgressFor(game, participant, skippedProblemId);
-        Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
+        Assert.Null(progress.SolvingSubmissionId);
     }
 
     [Fact]

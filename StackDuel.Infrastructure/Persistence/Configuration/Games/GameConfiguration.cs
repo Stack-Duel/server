@@ -182,6 +182,19 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
         builder.Property(participant => participant.FinishedAt).HasColumnName("finished_at").IsRequired(false);
 
+        // The current-round cursor. A single nullable column is what makes "at most one round in
+        // progress per participant" structural rather than an invariant upheld by an index or a
+        // handler — there is no in-progress row anywhere to duplicate.
+        builder
+            .Property(participant => participant.CurrentRoundId)
+            .HasColumnName("current_round_id")
+            .IsRequired(false);
+
+        builder
+            .Property(participant => participant.CurrentRoundStartedAt)
+            .HasColumnName("current_round_started_at")
+            .IsRequired(false);
+
         builder
             .HasOne<User>()
             .WithMany()
@@ -199,12 +212,12 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
         builder.HasAlternateKey("Id", "game_id", nameof(GameParticipant.UserId));
 
-        // Configured here, from the principal side, rather than from GameRoundParticipantConfiguration:
+        // Configured here, from the principal side, rather than from GameRoundResultConfiguration:
         // "game_id" is a shadow property on both sides, and HasPrincipalKey(string[]) needs it
         // already declared with its CLR type, which is only guaranteed within this Configure
         // method — the order configurations apply in across entity types is unspecified.
         builder
-            .HasMany<GameRoundParticipant>()
+            .HasMany<GameRoundResult>()
             .WithOne()
             .HasForeignKey("participant_id", "game_id")
             .HasPrincipalKey("Id", "game_id")
@@ -226,15 +239,15 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasMany(participant => participant.RoundProgress)
+            .HasMany(participant => participant.RoundResults)
             .WithOne()
             .HasForeignKey("participant_id")
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .Navigation(participant => participant.RoundProgress)
-            .HasField("_roundProgress")
+            .Navigation(participant => participant.RoundResults)
+            .HasField("_roundResults")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
