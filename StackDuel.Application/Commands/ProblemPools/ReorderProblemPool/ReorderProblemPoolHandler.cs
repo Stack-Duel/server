@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Problems;
@@ -7,6 +8,7 @@ namespace StackDuel.Application.Commands.ProblemPools.ReorderProblemPool;
 
 internal sealed class ReorderProblemPoolHandler(
     IProblemPoolRepository problemPoolRepository,
+    IUnitOfWork unitOfWork,
     IValidator<ReorderProblemPoolCommand> validator
 ) : AbstractCommandHandler<ReorderProblemPoolCommand>(validator)
 {
@@ -34,7 +36,7 @@ internal sealed class ReorderProblemPoolHandler(
 
         pool.Reorder(request.ProblemIds);
 
-        await problemPoolRepository.UpdateAsync(pool, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

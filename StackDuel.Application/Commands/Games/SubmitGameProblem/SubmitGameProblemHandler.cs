@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using MediatR;
@@ -16,6 +17,7 @@ namespace StackDuel.Application.Commands.Games.SubmitGameProblem;
 internal sealed partial class SubmitGameProblemHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IGameRoundSubmissionWriteRepository gameRoundSubmissionWriteRepository,
     IProblemReadRepository problemReadRepository,
     IDomainEventDispatcher domainEventDispatcher,
@@ -39,7 +41,7 @@ internal sealed partial class SubmitGameProblemHandler(
 
         if (game.CompleteIfExpired(DateTime.UtcNow))
         {
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
         }
 

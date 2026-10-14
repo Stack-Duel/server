@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using Moq;
 using StackDuel.Application.Events;
@@ -19,6 +20,7 @@ public class CompleteProblemHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IGameExpiryCanceller> _gameExpiryCanceller = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private Mock<IProblemSelectionStrategyResolver> _strategyResolver = null!;
@@ -32,6 +34,7 @@ public class CompleteProblemHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _gameExpiryCanceller = new Mock<IGameExpiryCanceller>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
         _strategyResolver = new Mock<IProblemSelectionStrategyResolver>();
@@ -51,6 +54,7 @@ public class CompleteProblemHandlerTests
         _handler = new CompleteProblemHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _domainEventDispatcher.Object,
             gameProblemAdvancer,
             _submissionRepository.Object,
@@ -330,7 +334,7 @@ public class CompleteProblemHandlerTests
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>
                 x.DispatchAsync(
@@ -472,8 +476,8 @@ public class CompleteProblemHandlerTests
                 )
             )
             .ReturnsAsync(winningProblemId);
-        _gameWriteRepository
-            .SetupSequence(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
+        _unitOfWork
+            .SetupSequence(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(
                 new GameProblemPositionConflictException(Guid.NewGuid(), new InvalidOperationException("conflict"))
             )
@@ -488,8 +492,8 @@ public class CompleteProblemHandlerTests
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2)
         );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Exactly(2)
         );
     }
@@ -537,8 +541,8 @@ public class CompleteProblemHandlerTests
                 (g, _, _, _, _) => g.AppendRound(generatedProblemId)
             )
             .ReturnsAsync(generatedProblemId);
-        _gameWriteRepository
-            .Setup(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
+        _unitOfWork
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(
                 new GameProblemPositionConflictException(Guid.NewGuid(), new InvalidOperationException("conflict"))
             );
@@ -548,8 +552,8 @@ public class CompleteProblemHandlerTests
         await Assert.ThrowsAsync<GameProblemPositionConflictException>(() =>
             _handler.Handle(command, CancellationToken.None)
         );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Exactly(2)
         );
     }

@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
@@ -14,6 +15,7 @@ namespace StackDuel.Application.Queries.Games.GetGameState;
 internal sealed class GetGameStateHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IGameExpiryCanceller gameExpiryCanceller,
     IDomainEventDispatcher domainEventDispatcher,
     IUserReadRepository userReadRepository,
@@ -33,13 +35,13 @@ internal sealed class GetGameStateHandler(
 
         if (game.CompleteIfExpired(DateTime.UtcNow))
         {
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
         }
         else if (game.CompleteIfEveryoneStopped())
         {
             await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
         }
 

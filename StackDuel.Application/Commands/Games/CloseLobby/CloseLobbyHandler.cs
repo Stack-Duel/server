@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
@@ -11,6 +12,7 @@ namespace StackDuel.Application.Commands.Games.CloseLobby;
 internal sealed class CloseLobbyHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IValidator<CloseLobbyCommand> validator
 ) : AbstractCommandHandler<CloseLobbyCommand>(validator)
@@ -39,7 +41,7 @@ internal sealed class CloseLobbyHandler(
 
         game.CloseLobby();
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result.Success();

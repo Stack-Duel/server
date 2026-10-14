@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using MediatR;
@@ -12,6 +13,7 @@ namespace StackDuel.Application.Commands.Games.ForfeitGame;
 internal sealed class ForfeitGameHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IGameExpiryCanceller gameExpiryCanceller,
     IValidator<ForfeitGameCommand> validator,
     IDomainEventDispatcher domainEventDispatcher
@@ -51,7 +53,7 @@ internal sealed class ForfeitGameHandler(
         // still needed to end the game normally for them when time runs out.
         await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result.Success();

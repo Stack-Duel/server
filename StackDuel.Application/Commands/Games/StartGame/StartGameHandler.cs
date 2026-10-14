@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using MediatR;
@@ -12,6 +13,7 @@ namespace StackDuel.Application.Commands.Games.StartGame;
 internal sealed class StartGameHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IProblemSelectionStrategyResolver problemSelectionStrategyResolver,
     IGameProblemSequencer gameProblemSequencer,
     IDomainEventDispatcher domainEventDispatcher,
@@ -68,7 +70,7 @@ internal sealed class StartGameHandler(
             game.StartRoundFor(participant.UserId, initialProblemId.Value);
         }
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result.Success();

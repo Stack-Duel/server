@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Problems;
@@ -7,6 +8,7 @@ namespace StackDuel.Application.Commands.ProblemPools.AddProblemToPool;
 
 internal sealed class AddProblemToPoolHandler(
     IProblemPoolRepository problemPoolRepository,
+    IUnitOfWork unitOfWork,
     IProblemReadRepository problemReadRepository,
     IValidator<AddProblemToPoolCommand> validator
 ) : AbstractCommandHandler<AddProblemToPoolCommand>(validator)
@@ -26,7 +28,7 @@ internal sealed class AddProblemToPoolHandler(
 
         pool.AddProblem(request.ProblemId);
 
-        await problemPoolRepository.UpdateAsync(pool, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

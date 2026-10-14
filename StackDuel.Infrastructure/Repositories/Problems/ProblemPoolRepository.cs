@@ -68,15 +68,4 @@ internal sealed class ProblemPoolRepository(StackDuelDbContext context) : IProbl
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateAsync(ProblemPool pool, CancellationToken cancellationToken = default)
-    {
-        if (context.Entry(pool).State == EntityState.Detached)
-            context.ProblemPools.Update(pool);
-
-        IEnumerable<ProblemPoolItem> items =
-            context.Entry(pool).Collection("_items").CurrentValue?.Cast<ProblemPoolItem>() ?? [];
-        await NewChildEntityTracker.MarkNewAsAddedAsync(context, items, cancellationToken);
-
-        await context.SaveChangesAsync(cancellationToken);
-    }
 }

@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
@@ -14,6 +15,7 @@ namespace StackDuel.Application.Commands.Games.CompleteProblem;
 internal sealed class CompleteProblemHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,
     ISubmissionWriteRepository submissionRepository,
@@ -84,7 +86,7 @@ internal sealed class CompleteProblemHandler(
 
             try
             {
-                await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
             }
             catch (GameProblemPositionConflictException) when (saveAttempt == 0)
             {
@@ -109,7 +111,7 @@ internal sealed class CompleteProblemHandler(
         if (!attempt.GameJustExpired)
             return;
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
     }
 

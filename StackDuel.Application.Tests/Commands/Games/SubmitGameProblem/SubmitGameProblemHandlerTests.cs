@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +20,7 @@ public class SubmitGameProblemHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IGameRoundSubmissionWriteRepository> _gameRoundSubmissionWriteRepository = null!;
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
@@ -29,6 +31,7 @@ public class SubmitGameProblemHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _gameRoundSubmissionWriteRepository = new Mock<IGameRoundSubmissionWriteRepository>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
@@ -47,6 +50,7 @@ public class SubmitGameProblemHandlerTests
         _handler = new SubmitGameProblemHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _gameRoundSubmissionWriteRepository.Object,
             _problemReadRepository.Object,
             _domainEventDispatcher.Object,
@@ -229,8 +233,8 @@ public class SubmitGameProblemHandlerTests
             x => x.AddAsync(It.IsAny<GameRoundSubmission>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

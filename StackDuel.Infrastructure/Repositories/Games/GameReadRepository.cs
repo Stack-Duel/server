@@ -37,6 +37,8 @@ internal sealed class GameReadRepository(StackDuelDbContext context) : IGameRead
         return await context
             .Games.AsSplitQuery()
             .Include(g => g.Participants)
+                .ThenInclude(p => p.RoundResults)
+                .ThenInclude(r => r.Solution)
             .Include(g => g.Tracks)
                 .ThenInclude(t => t.Languages)
             .Include(g => g.Rounds)

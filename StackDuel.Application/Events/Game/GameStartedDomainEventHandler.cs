@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using StackDuel.Domain.SeedWork;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Games;
 using StackDuel.Application.Messaging;
@@ -13,6 +14,7 @@ internal sealed partial class GameStartedDomainEventHandler(
     IMessagePublisher messagePublisher,
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     ILogger<GameStartedDomainEventHandler> logger
 ) : INotificationHandler<DomainEventNotification<GameStartedDomainEvent>>
 {
@@ -52,7 +54,7 @@ internal sealed partial class GameStartedDomainEventHandler(
             return;
 
         game.AttachScheduledExpiry(sequenceNumber);
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     [LoggerMessage(

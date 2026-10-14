@@ -20,6 +20,7 @@ public class GetGameStateHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IGameExpiryCanceller> _gameExpiryCanceller = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private Mock<IUserReadRepository> _userReadRepository = null!;
@@ -30,6 +31,7 @@ public class GetGameStateHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _gameExpiryCanceller = new Mock<IGameExpiryCanceller>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
         _userReadRepository = new Mock<IUserReadRepository>();
@@ -41,6 +43,7 @@ public class GetGameStateHandlerTests
         _handler = new GetGameStateHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _gameExpiryCanceller.Object,
             _domainEventDispatcher.Object,
             _userReadRepository.Object,
@@ -126,7 +129,7 @@ public class GetGameStateHandlerTests
         Assert.Equal(GameStatus.Completed, result.Value.Status);
 
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once
@@ -154,8 +157,8 @@ public class GetGameStateHandlerTests
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
         _domainEventDispatcher.Verify(

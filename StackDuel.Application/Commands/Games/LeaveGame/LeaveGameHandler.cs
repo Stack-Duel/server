@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
@@ -11,6 +12,7 @@ namespace StackDuel.Application.Commands.Games.LeaveGame;
 internal sealed class LeaveGameHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IValidator<LeaveGameCommand> validator
 ) : AbstractCommandHandler<LeaveGameCommand>(validator)
@@ -36,7 +38,7 @@ internal sealed class LeaveGameHandler(
 
         game.Leave(request.RequestedByUserId);
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result.Success();

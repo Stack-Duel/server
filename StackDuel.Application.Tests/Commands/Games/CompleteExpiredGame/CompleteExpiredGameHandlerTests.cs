@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -17,6 +18,7 @@ public class CompleteExpiredGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private CompleteExpiredGameHandler _handler = null!;
 
@@ -24,11 +26,13 @@ public class CompleteExpiredGameHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new CompleteExpiredGameHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             new CompleteExpiredGameValidator(),
             _domainEventDispatcher.Object,
             NullLogger<CompleteExpiredGameHandler>.Instance
@@ -98,8 +102,8 @@ public class CompleteExpiredGameHandlerTests
         Assert.Equal(CompleteExpiredGameOutcome.NotYetExpired_Rescheduled, result.Value.Outcome);
         Assert.NotNull(result.Value.RescheduleForUtc);
         Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Running, game.Status);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -119,7 +123,7 @@ public class CompleteExpiredGameHandlerTests
             result.Value.Outcome
         );
         Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Completed, game.Status);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>
                 x.DispatchAsync(
@@ -147,8 +151,8 @@ public class CompleteExpiredGameHandlerTests
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(CompleteExpiredGameOutcome.NotYetExpired_ImplausibleDelay_Dropped, result.Value.Outcome);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -166,7 +170,7 @@ public class CompleteExpiredGameHandlerTests
 
         Assert.Equal(CompleteExpiredGameOutcome.Completed, result.Value.Outcome);
         Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Completed, game.Status);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>
                 x.DispatchAsync(

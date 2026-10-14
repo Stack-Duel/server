@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
@@ -11,6 +12,7 @@ namespace StackDuel.Application.Commands.Games.JoinGame;
 internal sealed class JoinGameHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     UserContext userContext,
     IDomainEventDispatcher domainEventDispatcher,
     IValidator<JoinGameCommand> validator
@@ -46,7 +48,7 @@ internal sealed class JoinGameHandler(
 
         game.Join(request.RequestedByUserId, gameMode.MaxPlayers);
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result.Success();

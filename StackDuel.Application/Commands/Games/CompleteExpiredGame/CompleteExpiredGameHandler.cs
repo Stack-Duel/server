@@ -1,4 +1,5 @@
 ﻿using Ardalis.Result;
+using StackDuel.Domain.SeedWork;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Events;
@@ -12,6 +13,7 @@ namespace StackDuel.Application.Commands.Games.CompleteExpiredGame;
 internal sealed partial class CompleteExpiredGameHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IValidator<CompleteExpiredGameCommand> validator,
     IDomainEventDispatcher domainEventDispatcher,
     ILogger<CompleteExpiredGameHandler> logger
@@ -58,7 +60,7 @@ internal sealed partial class CompleteExpiredGameHandler(
             {
                 LogRescheduleLimitReached(game.Id, request.RescheduleCount);
                 game.Complete();
-                await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
                 await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
                 return Result<CompleteExpiredGameResult>.Success(
                     new CompleteExpiredGameResult(
@@ -84,7 +86,7 @@ internal sealed partial class CompleteExpiredGameHandler(
         }
 
         game.Complete();
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result<CompleteExpiredGameResult>.Success(

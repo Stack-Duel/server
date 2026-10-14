@@ -16,6 +16,7 @@ public class JoinGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private UserContext _userContext = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private JoinGameHandler _handler = null!;
@@ -24,12 +25,14 @@ public class JoinGameHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _userContext = new UserContext();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new JoinGameHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _userContext,
             _domainEventDispatcher.Object,
             new JoinGameValidator()
@@ -207,7 +210,7 @@ public class JoinGameHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Contains(game.Participants, p => p.UserId == requesterId);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once

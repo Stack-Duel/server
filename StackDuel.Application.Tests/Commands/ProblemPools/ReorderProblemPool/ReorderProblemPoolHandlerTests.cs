@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using Moq;
 using StackDuel.Application.Problems;
@@ -11,12 +12,18 @@ namespace StackDuel.Application.Tests.Commands.ProblemPools.ReorderProblemPool;
 public class ReorderProblemPoolHandlerTests
 {
     private Mock<IProblemPoolRepository> _problemPoolRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private ReorderProblemPoolHandler _handler = null!;
 
     public ReorderProblemPoolHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
-        _handler = new ReorderProblemPoolHandler(_problemPoolRepository.Object, new ReorderProblemPoolValidator());
+        _unitOfWork = new Mock<IUnitOfWork>();
+        _handler = new ReorderProblemPoolHandler(
+            _problemPoolRepository.Object,
+            _unitOfWork.Object,
+            new ReorderProblemPoolValidator()
+        );
     }
 
     [Fact]
@@ -59,7 +66,7 @@ public class ReorderProblemPoolHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(new[] { third, first, second }, pool.ProblemIds);
-        _problemPoolRepository.Verify(x => x.UpdateAsync(pool, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -77,8 +84,8 @@ public class ReorderProblemPoolHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _problemPoolRepository.Verify(
-            x => x.UpdateAsync(It.IsAny<ProblemPool>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

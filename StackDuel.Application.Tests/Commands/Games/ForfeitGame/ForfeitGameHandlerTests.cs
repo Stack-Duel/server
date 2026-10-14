@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using Moq;
 using StackDuel.Application.Events;
@@ -14,6 +15,7 @@ public class ForfeitGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IGameExpiryCanceller> _gameExpiryCanceller = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private ForfeitGameHandler _handler = null!;
@@ -22,12 +24,14 @@ public class ForfeitGameHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _gameExpiryCanceller = new Mock<IGameExpiryCanceller>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new ForfeitGameHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _gameExpiryCanceller.Object,
             new ForfeitGameValidator(),
             _domainEventDispatcher.Object
@@ -135,7 +139,7 @@ public class ForfeitGameHandlerTests
         Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Completed, game.Status);
         Assert.True(game.Participants.First().HasForfeited);
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>
                 x.DispatchAsync(

@@ -1,3 +1,4 @@
+using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
@@ -10,6 +11,7 @@ namespace StackDuel.Application.Commands.Games.SkipProblem;
 internal sealed class SkipProblemHandler(
     IGameReadRepository gameReadRepository,
     IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,
     IValidator<SkipProblemCommand> validator
@@ -36,7 +38,7 @@ internal sealed class SkipProblemHandler(
 
             if (attempt.GameJustExpired)
             {
-                await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
                 await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
             }
 
@@ -79,7 +81,7 @@ internal sealed class SkipProblemHandler(
 
             try
             {
-                await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
             }
             catch (GameProblemPositionConflictException) when (saveAttempt == 0)
             {

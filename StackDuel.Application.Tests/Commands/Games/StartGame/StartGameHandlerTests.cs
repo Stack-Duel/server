@@ -16,6 +16,7 @@ public class StartGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IProblemSelectionStrategyResolver> _strategyResolver = null!;
     private Mock<IProblemSelectionStrategy> _strategy = null!;
     private Mock<IGameProblemSequencer> _gameProblemSequencer = null!;
@@ -26,6 +27,7 @@ public class StartGameHandlerTests
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
         _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _strategyResolver = new Mock<IProblemSelectionStrategyResolver>();
         _strategy = new Mock<IProblemSelectionStrategy>();
         _gameProblemSequencer = new Mock<IGameProblemSequencer>();
@@ -34,6 +36,7 @@ public class StartGameHandlerTests
         _handler = new StartGameHandler(
             _gameReadRepository.Object,
             _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _strategyResolver.Object,
             _gameProblemSequencer.Object,
             _domainEventDispatcher.Object,
@@ -167,8 +170,8 @@ public class StartGameHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.NotFound, result.Status);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -196,8 +199,8 @@ public class StartGameHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
+        _unitOfWork.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }
@@ -232,7 +235,7 @@ public class StartGameHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(GameStatus.Running, game.Status);
         Assert.True(game.Participants.All(p => game.CurrentProblemIdFor(p.UserId) == initialProblemId));
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once
