@@ -70,7 +70,7 @@ internal sealed class SkipProblemHandler(
                     gameMode.Key,
                     onAdvance: nextProblemId =>
                         game.SkipCurrentRoundAndAdvance(request.RequestedByUserId, nextProblemId),
-                    onFinish: participant.UseSkip,
+                    onFinish: () => game.SkipCurrentRound(request.RequestedByUserId),
                     cancellationToken
                 );
             }

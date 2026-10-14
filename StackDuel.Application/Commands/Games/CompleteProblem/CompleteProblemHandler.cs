@@ -75,7 +75,7 @@ internal sealed class CompleteProblemHandler(
                             nextProblemId,
                             request.SubmissionId
                         ),
-                    onFinish: null,
+                    onFinish: () => game.SolveCurrentRound(request.RequestedByUserId, request.SubmissionId),
                     cancellationToken
                 );
             }

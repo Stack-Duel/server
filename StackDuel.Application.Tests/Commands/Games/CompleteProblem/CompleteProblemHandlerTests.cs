@@ -432,6 +432,12 @@ public class CompleteProblemHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Null(result.Value.NextProblemId);
         Assert.True(participant.HasFinishedProblems);
+        Assert.Null(participant.CurrentRoundId);
+
+        GameRoundResult finalRound = participant.RoundResults.Single();
+        Assert.Equal(GameRoundOutcome.Solved, finalRound.Outcome);
+        Assert.Equal(submission.Id, finalRound.SolvingSubmissionId);
+
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
