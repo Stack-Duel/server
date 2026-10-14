@@ -65,7 +65,7 @@ internal sealed class StartGameHandler(
 
         foreach (var participant in game.Participants)
         {
-            participant.InitializeProblemSession(initialProblemId.Value);
+            game.StartRoundFor(participant.UserId, initialProblemId.Value);
         }
 
         await gameWriteRepository.SaveChangesAsync(game, cancellationToken);

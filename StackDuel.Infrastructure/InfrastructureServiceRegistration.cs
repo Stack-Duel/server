@@ -371,6 +371,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IProblemReactionReadRepository, ProblemReactionReadRepository>();
         services.AddScoped<IProblemReactionWriteRepository, ProblemReactionWriteRepository>();
         services.AddScoped<IGameWriteRepository, GameWriteRepository>();
+        services.AddScoped<IGameRoundSubmissionWriteRepository, GameRoundSubmissionWriteRepository>();
         services.AddScoped<IGameReadRepository, GameReadRepository>();
         services.AddScoped<ILeaderboardWriteRepository, LeaderboardWriteRepository>();
         services.AddScoped<ILeaderboardReadRepository, LeaderboardReadRepository>();

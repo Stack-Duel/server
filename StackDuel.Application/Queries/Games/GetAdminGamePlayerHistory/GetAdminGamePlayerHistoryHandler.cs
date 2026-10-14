@@ -5,6 +5,7 @@ using StackDuel.Application.Problems;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Submissions.Enums;
 
 namespace StackDuel.Application.Queries.Games.GetAdminGamePlayerHistory;
@@ -30,12 +31,14 @@ internal sealed class GetAdminGamePlayerHistoryHandler(
         );
         ILookup<Guid, GameSubmissionEventDto> submissionsByUser = submissions.ToLookup(s => s.UserId);
 
-        // A skip carries no timestamp of its own in the domain model (GameProblemSession only
-        // keeps an unordered id list), and titles for a problem skipped with zero attempts never
-        // appear in the submissions join above, so both are resolved separately here.
+        Dictionary<Guid, Guid> problemIdByRoundId = game.Rounds.ToDictionary(r => r.Id, r => r.ProblemId);
+
+        // A skip carries no timestamp of its own in the domain model (a GameRoundParticipant row
+        // only records that the round was skipped), and titles for a problem skipped with zero
+        // attempts never appear in the submissions join above, so both are resolved separately here.
         HashSet<Guid> skippedProblemIds =
         [
-            .. game.Participants.SelectMany(p => p.ProblemSession?.SkippedProblemIds ?? []),
+            .. game.Participants.SelectMany(p => SkippedProblemIdsFor(p, problemIdByRoundId)),
         ];
         Dictionary<Guid, (string Title, string Slug)> skippedProblemTitles =
             skippedProblemIds.Count == 0
@@ -47,17 +50,32 @@ internal sealed class GetAdminGamePlayerHistoryHandler(
 
         var histories = game
             .Participants.Select(participant =>
-                BuildHistory(participant, submissionsByUser[participant.UserId].ToList(), skippedProblemTitles)
+                BuildHistory(
+                    participant,
+                    submissionsByUser[participant.UserId].ToList(),
+                    skippedProblemTitles,
+                    problemIdByRoundId
+                )
             )
             .ToList();
 
         return Result<IReadOnlyList<AdminGamePlayerHistoryDto>>.Success(histories);
     }
 
+    private static IEnumerable<Guid> SkippedProblemIdsFor(
+        GameParticipant participant,
+        IReadOnlyDictionary<Guid, Guid> problemIdByRoundId
+    ) =>
+        participant
+            .RoundProgress.Where(roundProgress => roundProgress.Outcome == GameRoundOutcome.Skipped)
+            .Where(roundProgress => problemIdByRoundId.ContainsKey(roundProgress.RoundId))
+            .Select(roundProgress => problemIdByRoundId[roundProgress.RoundId]);
+
     private static AdminGamePlayerHistoryDto BuildHistory(
         GameParticipant participant,
         IReadOnlyList<GameSubmissionEventDto> userSubmissions,
-        IReadOnlyDictionary<Guid, (string Title, string Slug)> skippedProblemTitles
+        IReadOnlyDictionary<Guid, (string Title, string Slug)> skippedProblemTitles,
+        IReadOnlyDictionary<Guid, Guid> problemIdByRoundId
     )
     {
         List<AdminGameHistoryEventDto> events =
@@ -75,7 +93,7 @@ internal sealed class GetAdminGamePlayerHistoryHandler(
             )),
         ];
 
-        foreach (Guid skippedProblemId in participant.ProblemSession?.SkippedProblemIds ?? [])
+        foreach (Guid skippedProblemId in SkippedProblemIdsFor(participant, problemIdByRoundId))
         {
             DateTime? lastAttemptAt = userSubmissions
                 .Where(s => s.ProblemId == skippedProblemId)

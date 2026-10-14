@@ -1,5 +1,4 @@
 using StackDuel.Domain.Games.Enums;
-using StackDuel.Domain.Games.ValueObjects;
 using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.Games.Entities;
@@ -21,7 +20,6 @@ public sealed class GameParticipant : Entity
         JoinedAt = DateTime.UtcNow;
         Score = 0;
         SkipsRemaining = TotalSkips;
-        ProblemSession = null;
     }
 
     private GameParticipant() { }
@@ -36,8 +34,6 @@ public sealed class GameParticipant : Entity
 
     public int SkipsRemaining { get; private set; }
 
-    public GameProblemSession? ProblemSession { get; private set; }
-
     public DateTime? ForfeitedAt { get; private set; }
 
     public bool HasForfeited => ForfeitedAt is not null;
@@ -45,6 +41,35 @@ public sealed class GameParticipant : Entity
     public DateTime? FinishedAt { get; private set; }
 
     public bool HasFinishedProblems => FinishedAt is not null;
+
+    /// <summary>
+    /// The rounds this participant has finished with, one row each. The round they are currently on
+    /// is <see cref="CurrentRoundId"/> and deliberately has no row here — that is what keeps every
+    /// column on <see cref="GameRoundResult"/> required. A round only identifies its problem via
+    /// <see cref="Game.Rounds"/>, so anything needing the actual problem id goes through
+    /// <see cref="Game"/> rather than this entity.
+    /// </summary>
+    public IReadOnlyCollection<GameRoundResult> RoundResults => _roundResults.AsReadOnly();
+
+    /// <summary>
+    /// The round this participant is on, or null before their first round and after they have
+    /// finished. A single column, so "at most one round in progress" is structural rather than an
+    /// invariant some index or handler has to uphold.
+    /// </summary>
+    public Guid? CurrentRoundId { get; private set; }
+
+    /// <summary>
+    /// When the current round was started, carried here so it can be recorded on the result once
+    /// the round completes. Set exactly when <see cref="CurrentRoundId"/> is.
+    /// </summary>
+    public DateTime? CurrentRoundStartedAt { get; private set; }
+
+    /// <summary>
+    /// The number of rounds this participant has reached, counting the one they're on. Doubles as
+    /// the position of their next round, which is what the problem selection strategy is seeded
+    /// with.
+    /// </summary>
+    public int RoundsReached => _roundResults.Count + (CurrentRoundId.HasValue ? 1 : 0);
 
     /// <summary>
     /// True once this participant has stopped playing for any reason — quit (<see cref="Forfeit"/>)
@@ -90,26 +115,6 @@ public sealed class GameParticipant : Entity
     /// </summary>
     public bool CanPerform(ParticipantAction action) => AllowedActions[PlayState].Contains(action);
 
-    /// <summary>
-    /// Whether this participant may attempt <paramref name="action"/> against <paramref name="problemId"/>
-    /// right now: still playing, has an initialized session, and that session's current problem is
-    /// the one being acted on. Backs <see cref="Game.EvaluateProblemAttempt"/> — see that for the
-    /// game-level checks (participant exists, game running) layered around this.
-    /// </summary>
-    public ProblemAttemptEligibility CanAttemptProblem(ParticipantAction action, Guid problemId)
-    {
-        if (!CanPerform(action))
-            return ProblemAttemptEligibility.ParticipantStopped;
-
-        if (ProblemSession is null)
-            return ProblemAttemptEligibility.ProblemSessionNotInitialized;
-
-        if (ProblemSession.CurrentProblemId != problemId)
-            return ProblemAttemptEligibility.ProblemMismatch;
-
-        return ProblemAttemptEligibility.Eligible;
-    }
-
     public void Forfeit()
     {
         if (HasStoppedPlaying)
@@ -131,83 +136,54 @@ public sealed class GameParticipant : Entity
         FinishedAt = DateTime.UtcNow;
     }
 
-    public void InitializeProblemSession(Guid initialProblemId)
+    /// <summary>
+    /// Puts this participant on <paramref name="roundId"/>. Rejects a second concurrent round rather
+    /// than silently leaving two in progress, and rejects re-entering a round already finished — a
+    /// participant is offered each round exactly once.
+    /// </summary>
+    internal void StartRound(Guid roundId)
     {
-        if (ProblemSession is not null)
-            throw new InvalidOperationException("Problem session is already initialized.");
+        if (CurrentRoundId.HasValue)
+            throw new InvalidOperationException("Participant is already on a round.");
 
-        ProblemSession = new GameProblemSession(initialProblemId);
+        if (_roundResults.Any(result => result.RoundId == roundId))
+            throw new InvalidOperationException("Participant has already played this round.");
+
+        CurrentRoundId = roundId;
+        CurrentRoundStartedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Records how the current round ended and clears the cursor, leaving the participant on no
+    /// round until <see cref="StartRound"/> moves them to the next one.
+    /// </summary>
+    internal GameRoundResult CompleteCurrentRound(GameRoundOutcome outcome, Guid? solvingSubmissionId)
+    {
+        if (!CurrentRoundId.HasValue)
+            throw new InvalidOperationException("Participant is not on a round.");
+
+        GameRoundResult result = outcome switch
+        {
+            GameRoundOutcome.Solved => GameRoundResult.Solved(
+                CurrentRoundId.Value,
+                CurrentRoundStartedAt!.Value,
+                solvingSubmissionId
+                    ?? throw new InvalidOperationException("A round cannot be solved without a submission.")
+            ),
+            GameRoundOutcome.Skipped => GameRoundResult.Skipped(CurrentRoundId.Value, CurrentRoundStartedAt!.Value),
+            _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Unhandled round outcome."),
+        };
+
+        _roundResults.Add(result);
+        CurrentRoundId = null;
+        CurrentRoundStartedAt = null;
+
+        return result;
     }
 
     public void IncrementScore()
     {
         Score++;
-    }
-
-    public void SetActiveSubmission(Guid submissionId)
-    {
-        if (ProblemSession is null)
-            throw new InvalidOperationException("Problem session is not initialized.");
-
-        // Replace reference so EF Core detects the change (jsonb value conversion snapshot issue).
-        var next = new GameProblemSession(ProblemSession.CurrentProblemId);
-        foreach (var solvedId in ProblemSession.SolvedProblemIds)
-            next.AddSolvedProblem(solvedId);
-        foreach (var skippedId in ProblemSession.SkippedProblemIds)
-            next.AddSkippedProblem(skippedId);
-        foreach (var (problemId, recordedSubmissionId) in ProblemSession.SolvedProblemSubmissionIds)
-            next.RecordSolvedSubmission(problemId, recordedSubmissionId);
-        next.SetActiveSubmission(submissionId);
-        ProblemSession = next;
-    }
-
-    public void AdvanceProblem(Guid nextProblemId)
-    {
-        if (ProblemSession is null)
-            throw new InvalidOperationException("Problem session is not initialized.");
-
-        // Build a new GameProblemSession instance rather than mutating in place.
-        // ProblemSession is stored as a jsonb column with a value conversion;
-        // EF Core's snapshot points to the same object reference, so in-place
-        // mutations are invisible to change detection. Replacing the reference
-        // guarantees the property is detected as changed and saved.
-        var next = new GameProblemSession(nextProblemId);
-        foreach (var solvedId in ProblemSession.SolvedProblemIds)
-            next.AddSolvedProblem(solvedId);
-        next.AddSolvedProblem(ProblemSession.CurrentProblemId);
-        foreach (var skippedId in ProblemSession.SkippedProblemIds)
-            next.AddSkippedProblem(skippedId);
-
-        foreach (var (problemId, recordedSubmissionId) in ProblemSession.SolvedProblemSubmissionIds)
-            next.RecordSolvedSubmission(problemId, recordedSubmissionId);
-        if (ProblemSession.ActiveSubmissionId is { } activeSubmissionId)
-            next.RecordSolvedSubmission(ProblemSession.CurrentProblemId, activeSubmissionId);
-
-        ProblemSession = next;
-    }
-
-    public void SkipToProblem(Guid nextProblemId)
-    {
-        if (ProblemSession is null)
-            throw new InvalidOperationException("Problem session is not initialized.");
-
-        UseSkip();
-
-        // Same rebuild-rather-than-mutate approach as AdvanceProblem (jsonb value
-        // conversion snapshot issue). The skipped problem goes to SkippedProblemIds
-        // instead of SolvedProblemIds, so it's excluded from future selection without
-        // counting toward the participant's score.
-        var next = new GameProblemSession(nextProblemId);
-        foreach (var solvedId in ProblemSession.SolvedProblemIds)
-            next.AddSolvedProblem(solvedId);
-        foreach (var skippedId in ProblemSession.SkippedProblemIds)
-            next.AddSkippedProblem(skippedId);
-        next.AddSkippedProblem(ProblemSession.CurrentProblemId);
-
-        foreach (var (problemId, recordedSubmissionId) in ProblemSession.SolvedProblemSubmissionIds)
-            next.RecordSolvedSubmission(problemId, recordedSubmissionId);
-
-        ProblemSession = next;
     }
 
     public void UseSkip()
@@ -217,4 +193,6 @@ public sealed class GameParticipant : Entity
 
         SkipsRemaining--;
     }
+
+    private readonly List<GameRoundResult> _roundResults = [];
 }

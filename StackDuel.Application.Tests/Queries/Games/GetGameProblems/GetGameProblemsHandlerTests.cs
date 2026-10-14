@@ -71,14 +71,18 @@ public class GetGameProblemsHandlerTests
         var otherParticipantId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [requesterId, otherParticipantId], 300);
 
-        var initialProblemId = Guid.NewGuid();
+        var nextProblemId = Guid.NewGuid();
         var solvedProblemId = Guid.NewGuid();
         var submissionId = Guid.NewGuid();
 
-        GameParticipant requester = game.Participants.Single(p => p.UserId == requesterId);
-        requester.InitializeProblemSession(initialProblemId);
-        requester.ProblemSession!.AddSolvedProblem(solvedProblemId);
-        requester.ProblemSession!.RecordSolvedSubmission(solvedProblemId, submissionId);
+        // Solving a round is the only way a problem ends up in the solved list now — there's no
+        // standalone "add a solved problem" call, so this drives the full round lifecycle: start on
+        // the problem, attach the submission that solves it, then advance past it.
+        game.AppendRound(solvedProblemId);
+        game.StartRoundFor(requesterId, solvedProblemId);
+        game.AttachSubmissionFor(requesterId, submissionId);
+        game.AppendRound(nextProblemId);
+        game.SolveCurrentRoundAndAdvance(requesterId, nextProblemId);
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
 

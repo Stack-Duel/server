@@ -5,12 +5,48 @@ namespace StackDuel.Domain.Tests.Games.Entities;
 
 public class GameParticipantTests
 {
-    private static GameParticipant CreateParticipantWithProblem(out Guid problemId)
+    private static readonly Guid GameModeId = Guid.NewGuid();
+    private static readonly Guid PoolId = Guid.NewGuid();
+    private static readonly Guid TrackId = Guid.NewGuid();
+
+    /// <summary>
+    /// A running two-participant game with <paramref name="userId"/>'s participant already on a
+    /// round; the second participant exists only so forfeiting the first doesn't auto-complete the
+    /// game. Problem-session behaviour (<c>InitializeProblemSession</c>/<c>SkipToProblem</c>/
+    /// <c>AdvanceProblem</c>/etc.) used to live directly on <see cref="GameParticipant"/>; it is now
+    /// driven through <see cref="Game"/>, since only the aggregate root can resolve a round to its
+    /// problem id.
+    /// </summary>
+    private static (Game Game, Guid UserId, Guid ProblemId) CreateRunningGameWithActiveRound()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
-        problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
-        return participant;
+        Guid userId = Guid.NewGuid();
+        Game game = new(GameModeId, PoolId, [TrackId], [userId, Guid.NewGuid()], timeLimitInSeconds: 300);
+        game.Start();
+
+        Guid problemId = Guid.NewGuid();
+        game.AppendRound(problemId);
+        game.StartRoundFor(userId, problemId);
+
+        return (game, userId, problemId);
+    }
+
+    private static GameRoundParticipant RoundProgressFor(Game game, GameParticipant participant, Guid problemId)
+    {
+        Guid roundId = game.Rounds.Single(round => round.ProblemId == problemId).Id;
+        return participant.RoundProgress.Single(progress => progress.RoundId == roundId);
+    }
+
+    /// <summary>
+    /// Appends a round for a fresh problem and hands back its problem id. Advancing requires the
+    /// destination round to exist already — <see cref="Game.AppendRound"/> is the only thing that
+    /// creates one — so a test that moves a participant forward has to add it first rather than
+    /// passing an arbitrary problem id.
+    /// </summary>
+    private static Guid AppendNextRound(Game game)
+    {
+        Guid problemId = Guid.NewGuid();
+        game.AppendRound(problemId);
+        return problemId;
     }
 
     [Fact]
@@ -22,108 +58,154 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void SkipToProblem_DecrementsSkipsRemaining()
+    public void SkipCurrentRoundAndAdvance_DecrementsSkipsRemaining()
     {
-        var participant = CreateParticipantWithProblem(out _);
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        participant.SkipToProblem(Guid.NewGuid());
+        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
         Assert.Equal(GameParticipant.TotalSkips - 1, participant.SkipsRemaining);
     }
 
     [Fact]
-    public void SkipToProblem_MovesCurrentProblemToSkipped_NotSolved()
+    public void SkipCurrentRoundAndAdvance_MarksTheRoundSkipped_NotSolved()
     {
-        var participant = CreateParticipantWithProblem(out Guid problemId);
+        var (game, userId, problemId) = CreateRunningGameWithActiveRound();
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        participant.SkipToProblem(Guid.NewGuid());
+        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
-        Assert.Contains(problemId, participant.ProblemSession!.SkippedProblemIds);
-        Assert.DoesNotContain(problemId, participant.ProblemSession.SolvedProblemIds);
+        GameRoundParticipant progress = RoundProgressFor(game, participant, problemId);
+        Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
     }
 
     [Fact]
-    public void SkipToProblem_SetsCurrentProblemToTheNewProblem()
+    public void SkipCurrentRoundAndAdvance_SetsCurrentProblemToTheNewProblem()
     {
-        var participant = CreateParticipantWithProblem(out _);
-        Guid nextProblemId = Guid.NewGuid();
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+        Guid nextProblemId = AppendNextRound(game);
 
-        participant.SkipToProblem(nextProblemId);
+        game.SkipCurrentRoundAndAdvance(userId, nextProblemId);
 
-        Assert.Equal(nextProblemId, participant.ProblemSession!.CurrentProblemId);
+        Assert.Equal(nextProblemId, game.CurrentProblemIdFor(userId));
     }
 
     [Fact]
-    public void SkipToProblem_DoesNotAffectScore()
+    public void SkipCurrentRoundAndAdvance_DoesNotAffectScore()
     {
-        var participant = CreateParticipantWithProblem(out _);
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        participant.SkipToProblem(Guid.NewGuid());
+        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
         Assert.Equal(0, participant.Score);
     }
 
     [Fact]
-    public void SkipToProblem_NoSkipsRemaining_Throws()
+    public void SkipCurrentRoundAndAdvance_NoSkipsRemaining_Throws()
     {
-        var participant = CreateParticipantWithProblem(out _);
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
         for (int i = 0; i < GameParticipant.TotalSkips; i++)
-            participant.SkipToProblem(Guid.NewGuid());
+            game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
-        Assert.Throws<InvalidOperationException>(() => participant.SkipToProblem(Guid.NewGuid()));
+        Guid unreachableProblemId = AppendNextRound(game);
+        Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRoundAndAdvance(userId, unreachableProblemId));
+    }
+
+    /// <summary>
+    /// A rejected skip must not cost the participant a skip. Charging it before confirming there is
+    /// a round to leave would silently burn one on a call that throws.
+    /// </summary>
+    [Fact]
+    public void SkipCurrentRoundAndAdvance_NotOnARound_ThrowsWithoutConsumingASkip()
+    {
+        Guid userId = Guid.NewGuid();
+        Game game = new(GameModeId, PoolId, [TrackId], [userId, Guid.NewGuid()], timeLimitInSeconds: 300);
+        game.Start();
+        Guid nextProblemId = AppendNextRound(game);
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
+
+        Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRoundAndAdvance(userId, nextProblemId));
+
+        Assert.Equal(GameParticipant.TotalSkips, participant.SkipsRemaining);
     }
 
     [Fact]
-    public void SkipToProblem_ProblemSessionNotInitialized_Throws()
+    public void ExcludedProblemIdsFor_IncludesSkippedProblems_NotJustSolved()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var (game, userId, firstProblemId) = CreateRunningGameWithActiveRound();
+        Guid secondProblemId = AppendNextRound(game);
+        game.SkipCurrentRoundAndAdvance(userId, secondProblemId);
 
-        Assert.Throws<InvalidOperationException>(() => participant.SkipToProblem(Guid.NewGuid()));
+        Assert.Contains(firstProblemId, game.ExcludedProblemIdsFor(userId));
     }
 
     [Fact]
-    public void ExcludedProblemIds_IncludesSkippedProblems_NotJustSolved()
+    public void ExcludedProblemIdsFor_IncludesTheCurrentProblem()
     {
-        var participant = CreateParticipantWithProblem(out Guid firstProblemId);
-        var secondProblemId = Guid.NewGuid();
-        participant.SkipToProblem(secondProblemId);
+        var (game, userId, problemId) = CreateRunningGameWithActiveRound();
 
-        Assert.Contains(firstProblemId, participant.ProblemSession!.ExcludedProblemIds);
+        Assert.Contains(problemId, game.ExcludedProblemIdsFor(userId));
     }
 
     [Fact]
-    public void ExcludedProblemIds_IncludesTheCurrentProblem()
+    public void SolveCurrentRoundAndAdvance_PreservesPreviouslySkippedProblems()
     {
-        var participant = CreateParticipantWithProblem(out Guid problemId);
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+        Guid skippedProblemId = AppendNextRound(game);
+        game.SkipCurrentRoundAndAdvance(userId, skippedProblemId);
+        // Now on skippedProblemId; skip again so it lands as a Skipped round, then solve the one
+        // after that and confirm the earlier skip survives.
+        Guid solvedProblemId = AppendNextRound(game);
+        game.SkipCurrentRoundAndAdvance(userId, solvedProblemId);
 
-        Assert.Contains(problemId, participant.ProblemSession!.ExcludedProblemIds);
+        game.AttachSubmissionFor(userId, Guid.NewGuid());
+        game.SolveCurrentRoundAndAdvance(userId, AppendNextRound(game));
+
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
+        GameRoundParticipant progress = RoundProgressFor(game, participant, skippedProblemId);
+        Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
+    }
+
+    /// <summary>
+    /// Solving is only reachable through a submission, so the round must already carry one. Skipping
+    /// deliberately has no such requirement — see
+    /// <see cref="SkipCurrentRoundAndAdvance_WithNoSubmission_IsAllowed"/>.
+    /// </summary>
+    [Fact]
+    public void SolveCurrentRoundAndAdvance_WithNoSubmissionAttached_Throws()
+    {
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+        Guid nextProblemId = AppendNextRound(game);
+
+        Assert.Throws<InvalidOperationException>(() => game.SolveCurrentRoundAndAdvance(userId, nextProblemId));
     }
 
     [Fact]
-    public void AdvanceProblem_PreservesPreviouslySkippedProblems()
+    public void SkipCurrentRoundAndAdvance_WithNoSubmission_IsAllowed()
     {
-        var participant = CreateParticipantWithProblem(out _);
-        var skippedProblemId = Guid.NewGuid();
-        participant.SkipToProblem(skippedProblemId);
-        // Now on skippedProblemId; skip again so it lands in SkippedProblemIds, then solve
-        // the one after that and confirm the earlier skip survives the AdvanceProblem rebuild.
-        var solvedProblemId = Guid.NewGuid();
-        participant.SkipToProblem(solvedProblemId);
+        var (game, userId, skippedProblemId) = CreateRunningGameWithActiveRound();
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        participant.AdvanceProblem(Guid.NewGuid());
+        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
-        Assert.Contains(skippedProblemId, participant.ProblemSession!.SkippedProblemIds);
+        GameRoundParticipant progress = RoundProgressFor(game, participant, skippedProblemId);
+        Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
+        Assert.Null(progress.SubmissionId);
     }
 
     [Fact]
-    public void SetActiveSubmission_PreservesPreviouslySkippedProblems()
+    public void AttachSubmissionFor_PreservesPreviouslySkippedProblems()
     {
-        var participant = CreateParticipantWithProblem(out Guid skippedProblemId);
-        participant.SkipToProblem(Guid.NewGuid());
+        var (game, userId, skippedProblemId) = CreateRunningGameWithActiveRound();
+        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
 
-        participant.SetActiveSubmission(Guid.NewGuid());
+        game.AttachSubmissionFor(userId, Guid.NewGuid());
 
-        Assert.Contains(skippedProblemId, participant.ProblemSession!.SkippedProblemIds);
+        GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
+        GameRoundParticipant progress = RoundProgressFor(game, participant, skippedProblemId);
+        Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
     }
 
     [Fact]
@@ -210,42 +292,52 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void CanAttemptProblem_OnCurrentProblem_ReturnsEligible()
+    public void EvaluateProblemAttempt_OnCurrentProblem_ReturnsEligible()
     {
-        var participant = CreateParticipantWithProblem(out Guid problemId);
+        var (game, userId, problemId) = CreateRunningGameWithActiveRound();
 
-        var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, problemId);
+        var eligibility = game
+            .EvaluateProblemAttempt(userId, problemId, ParticipantAction.CompleteProblem, DateTime.UtcNow)
+            .Eligibility;
 
         Assert.Equal(ProblemAttemptEligibility.Eligible, eligibility);
     }
 
     [Fact]
-    public void CanAttemptProblem_NoSessionInitialized_ReturnsProblemSessionNotInitialized()
+    public void EvaluateProblemAttempt_NoRoundStarted_ReturnsRoundNotStarted()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        Guid userId = Guid.NewGuid();
+        Game game = new(GameModeId, PoolId, [TrackId], [userId], timeLimitInSeconds: 300);
+        game.Start();
 
-        var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, Guid.NewGuid());
+        var eligibility = game
+            .EvaluateProblemAttempt(userId, Guid.NewGuid(), ParticipantAction.CompleteProblem, DateTime.UtcNow)
+            .Eligibility;
 
-        Assert.Equal(ProblemAttemptEligibility.ProblemSessionNotInitialized, eligibility);
+        Assert.Equal(ProblemAttemptEligibility.RoundNotStarted, eligibility);
     }
 
     [Fact]
-    public void CanAttemptProblem_DifferentProblemId_ReturnsProblemMismatch()
+    public void EvaluateProblemAttempt_DifferentProblemId_ReturnsProblemMismatch()
     {
-        var participant = CreateParticipantWithProblem(out _);
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
 
-        var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, Guid.NewGuid());
+        var eligibility = game
+            .EvaluateProblemAttempt(userId, Guid.NewGuid(), ParticipantAction.CompleteProblem, DateTime.UtcNow)
+            .Eligibility;
 
         Assert.Equal(ProblemAttemptEligibility.ProblemMismatch, eligibility);
     }
 
     [Fact]
-    public void CanAttemptProblem_AfterForfeit_ReturnsParticipantStopped()
+    public void EvaluateProblemAttempt_AfterForfeit_ReturnsParticipantStopped()
     {
-        var participant = CreateParticipantWithProblem(out Guid problemId);
-        participant.Forfeit();
+        var (game, userId, problemId) = CreateRunningGameWithActiveRound();
+        game.Forfeit(userId);
 
-        var eligibility = participant.CanAttemptProblem(ParticipantAction.CompleteProblem, problemId);
+        var eligibility = game
+            .EvaluateProblemAttempt(userId, problemId, ParticipantAction.CompleteProblem, DateTime.UtcNow)
+            .Eligibility;
 
         Assert.Equal(ProblemAttemptEligibility.ParticipantStopped, eligibility);
     }

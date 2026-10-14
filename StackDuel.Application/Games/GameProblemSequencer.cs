@@ -23,7 +23,7 @@ internal sealed class GameProblemSequencer(ILanguageReadRepository languageReadR
                 cancellationToken
             );
 
-        Guid[] usedProblemIds = [.. game.ProblemSequence.Select(p => p.ProblemId)];
+        Guid[] usedProblemIds = [.. game.Rounds.Select(r => r.ProblemId)];
         var context = new ProblemSelectionContext(
             game.Id,
             game.PoolId,
@@ -35,7 +35,7 @@ internal sealed class GameProblemSequencer(ILanguageReadRepository languageReadR
 
         Guid? generatedProblemId = await strategy.SelectNextProblemIdAsync(context, cancellationToken);
         if (generatedProblemId is { } newProblemId)
-            game.AppendProblem(newProblemId);
+            game.AppendRound(newProblemId);
 
         return generatedProblemId;
     }

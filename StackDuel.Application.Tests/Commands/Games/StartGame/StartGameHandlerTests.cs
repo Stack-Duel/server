@@ -219,8 +219,13 @@ public class StartGameHandlerTests
             .Setup(x => x.FindGameModeByIdAsync(gameModeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
         _strategyResolver.Setup(x => x.Resolve("duel")).Returns(_strategy.Object);
+        // The real GameProblemSequencer would append the generated problem's round itself; since it's
+        // mocked here, the callback does it instead so StartRoundFor finds the round.
         _gameProblemSequencer
             .Setup(x => x.GetOrGenerateProblemAsync(game, 0, "duel", _strategy.Object, It.IsAny<CancellationToken>()))
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(initialProblemId)
+            )
             .ReturnsAsync(initialProblemId);
 
         var command = new StartGameCommand(game.Id, hostId);
@@ -228,7 +233,7 @@ public class StartGameHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(GameStatus.Running, game.Status);
-        Assert.True(game.Participants.All(p => p.ProblemSession!.CurrentProblemId == initialProblemId));
+        Assert.True(game.Participants.All(p => game.CurrentProblemIdFor(p.UserId) == initialProblemId));
         _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
@@ -254,11 +259,17 @@ public class StartGameHandlerTests
             .Setup(x => x.FindGameModeByIdAsync(gameModeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
         _strategyResolver.Setup(x => x.Resolve(gameModeKey)).Returns(_strategy.Object);
+        // The real GameProblemSequencer would append the generated problem's round itself; since it's
+        // mocked here, the callback does it instead so StartRoundFor finds the round.
+        var initialProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(game, 0, gameModeKey, _strategy.Object, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Guid.NewGuid());
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(initialProblemId)
+            )
+            .ReturnsAsync(initialProblemId);
 
         var command = new StartGameCommand(game.Id, hostId);
         Result result = await _handler.Handle(command, CancellationToken.None);
@@ -286,11 +297,17 @@ public class StartGameHandlerTests
             .Setup(x => x.FindGameModeByIdAsync(gameModeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
         _strategyResolver.Setup(x => x.Resolve("solo_rush")).Returns(_strategy.Object);
+        // The real GameProblemSequencer would append the generated problem's round itself; since it's
+        // mocked here, the callback does it instead so StartRoundFor finds the round.
+        var initialProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(game, 0, "solo_rush", _strategy.Object, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Guid.NewGuid());
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(initialProblemId)
+            )
+            .ReturnsAsync(initialProblemId);
 
         var command = new StartGameCommand(game.Id, hostId);
         Result result = await _handler.Handle(command, CancellationToken.None);

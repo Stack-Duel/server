@@ -66,14 +66,26 @@ internal sealed class SkipProblemHandler(
             if (gameMode is null)
                 return Result<SkipProblemResultDto>.NotFound("Game references a mode that no longer exists.");
 
-            Guid? nextProblemId = await gameProblemAdvancer.AdvanceAsync(
-                game,
-                participant,
-                gameMode.Key,
-                onAdvance: participant.SkipToProblem,
-                onFinish: participant.UseSkip,
-                cancellationToken
-            );
+            Guid? nextProblemId;
+            try
+            {
+                nextProblemId = await gameProblemAdvancer.AdvanceAsync(
+                    game,
+                    participant,
+                    gameMode.Key,
+                    onAdvance: nextProblemId =>
+                        game.SkipCurrentRoundAndAdvance(request.RequestedByUserId, nextProblemId),
+                    onFinish: participant.UseSkip,
+                    cancellationToken
+                );
+            }
+            catch (DuplicateGameProblemException)
+            {
+                // Genuine fault in problem selection (the excluded-problem set it was given failed
+                // to exclude something already served), not the benign (game_id, position) race
+                // GameProblemPositionConflictException below retries — so fail cleanly instead.
+                return Result<SkipProblemResultDto>.Error("Failed to advance to the next problem.");
+            }
 
             try
             {

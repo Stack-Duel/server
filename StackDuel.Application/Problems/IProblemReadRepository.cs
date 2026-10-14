@@ -74,6 +74,14 @@ public interface IProblemReadRepository
     );
 
     /// <summary>
+    /// Resolves the problem a setup belongs to, or null if no setup exists with that id. Used to
+    /// verify a client-supplied problem setup actually belongs to the problem it's being submitted
+    /// against, before handing both ids to a composite foreign key that would otherwise reject the
+    /// mismatch mid-transaction.
+    /// </summary>
+    Task<Guid?> GetProblemIdByProblemSetupIdAsync(Guid problemSetupId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the pool's published members' ids, ordered by their position in the pool. Used by the
     /// daily-challenge job for strict sequential assignment (as opposed to <see cref="GetRandomProblemIdByDifficultyAsync"/>,
     /// which game modes use for random selection).

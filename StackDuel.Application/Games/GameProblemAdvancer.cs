@@ -18,7 +18,7 @@ internal sealed class GameProblemAdvancer(
     )
     {
         IProblemSelectionStrategy strategy = strategyResolver.Resolve(gameModeKey);
-        int nextPosition = participant.ProblemSession!.ExcludedProblemIds.Count;
+        int nextPosition = game.RoundsReachedFor(participant.UserId);
 
         Guid? nextProblemId = await gameProblemSequencer.GetOrGenerateProblemAsync(
             game,

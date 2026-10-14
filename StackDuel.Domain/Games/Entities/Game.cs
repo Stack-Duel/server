@@ -248,7 +248,39 @@ public sealed class Game : AggregateRoot
         if (Status != GameStatus.Running)
             return new GameProblemAttempt(participant, justExpired, ProblemAttemptEligibility.GameNotRunning);
 
-        return new GameProblemAttempt(participant, justExpired, participant.CanAttemptProblem(action, problemId));
+        return new GameProblemAttempt(participant, justExpired, EvaluateEligibility(participant, action, problemId));
+    }
+
+    /// <summary>
+    /// Lives here rather than on <see cref="GameParticipant"/> because matching the requested
+    /// problem needs both sides: the participant knows which round they're on, but only the game
+    /// knows which problem that round holds.
+    /// </summary>
+    private ProblemAttemptEligibility EvaluateEligibility(
+        GameParticipant participant,
+        ParticipantAction action,
+        Guid problemId
+    )
+    {
+        if (!participant.CanPerform(action))
+            return ProblemAttemptEligibility.ParticipantStopped;
+
+        Guid? currentProblemId = CurrentProblemIdFor(participant);
+        if (!currentProblemId.HasValue)
+            return ProblemAttemptEligibility.RoundNotStarted;
+
+        return currentProblemId.Value == problemId
+            ? ProblemAttemptEligibility.Eligible
+            : ProblemAttemptEligibility.ProblemMismatch;
+    }
+
+    private Guid? CurrentProblemIdFor(GameParticipant participant)
+    {
+        Guid? roundId = participant.CurrentRoundId;
+        if (!roundId.HasValue)
+            return null;
+
+        return _rounds.FirstOrDefault(round => round.Id == roundId.Value)?.ProblemId;
     }
 
     /// <summary>
@@ -314,27 +346,126 @@ public sealed class Game : AggregateRoot
     /// The problem id every participant who has reached <paramref name="position"/> was (or will
     /// be) given, if anyone has reached it yet. Null means no participant has gotten there —
     /// the caller is the first, and must generate one and record it via
-    /// <see cref="AppendProblem"/> so every later arrival reuses the exact same problem instead
+    /// <see cref="AppendRound"/> so every later arrival reuses the exact same problem instead
     /// of each participant rolling independently.
     /// </summary>
     public Guid? ProblemIdAtPosition(int position) =>
-        _problemSequence.FirstOrDefault(p => p.Position == position)?.ProblemId;
+        _rounds.FirstOrDefault(round => round.Position == position)?.ProblemId;
 
     /// <summary>
-    /// Extends the shared problem sequence by one slot, at whatever the next position is. Only
-    /// ever called after <see cref="ProblemIdAtPosition"/> came back null for that position — this
-    /// is what makes the sequence a single shared list instead of independent per-participant
-    /// selection: the first participant to reach a new position generates it, and it's persisted
-    /// here so everyone after them lands on the identical problem.
+    /// Extends the shared sequence by one round, at whatever the next position is. Only ever called
+    /// after <see cref="ProblemIdAtPosition"/> came back null for that position — this is what makes
+    /// the sequence a single shared list instead of independent per-participant selection: the first
+    /// participant to reach a new position generates it, and it's persisted here so everyone after
+    /// them lands on the identical problem.
     /// </summary>
-    public void AppendProblem(Guid problemId)
+    public void AppendRound(Guid problemId)
     {
         if (problemId == Guid.Empty)
             throw new ArgumentException("Problem id must not be empty.", nameof(problemId));
 
-        int nextPosition = _problemSequence.Count;
-        _problemSequence.Add(new GameProblem(nextPosition, problemId));
+        if (_rounds.Any(round => round.ProblemId == problemId))
+            throw new DuplicateGameProblemException(Id, problemId);
+
+        _rounds.Add(new GameRound(_rounds.Count, problemId));
     }
+
+    /// <summary>
+    /// The problem a participant is currently on, or null before their first round has been started.
+    /// </summary>
+    public Guid? CurrentProblemIdFor(Guid userId)
+    {
+        GameParticipant? participant = _participants.FirstOrDefault(p => p.UserId == userId);
+        return participant is null ? null : CurrentProblemIdFor(participant);
+    }
+
+    /// <summary>
+    /// Every problem this participant should never be offered again: solved, skipped, or the one
+    /// they're currently on — i.e. the problem behind every round they have reached. The single
+    /// source of truth for the exclude list handed to IProblemSelectionStrategy, so a skipped
+    /// problem can't quietly drop out of one caller's exclusions while staying in another's.
+    /// </summary>
+    public IReadOnlyList<Guid> ExcludedProblemIdsFor(Guid userId)
+    {
+        GameParticipant? participant = _participants.FirstOrDefault(p => p.UserId == userId);
+        if (participant is null)
+            return [];
+
+        HashSet<Guid> reachedRoundIds = [.. participant.RoundResults.Select(result => result.RoundId)];
+        if (participant.CurrentRoundId.HasValue)
+            reachedRoundIds.Add(participant.CurrentRoundId.Value);
+
+        return [.. _rounds.Where(round => reachedRoundIds.Contains(round.Id)).Select(round => round.ProblemId)];
+    }
+
+    /// <summary>
+    /// How many rounds a participant has reached, counting the one they're on. Doubles as the
+    /// position their next round would occupy.
+    /// </summary>
+    public int RoundsReachedFor(Guid userId) =>
+        _participants.FirstOrDefault(p => p.UserId == userId)?.RoundsReached ?? 0;
+
+    /// <summary>
+    /// Puts a participant on the round holding <paramref name="problemId"/> — their first round, or
+    /// the next one after <see cref="SolveCurrentRoundAndAdvance"/>/<see cref="SkipCurrentRoundAndAdvance"/>.
+    /// The round must already exist; <see cref="AppendRound"/> is what creates it.
+    /// </summary>
+    public void StartRoundFor(Guid userId, Guid problemId)
+    {
+        RequireParticipant(userId).StartRound(RequireRoundFor(problemId).Id);
+    }
+
+    /// <summary>
+    /// Records the current round as solved by <paramref name="solvingSubmissionId"/> and moves the
+    /// participant on. The caller is responsible for having verified that submission really is this
+    /// participant's latest attempt at this round — that lives in <c>game_round_submissions</c>, not
+    /// in this aggregate, so it cannot be checked here.
+    /// </summary>
+    public void SolveCurrentRoundAndAdvance(Guid userId, Guid nextProblemId, Guid solvingSubmissionId)
+    {
+        Advance(userId, nextProblemId, GameRoundOutcome.Solved, solvingSubmissionId);
+    }
+
+    /// <summary>
+    /// Consumes a skip and moves the participant on. The skip is spent even though the round wasn't
+    /// solved, matching the old SkipToProblem behaviour.
+    /// </summary>
+    public void SkipCurrentRoundAndAdvance(Guid userId, Guid nextProblemId)
+    {
+        Advance(userId, nextProblemId, GameRoundOutcome.Skipped, solvingSubmissionId: null);
+    }
+
+    /// <summary>
+    /// Every precondition is checked before anything mutates, so a rejected advance leaves the
+    /// participant exactly as it found them. Ordering matters here: charging the skip before
+    /// confirming there is a round to leave and a round to arrive at would cost the participant a
+    /// skip on a call that then throws.
+    /// </summary>
+    private void Advance(Guid userId, Guid nextProblemId, GameRoundOutcome outcome, Guid? solvingSubmissionId)
+    {
+        GameParticipant participant = RequireParticipant(userId);
+        GameRound nextRound = RequireRoundFor(nextProblemId);
+
+        if (!participant.CurrentRoundId.HasValue)
+            throw new InvalidOperationException("Participant is not on a round.");
+
+        if (participant.RoundResults.Any(result => result.RoundId == nextRound.Id))
+            throw new InvalidOperationException("Participant has already played the round being advanced to.");
+
+        if (outcome == GameRoundOutcome.Skipped)
+            participant.UseSkip();
+
+        participant.CompleteCurrentRound(outcome, solvingSubmissionId);
+        participant.StartRound(nextRound.Id);
+    }
+
+    private GameParticipant RequireParticipant(Guid userId) =>
+        _participants.FirstOrDefault(p => p.UserId == userId)
+        ?? throw new InvalidOperationException("User is not a participant in this game.");
+
+    private GameRound RequireRoundFor(Guid problemId) =>
+        _rounds.FirstOrDefault(round => round.ProblemId == problemId)
+        ?? throw new InvalidOperationException($"Game has no round for problem '{problemId}'.");
 
     /// <summary>
     /// Records the transport handle (e.g. Azure Service Bus sequence number) for the scheduled
@@ -383,13 +514,13 @@ public sealed class Game : AggregateRoot
     public IReadOnlyCollection<GameTrack> Tracks => _tracks.AsReadOnly();
 
     /// <summary>
-    /// The shared problem sequence for this game, in position order. Every participant advances
-    /// through this same list rather than each getting an independently-selected run of
-    /// problems — see <see cref="ProblemIdAtPosition"/> and <see cref="AppendProblem"/>.
+    /// The shared sequence of rounds for this game, in position order. Every participant advances
+    /// through this same list rather than each getting an independently-selected run of problems —
+    /// see <see cref="ProblemIdAtPosition"/> and <see cref="AppendRound"/>.
     /// </summary>
-    public IReadOnlyCollection<GameProblem> ProblemSequence => _problemSequence.AsReadOnly();
+    public IReadOnlyCollection<GameRound> Rounds => _rounds.AsReadOnly();
 
     private readonly List<GameParticipant> _participants = [];
     private readonly List<GameTrack> _tracks = [];
-    private readonly List<GameProblem> _problemSequence = [];
+    private readonly List<GameRound> _rounds = [];
 }

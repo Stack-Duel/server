@@ -354,4 +354,18 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             )
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<Guid?> GetProblemIdByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => setup.Id == problemSetupId)
+            .Select(setup => (Guid?)EF.Property<Guid>(setup, "problem_id"))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }

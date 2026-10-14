@@ -73,7 +73,9 @@ internal sealed class GetGameStateHandler(
                 userMap.TryGetValue(p.UserId, out UserDto? user);
 
                 GameCurrentProblemDto? currentProblem =
-                    p.ProblemSession != null ? new GameCurrentProblemDto(p.ProblemSession.CurrentProblemId) : null;
+                    game.CurrentProblemIdFor(p.UserId) is { } currentProblemId
+                        ? new GameCurrentProblemDto(currentProblemId)
+                        : null;
 
                 return new GameParticipantDto(
                     p.UserId,

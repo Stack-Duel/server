@@ -54,7 +54,7 @@ internal sealed class CompleteProblemHandler(
 
             var participant = attempt.Participant!;
 
-            var (submissionFailure, _) = await ValidateSubmissionAsync(participant, request, cancellationToken);
+            var (submissionFailure, _) = await ValidateSubmissionAsync(game, participant, request, cancellationToken);
             if (submissionFailure is not null)
                 return submissionFailure;
 
@@ -67,14 +67,26 @@ internal sealed class CompleteProblemHandler(
 
             game.RecordProblemSolved(request.RequestedByUserId);
 
-            Guid? nextProblemId = await gameProblemAdvancer.AdvanceAsync(
-                game,
-                participant,
-                gameMode.Key,
-                onAdvance: participant.AdvanceProblem,
-                onFinish: null,
-                cancellationToken
-            );
+            Guid? nextProblemId;
+            try
+            {
+                nextProblemId = await gameProblemAdvancer.AdvanceAsync(
+                    game,
+                    participant,
+                    gameMode.Key,
+                    onAdvance: nextProblemId =>
+                        game.SolveCurrentRoundAndAdvance(request.RequestedByUserId, nextProblemId),
+                    onFinish: null,
+                    cancellationToken
+                );
+            }
+            catch (DuplicateGameProblemException)
+            {
+                // Genuine fault in problem selection (the excluded-problem set it was given failed
+                // to exclude something already served), not the benign (game_id, position) race
+                // GameProblemPositionConflictException below retries — so fail cleanly instead.
+                return Result<CompleteProblemResultDto>.Error("Failed to advance to the next problem.");
+            }
 
             try
             {
@@ -113,12 +125,13 @@ internal sealed class CompleteProblemHandler(
     // requester, and was accepted. Returns the failing Result on the left when invalid, or the
     // validated submission on the right when it's safe to proceed.
     private async Task<(Result<CompleteProblemResultDto>? Failure, Submission? Submission)> ValidateSubmissionAsync(
+        Game game,
         GameParticipant participant,
         CompleteProblemCommand request,
         CancellationToken cancellationToken
     )
     {
-        if (!participant.ProblemSession!.HasActiveSubmission(request.SubmissionId))
+        if (!game.HasSubmissionFor(participant.UserId, request.SubmissionId))
             return (
                 Result<CompleteProblemResultDto>.Invalid(
                     new ValidationError(nameof(request.SubmissionId), "Submission was not created through the game.")

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.ExecutionAssets.Entities;
 using StackDuel.Domain.ExecutionPipelines;
+using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -22,6 +23,21 @@ internal sealed class ProblemSetupConfiguration : IEntityTypeConfiguration<Probl
         builder.Property(s => s.Id).HasColumnName("id");
 
         builder.Property<Guid>("problem_id").HasColumnName("problem_id").IsRequired();
+
+        // Principal side of game_round_submissions' composite FK pinning a setup to its problem.
+        builder.HasAlternateKey("Id", "problem_id");
+
+        // Configured here, from the principal side, rather than from GameRoundSubmissionConfiguration:
+        // "problem_id" is a shadow property, and HasPrincipalKey(string[]) requires it to already be
+        // declared with its CLR type, which is only guaranteed within this Configure method — the
+        // order configurations apply in across entity types is unspecified.
+        builder
+            .HasMany<GameRoundSubmission>()
+            .WithOne()
+            .HasForeignKey("SetupId", "ProblemId")
+            .HasPrincipalKey("Id", "problem_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(s => s.LanguageVersionId).HasColumnName("language_version_id").IsRequired();
 

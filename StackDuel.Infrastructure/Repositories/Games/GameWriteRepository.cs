@@ -9,7 +9,7 @@ namespace StackDuel.Infrastructure.Repositories.Games;
 
 internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWriteRepository
 {
-    private const string ProblemSequencePositionIndexName = "IX_game_problems_game_id_position";
+    private const string RoundsPositionIndexName = "IX_game_rounds_game_id_position";
 
     public async Task AddAsync(Game entity, CancellationToken cancellationToken = default)
     {
@@ -26,10 +26,10 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
     {
         // Every Entity subclass gets its Id assigned client-side (Entity's constructor calls
         // Guid.NewGuid()), so whenever a new child is appended to an already-tracked collection
-        // (Game.Join() -> Participants, Game.AppendProblem() -> ProblemSequence), EF's change
-        // detection can't tell it's new from a default/temporary key value — it sees a real Guid
-        // already set and assumes the row already exists, generating an UPDATE instead of an
-        // INSERT. That UPDATE matches 0 rows and throws DbUpdateConcurrencyException.
+        // (Game.Join() -> Participants, Game.AppendRound() -> Rounds), EF's change detection can't
+        // tell it's new from a default/temporary key value — it sees a real Guid already set and
+        // assumes the row already exists, generating an UPDATE instead of an INSERT. That UPDATE
+        // matches 0 rows and throws DbUpdateConcurrencyException.
         //
         // Auto-detect-changes is disabled for this loop because context.Entry(...) itself triggers
         // a full change-detection pass — with it left on, the very first Entry() call (for a
@@ -46,7 +46,7 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
                 entry.State = EntityState.Added;
             }
         }
-        foreach (EntityEntry<GameProblem> entry in entity.ProblemSequence.Select(context.Entry))
+        foreach (EntityEntry<GameRound> entry in entity.Rounds.Select(context.Entry))
         {
             if (entry.State == EntityState.Detached)
             {
@@ -59,10 +59,10 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (IsProblemSequencePositionConflict(ex))
+        catch (DbUpdateException ex) when (IsRoundPositionConflict(ex))
         {
             // The losing side of the (game_id, position) unique index race (see
-            // GameProblemConfiguration). The failed SaveChanges leaves every entity from this
+            // GameRoundConfiguration). The failed SaveChanges leaves every entity from this
             // attempt sitting in the context's change tracker in whatever state it was pushed to
             // (Added/Modified) — detach the whole graph so a retry's fresh FindGameByIdAsync, on
             // this same scoped DbContext, actually hits the database instead of being handed back
@@ -72,21 +72,17 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
         }
     }
 
-    private static bool IsProblemSequencePositionConflict(DbUpdateException ex) =>
+    private static bool IsRoundPositionConflict(DbUpdateException ex) =>
         ex.InnerException
-            is PostgresException
-        {
-            SqlState: PostgresErrorCodes.UniqueViolation,
-            ConstraintName: ProblemSequencePositionIndexName
-        };
+            is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RoundsPositionIndexName };
 
     private void DetachGraph(Game entity)
     {
         context.Entry(entity).State = EntityState.Detached;
         foreach (GameParticipant participant in entity.Participants)
             context.Entry(participant).State = EntityState.Detached;
-        foreach (GameProblem problem in entity.ProblemSequence)
-            context.Entry(problem).State = EntityState.Detached;
+        foreach (GameRound round in entity.Rounds)
+            context.Entry(round).State = EntityState.Detached;
         foreach (GameTrack track in entity.Tracks)
             context.Entry(track).State = EntityState.Detached;
     }

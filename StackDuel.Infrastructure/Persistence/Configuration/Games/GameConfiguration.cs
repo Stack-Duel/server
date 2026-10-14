@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Games.Entities;
-using StackDuel.Domain.Games.ValueObjects;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Tracks.Entities;
@@ -77,47 +76,13 @@ internal sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Navigation(game => game.Tracks).HasField("_tracks").UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder
-            .HasMany(game => game.ProblemSequence)
+            .HasMany(game => game.Rounds)
             .WithOne()
             .HasForeignKey("game_id")
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder
-            .Navigation(game => game.ProblemSequence)
-            .HasField("_problemSequence")
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
-    }
-}
-
-internal sealed class GameProblemConfiguration : IEntityTypeConfiguration<GameProblem>
-{
-    public void Configure(EntityTypeBuilder<GameProblem> builder)
-    {
-        builder.ToTable("game_problems");
-
-        builder.HasKey(gp => gp.Id);
-
-        builder.Property(gp => gp.Id).HasColumnName("id");
-
-        builder.Property<Guid>("game_id").HasColumnName("game_id").IsRequired();
-
-        builder.Property(gp => gp.Position).HasColumnName("position").IsRequired();
-
-        builder.Property(gp => gp.ProblemId).HasColumnName("problem_id").IsRequired();
-
-        builder
-            .HasOne<Problem>()
-            .WithMany()
-            .HasForeignKey(gp => gp.ProblemId)
-            .IsRequired()
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // The concurrency safety net: when two participants race to be the first to reach a new
-        // position, both build the same next-position GameProblem in memory, but only one
-        // SaveChangesAsync can win this unique index. The loser's save fails cleanly instead of
-        // silently persisting two different problems at the same position.
-        builder.HasIndex("game_id", nameof(GameProblem.Position)).IsUnique();
+        builder.Navigation(game => game.Rounds).HasField("_rounds").UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
 
@@ -184,7 +149,14 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 {
     public void Configure(EntityTypeBuilder<GameParticipant> builder)
     {
-        builder.ToTable("game_participants");
+        builder.ToTable(
+            "game_participants",
+            table =>
+                table.HasCheckConstraint(
+                    "ck_game_participants_current_round_pair",
+                    "(current_round_id IS NULL) = (current_round_started_at IS NULL)"
+                )
+        );
 
         builder.HasKey(participant => participant.Id);
 
@@ -211,13 +183,6 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
         builder.Property(participant => participant.FinishedAt).HasColumnName("finished_at").IsRequired(false);
 
         builder
-            .Property(participant => participant.ProblemSession)
-            .HasColumnName("problem_session")
-            .HasColumnType("jsonb")
-            .IsRequired(false)
-            .HasConversion(session => SerializeProblemSession(session), json => DeserializeProblemSession(json));
-
-        builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(participant => participant.UserId)
@@ -227,112 +192,50 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
         builder.HasIndex("game_id", nameof(GameParticipant.UserId)).IsUnique();
 
         builder.HasIndex("game_id", nameof(GameParticipant.SeatNo)).IsUnique();
-    }
 
-    private static string SerializeProblemSession(GameProblemSession session)
-    {
-        if (session == null)
-            return null;
+        // Principal side of the composite FKs game_round_participants and game_round_submissions
+        // use to pin a participant's rows to this same participant within the same game.
+        builder.HasAlternateKey("Id", "game_id");
 
-        var options = new System.Text.Json.JsonSerializerOptions
-        {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-        };
+        builder.HasAlternateKey("Id", "game_id", nameof(GameParticipant.UserId));
 
-        return System.Text.Json.JsonSerializer.Serialize(
-            new
-            {
-                session.CurrentProblemId,
-                SolvedProblemIds = session.SolvedProblemIds.ToList(),
-                SkippedProblemIds = session.SkippedProblemIds.ToList(),
-                session.ActiveSubmissionId,
-                SolvedProblemSubmissions = session
-                    .SolvedProblemSubmissionIds.Select(kvp => new { ProblemId = kvp.Key, SubmissionId = kvp.Value })
-                    .ToList(),
-            },
-            options
-        );
-    }
+        // Configured here, from the principal side, rather than from GameRoundParticipantConfiguration:
+        // "game_id" is a shadow property on both sides, and HasPrincipalKey(string[]) needs it
+        // already declared with its CLR type, which is only guaranteed within this Configure
+        // method — the order configurations apply in across entity types is unspecified.
+        builder
+            .HasMany<GameRoundParticipant>()
+            .WithOne()
+            .HasForeignKey("participant_id", "game_id")
+            .HasPrincipalKey("Id", "game_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-    private static GameProblemSession DeserializeProblemSession(string json)
-    {
-        if (string.IsNullOrEmpty(json))
-            return null;
-
-        try
-        {
-            var options = new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            };
-
-            var document = System.Text.Json.JsonDocument.Parse(
-                json,
-                new System.Text.Json.JsonDocumentOptions { AllowTrailingCommas = true }
-            );
-            var root = document.RootElement;
-
-            if (
-                root.TryGetProperty("currentProblemId", out var problemIdElement)
-                && problemIdElement.TryGetGuid(out var problemId)
+        // Same reasoning: pins a submission's participant_id and user_id to this same participant,
+        // alongside game_id, for the same shadow-property-ordering reason as above.
+        builder
+            .HasMany<GameRoundSubmission>()
+            .WithOne()
+            .HasForeignKey(
+                nameof(GameRoundSubmission.ParticipantId),
+                nameof(GameRoundSubmission.GameId),
+                nameof(GameRoundSubmission.UserId)
             )
-            {
-                var session = new GameProblemSession(problemId);
+            .HasPrincipalKey("Id", "game_id", nameof(GameParticipant.UserId))
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-                foreach (var solvedId in ParseGuidArray(root, "solvedProblemIds"))
-                    session.AddSolvedProblem(solvedId);
+        builder
+            .HasMany(participant => participant.RoundProgress)
+            .WithOne()
+            .HasForeignKey("participant_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
-                foreach (var skippedId in ParseGuidArray(root, "skippedProblemIds"))
-                    session.AddSkippedProblem(skippedId);
-
-                if (
-                    root.TryGetProperty("activeSubmissionId", out var activeSubEl)
-                    && activeSubEl.ValueKind != System.Text.Json.JsonValueKind.Null
-                    && activeSubEl.TryGetGuid(out var activeSubId)
-                )
-                {
-                    session.SetActiveSubmission(activeSubId);
-                }
-
-                if (
-                    root.TryGetProperty("solvedProblemSubmissions", out var submissionsElement)
-                    && submissionsElement.ValueKind == System.Text.Json.JsonValueKind.Array
-                )
-                {
-                    foreach (var item in submissionsElement.EnumerateArray())
-                    {
-                        if (
-                            item.TryGetProperty("problemId", out var problemIdEl)
-                            && problemIdEl.TryGetGuid(out var solvedProblemId)
-                            && item.TryGetProperty("submissionId", out var submissionIdEl)
-                            && submissionIdEl.TryGetGuid(out var solvedSubmissionId)
-                        )
-                        {
-                            session.RecordSolvedSubmission(solvedProblemId, solvedSubmissionId);
-                        }
-                    }
-                }
-
-                return session;
-            }
-        }
-        catch
-        {
-            return null;
-        }
-
-        return null;
-    }
-
-    private static IEnumerable<Guid> ParseGuidArray(System.Text.Json.JsonElement root, string propertyName)
-    {
-        if (
-            !root.TryGetProperty(propertyName, out var arrayElement)
-            || arrayElement.ValueKind != System.Text.Json.JsonValueKind.Array
-        )
-            return [];
-
-        return arrayElement.EnumerateArray().Where(item => item.TryGetGuid(out _)).Select(item => item.GetGuid());
+        builder
+            .Navigation(participant => participant.RoundProgress)
+            .HasField("_roundProgress")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
 

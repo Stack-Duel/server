@@ -35,8 +35,8 @@ internal static class GameProblemAttemptResult
                 )
             ),
 
-            ProblemAttemptEligibility.ProblemSessionNotInitialized => Result<T>.Invalid(
-                new ValidationError(nameof(GameParticipant.ProblemSession), "Problem session not initialized.")
+            ProblemAttemptEligibility.RoundNotStarted => Result<T>.Invalid(
+                new ValidationError("CurrentRoundId", "Round not started.")
             ),
 
             ProblemAttemptEligibility.ProblemMismatch => Result<T>.Invalid(

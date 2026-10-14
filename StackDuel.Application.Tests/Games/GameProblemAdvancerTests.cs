@@ -29,8 +29,10 @@ public class GameProblemAdvancerTests
         Guid userId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
         game.Start();
+        var problemId = Guid.NewGuid();
+        game.AppendRound(problemId);
+        game.StartRoundFor(userId, problemId);
         participant = game.Participants.First(p => p.UserId == userId);
-        participant.InitializeProblemSession(Guid.NewGuid());
         return game;
     }
 

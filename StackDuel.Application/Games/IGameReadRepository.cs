@@ -13,6 +13,18 @@ public interface IGameReadRepository
     Task<GameMode?> FindGameModeByIdIncludingInactiveAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Game?> FindGameByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Game?> FindGameByJoinCodeAsync(string joinCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves the <c>game_rounds</c> row id for the slot in <paramref name="gameId"/>'s shared
+    /// problem sequence that serves <paramref name="problemId"/>, if that problem has been appended
+    /// via <see cref="Domain.Games.Entities.Game.AppendRound"/>. Used to stamp
+    /// <c>GameRoundSubmission.RoundId</c> when recording an attempt.
+    /// </summary>
+    Task<Guid?> FindRoundIdByGameAndProblemAsync(
+        Guid gameId,
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    );
     Task<IReadOnlyList<GameMode>> GetActiveGameModesAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Game>> GetRunningGamesPastExpiryAsync(

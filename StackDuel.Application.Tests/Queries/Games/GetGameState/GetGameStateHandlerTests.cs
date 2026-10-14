@@ -176,7 +176,8 @@ public class GetGameStateHandlerTests
 
         var initialProblemId = Guid.NewGuid();
         GameParticipant known = game.Participants.Single(p => p.UserId == knownUserId);
-        known.InitializeProblemSession(initialProblemId);
+        game.AppendRound(initialProblemId);
+        game.StartRoundFor(knownUserId, initialProblemId);
         known.IncrementScore();
 
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());
