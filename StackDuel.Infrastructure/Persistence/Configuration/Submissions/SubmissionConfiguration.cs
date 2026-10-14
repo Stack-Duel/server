@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Problems.Entities;
@@ -23,8 +23,6 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
 
         builder.Property(s => s.ProblemSetupId).HasColumnName("problem_setup_id").IsRequired();
 
-        // Principal side of game_round_submissions' composite FK pinning a submission (and its
-        // user) to the setup it actually ran with.
         builder.HasAlternateKey(s => new { s.Id, s.ProblemSetupId, s.UserId });
 
         builder.Property(s => s.GameId).HasColumnName("game_id").IsRequired(false);

@@ -41,9 +41,6 @@ internal sealed class GetGameProblemsHandler(IGameReadRepository gameReadReposit
                         .Select(result => problemIdByRoundId[result.RoundId]),
                 ];
 
-                // A solved round always carries its solving submission, so the HasValue filter only
-                // bites if the Solution navigation wasn't loaded — in which case dropping the entry
-                // is safer than surfacing a wrong one.
                 List<SolvedProblemSubmissionDto> solvedProblemSubmissions =
                 [
                     .. solvedRounds

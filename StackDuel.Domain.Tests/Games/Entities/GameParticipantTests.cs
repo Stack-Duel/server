@@ -9,13 +9,6 @@ public class GameParticipantTests
     private static readonly Guid PoolId = Guid.NewGuid();
     private static readonly Guid TrackId = Guid.NewGuid();
 
-    /// <summary>
-    /// A running two-participant game with <paramref name="userId"/>'s participant already on a
-    /// round; the second participant exists only so forfeiting the first doesn't auto-complete the
-    /// game. Round progression is driven through <see cref="Game"/> rather than the participant,
-    /// since only the aggregate root can resolve a round to its problem id — and the participant's
-    /// own mutators are internal to it for that reason.
-    /// </summary>
     private static (Game Game, Guid UserId, Guid ProblemId) CreateRunningGameWithActiveRound()
     {
         Guid userId = Guid.NewGuid();
@@ -35,12 +28,6 @@ public class GameParticipantTests
         return participant.RoundResults.Single(result => result.RoundId == roundId);
     }
 
-    /// <summary>
-    /// Appends a round for a fresh problem and hands back its problem id. Advancing requires the
-    /// destination round to exist already — <see cref="Game.AppendRound"/> is the only thing that
-    /// creates one — so a test that moves a participant forward has to add it first rather than
-    /// passing an arbitrary problem id.
-    /// </summary>
     private static Guid AppendNextRound(Game game)
     {
         Guid problemId = Guid.NewGuid();
@@ -112,10 +99,6 @@ public class GameParticipantTests
         Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRoundAndAdvance(userId, unreachableProblemId));
     }
 
-    /// <summary>
-    /// A rejected skip must not cost the participant a skip. Charging it before confirming there is
-    /// a round to leave would silently burn one on a call that throws.
-    /// </summary>
     [Fact]
     public void SkipCurrentRoundAndAdvance_NotOnARound_ThrowsWithoutConsumingASkip()
     {
@@ -154,8 +137,6 @@ public class GameParticipantTests
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         Guid skippedProblemId = AppendNextRound(game);
         game.SkipCurrentRoundAndAdvance(userId, skippedProblemId);
-        // Now on skippedProblemId; skip again so it lands as a Skipped round, then solve the one
-        // after that and confirm the earlier skip survives.
         Guid solvedProblemId = AppendNextRound(game);
         game.SkipCurrentRoundAndAdvance(userId, solvedProblemId);
 
@@ -166,11 +147,6 @@ public class GameParticipantTests
         Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
     }
 
-    /// <summary>
-    /// A solved round always names the submission that solved it, so there is no way to record one
-    /// without a usable id. Skipping deliberately has no such requirement — see
-    /// <see cref="SkipCurrentRoundAndAdvance_WithNoSubmission_IsAllowed"/>.
-    /// </summary>
     [Fact]
     public void SolveCurrentRoundAndAdvance_WithEmptySubmissionId_Throws()
     {

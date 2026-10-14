@@ -33,11 +33,6 @@ internal sealed class GetAdminGamePlayerHistoryHandler(
 
         Dictionary<Guid, Guid> problemIdByRoundId = game.Rounds.ToDictionary(r => r.Id, r => r.ProblemId);
 
-        // Titles for a problem skipped with zero attempts never appear in the submissions join
-        // above, so they are resolved separately here.
-        // NOTE: skips now DO carry their own timestamp — GameRoundResult.CompletedAt is required —
-        // so the fabricated ordering below could read the real one instead. Left alone because that
-        // would change the timestamps this admin DTO reports.
         HashSet<Guid> skippedProblemIds =
         [
             .. game.Participants.SelectMany(p => SkippedProblemIdsFor(p, problemIdByRoundId)),

@@ -131,7 +131,6 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
 
     public DbSet<UserAvatar> UserAvatars { get; init; }
 
-    // Infrastructure-only — not domain aggregates
     public DbSet<Judge0StepConfiguration> Judge0StepConfigurations { get; init; }
     public DbSet<AssertStepConfiguration> AssertStepConfigurations { get; init; }
 

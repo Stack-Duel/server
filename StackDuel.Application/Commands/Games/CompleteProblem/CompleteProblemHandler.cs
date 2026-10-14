@@ -26,11 +26,6 @@ internal sealed class CompleteProblemHandler(
         CancellationToken cancellationToken
     )
     {
-        // Retried once: GetOrGenerateProblemAsync (via gameProblemAdvancer) can race another
-        // participant who's also first to reach this position (see GameProblemConfiguration's
-        // (game_id, position) unique index). The loser gets GameProblemPositionConflictException
-        // out of SaveChangesAsync — re-fetching from scratch picks up the winner's already-persisted
-        // problem via Game.ProblemIdAtPosition instead of generating a conflicting second one.
         int saveAttempt = 0;
         while (true)
         {
@@ -59,9 +54,6 @@ internal sealed class CompleteProblemHandler(
             if (submissionFailure is not null)
                 return submissionFailure;
 
-            // Resolved before any state mutation: a game mode that no longer exists is a genuine
-            // system error and should bail out cleanly, not after the participant's score has
-            // already been bumped in memory for a solve that then can't be persisted.
             var gameMode = await gameReadRepository.FindGameModeByIdAsync(game.GameModeId, cancellationToken);
             if (gameMode is null)
                 return Result<CompleteProblemResultDto>.NotFound("Game references a mode that no longer exists.");
@@ -87,9 +79,6 @@ internal sealed class CompleteProblemHandler(
             }
             catch (DuplicateGameProblemException)
             {
-                // Genuine fault in problem selection (the excluded-problem set it was given failed
-                // to exclude something already served), not the benign (game_id, position) race
-                // GameProblemPositionConflictException below retries — so fail cleanly instead.
                 return Result<CompleteProblemResultDto>.Error("Failed to advance to the next problem.");
             }
 
@@ -111,8 +100,6 @@ internal sealed class CompleteProblemHandler(
         }
     }
 
-    // The expiry check inside EvaluateProblemAttempt may have just completed the game — that
-    // must be persisted regardless of whether this request itself goes on to succeed.
     private async Task PersistExpiryIfNeededAsync(
         Game game,
         GameProblemAttempt attempt,
@@ -126,9 +113,6 @@ internal sealed class CompleteProblemHandler(
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
     }
 
-    // Verifies the submission was created through the game's own submit endpoint, belongs to the
-    // requester, and was accepted. Returns the failing Result on the left when invalid, or the
-    // validated submission on the right when it's safe to proceed.
     private async Task<(Result<CompleteProblemResultDto>? Failure, Submission? Submission)> ValidateSubmissionAsync(
         Game game,
         GameParticipant participant,
@@ -136,9 +120,6 @@ internal sealed class CompleteProblemHandler(
         CancellationToken cancellationToken
     )
     {
-        // The round's attempts live in game_round_submissions rather than on the Game aggregate, so
-        // this is a read rather than an in-memory check. Only the participant's latest attempt
-        // qualifies — a superseded one must not stay eligible to complete the round.
         Guid? currentRoundId = participant.CurrentRoundId;
         if (!currentRoundId.HasValue)
             return (

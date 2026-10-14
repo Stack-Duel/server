@@ -106,7 +106,6 @@ public class GetGameStateHandlerTests
         foreach (GameParticipant participant in game.Participants)
             participant.Forfeit();
 
-        // sanity: race simulated by forfeiting without Game.Forfeit's own self-heal
         Assert.Equal(GameStatus.Running, game.Status);
 
         var gameMode = new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid());

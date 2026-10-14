@@ -72,10 +72,6 @@ internal sealed partial class SubmitGameProblemHandler(
                 )
             );
 
-        // The client picks which setup it ran the code against (e.g. language version); verify it
-        // actually belongs to the problem being submitted rather than trusting it blindly. Without
-        // this, a mismatch would only surface once game_round_submissions' composite foreign keys
-        // reject the insert below, turning a bad request into a mid-transaction 500.
         Guid? setupProblemId = await problemReadRepository.GetProblemIdByProblemSetupIdAsync(
             request.ProblemSetupId,
             cancellationToken
@@ -88,9 +84,6 @@ internal sealed partial class SubmitGameProblemHandler(
                 )
             );
 
-        // Resolved up front, not after the submission exists: a missing round is a hard failure, and
-        // failing here means nothing has been written and no code has been queued to execute. Doing
-        // this lookup later would report failure for a submission that is already running.
         Guid? roundId = await gameReadRepository.FindRoundIdByGameAndProblemAsync(
             game.Id,
             request.ProblemId,
@@ -99,7 +92,6 @@ internal sealed partial class SubmitGameProblemHandler(
         if (roundId is null)
             return Result<Guid>.Error("Game round not found for the current problem.");
 
-        // Create the grade submission through the existing submission pipeline.
         var submissionResult = await mediator.Send(
             new CreateSubmissionCommand(
                 request.ProblemSetupId,
@@ -126,19 +118,6 @@ internal sealed partial class SubmitGameProblemHandler(
         );
     }
 
-    /// <summary>
-    /// Records the attempt in <c>game_round_submissions</c>, which is now the only place a game
-    /// submission is registered against its round — CompleteProblemHandler reads it to verify the
-    /// submission being completed really is this participant's latest attempt. A failure here is
-    /// therefore fatal rather than cosmetic: without the row the participant could never complete
-    /// the round, so the caller is told the submit failed.
-    /// </summary>
-    /// <remarks>
-    /// The submission itself has already been created and queued by this point, so a failure leaves
-    /// code executing for an attempt the client was told failed. Closing that window properly needs
-    /// the submission and this row written in one transaction, which the current
-    /// mediator-per-aggregate split doesn't allow.
-    /// </remarks>
     private async Task<Result<Guid>> RecordRoundSubmissionAsync(
         Guid roundId,
         Guid participantId,

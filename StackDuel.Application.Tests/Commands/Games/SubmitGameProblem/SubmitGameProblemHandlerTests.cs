@@ -34,9 +34,6 @@ public class SubmitGameProblemHandlerTests
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
         _mediator = new Mock<IMediator>();
 
-        // Fails closed: an unconfigured setup resolves to no problem at all, so a test that reaches
-        // the setup/problem check without calling SetupMatchingProblemSetup is rejected rather than
-        // silently passing validation it never set up.
         _problemReadRepository
             .Setup(x => x.GetProblemIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Guid?)null);
@@ -262,9 +259,6 @@ public class SubmitGameProblemHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(submissionId, result.Value);
 
-        // The attempt is recorded in game_round_submissions rather than stamped onto the aggregate,
-        // and CompleteProblemHandler reads that table to decide whether a submission may complete
-        // the round — so this write is the whole observable effect of a successful submit.
         _gameRoundSubmissionWriteRepository.Verify(
             x =>
                 x.AddAsync(
@@ -333,7 +327,6 @@ public class SubmitGameProblemHandlerTests
         game.Start();
         var participant = game.Participants.Single();
         StartParticipantOnProblem(game, userId, problemId);
-        // Default stub already returns null from GetProblemIdByProblemSetupIdAsync.
 
         _gameReadRepository
             .Setup(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

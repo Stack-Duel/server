@@ -128,8 +128,6 @@ public class GameProblemAdvancerTests
             CancellationToken.None
         );
 
-        // Mirrors SkipProblemHandler's original ordering: UseSkip() ran before FinishProblemsFor,
-        // so a skip is always consumed even when the finish was caused by pool exhaustion.
         Assert.False(participantAlreadyFinishedWhenOnFinishRan);
     }
 

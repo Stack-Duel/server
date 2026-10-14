@@ -182,9 +182,6 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
         builder.Property(participant => participant.FinishedAt).HasColumnName("finished_at").IsRequired(false);
 
-        // The current-round cursor. A single nullable column is what makes "at most one round in
-        // progress per participant" structural rather than an invariant upheld by an index or a
-        // handler — there is no in-progress row anywhere to duplicate.
         builder
             .Property(participant => participant.CurrentRoundId)
             .HasColumnName("current_round_id")
@@ -206,16 +203,10 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
         builder.HasIndex("game_id", nameof(GameParticipant.SeatNo)).IsUnique();
 
-        // Principal side of the composite FKs game_round_participants and game_round_submissions
-        // use to pin a participant's rows to this same participant within the same game.
         builder.HasAlternateKey("Id", "game_id");
 
         builder.HasAlternateKey("Id", "game_id", nameof(GameParticipant.UserId));
 
-        // Configured here, from the principal side, rather than from GameRoundResultConfiguration:
-        // "game_id" is a shadow property on both sides, and HasPrincipalKey(string[]) needs it
-        // already declared with its CLR type, which is only guaranteed within this Configure
-        // method — the order configurations apply in across entity types is unspecified.
         builder
             .HasMany<GameRoundResult>()
             .WithOne()
@@ -224,8 +215,6 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Same reasoning: pins a submission's participant_id and user_id to this same participant,
-        // alongside game_id, for the same shadow-property-ordering reason as above.
         builder
             .HasMany<GameRoundSubmission>()
             .WithOne()

@@ -34,8 +34,6 @@ internal sealed class GameProblemAdvancer(
         }
         else
         {
-            // Nothing left anywhere in the pool for this participant. They're done — not the whole
-            // game; other participants may still be mid-run. See Game.FinishProblemsFor.
             onFinish?.Invoke();
             game.FinishProblemsFor(participant.UserId);
             await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);

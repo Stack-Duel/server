@@ -20,11 +20,6 @@ internal sealed class SkipProblemHandler(
         CancellationToken cancellationToken
     )
     {
-        // Retried once: GetOrGenerateProblemAsync (via gameProblemAdvancer) can race another
-        // participant who's also first to reach this position (see GameProblemConfiguration's
-        // (game_id, position) unique index). The loser gets GameProblemPositionConflictException
-        // out of SaveChangesAsync — re-fetching from scratch picks up the winner's already-persisted
-        // problem via Game.ProblemIdAtPosition instead of generating a conflicting second one.
         int saveAttempt = 0;
         while (true)
         {
@@ -39,8 +34,6 @@ internal sealed class SkipProblemHandler(
                 DateTime.UtcNow
             );
 
-            // The expiry check inside EvaluateProblemAttempt may have just completed the game —
-            // that must be persisted regardless of whether this request itself goes on to succeed.
             if (attempt.GameJustExpired)
             {
                 await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
@@ -81,9 +74,6 @@ internal sealed class SkipProblemHandler(
             }
             catch (DuplicateGameProblemException)
             {
-                // Genuine fault in problem selection (the excluded-problem set it was given failed
-                // to exclude something already served), not the benign (game_id, position) race
-                // GameProblemPositionConflictException below retries — so fail cleanly instead.
                 return Result<SkipProblemResultDto>.Error("Failed to advance to the next problem.");
             }
 

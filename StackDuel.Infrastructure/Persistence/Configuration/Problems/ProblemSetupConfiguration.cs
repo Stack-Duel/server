@@ -24,13 +24,8 @@ internal sealed class ProblemSetupConfiguration : IEntityTypeConfiguration<Probl
 
         builder.Property<Guid>("problem_id").HasColumnName("problem_id").IsRequired();
 
-        // Principal side of game_round_submissions' composite FK pinning a setup to its problem.
         builder.HasAlternateKey("Id", "problem_id");
 
-        // Configured here, from the principal side, rather than from GameRoundSubmissionConfiguration:
-        // "problem_id" is a shadow property, and HasPrincipalKey(string[]) requires it to already be
-        // declared with its CLR type, which is only guaranteed within this Configure method — the
-        // order configurations apply in across entity types is unspecified.
         builder
             .HasMany<GameRoundSubmission>()
             .WithOne()

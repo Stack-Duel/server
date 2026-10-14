@@ -105,9 +105,6 @@ public class GetAdminGamePlayerHistoryHandlerTests
         var firstProblemId = Guid.NewGuid();
         var skippedProblemId = Guid.NewGuid();
 
-        // Skipping is now the only way a problem lands on the skipped list, so this drives the full
-        // round lifecycle instead of poking a standalone "add a skipped problem" call: start on the
-        // problem, then skip past it onto the next one.
         game.AppendRound(skippedProblemId);
         game.StartRoundFor(participantId, skippedProblemId);
         game.AppendRound(firstProblemId);

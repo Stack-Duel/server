@@ -59,13 +59,6 @@ public class CompleteProblemHandlerTests
         );
     }
 
-    /// <summary>
-    /// The attempt the handler will accept as the participant's latest for their current round.
-    /// Replaces the old <c>game.AttachSubmissionFor(...)</c> setup — attempts now live in
-    /// game_round_submissions, so eligibility is a repository read rather than aggregate state.
-    /// Unstubbed submissions resolve to false, which keeps the "not created through the game" path
-    /// the default rather than something a test has to opt into.
-    /// </summary>
     private void AllowSubmission(Guid submissionId) =>
         _gameRoundSubmissionReadRepository
             .Setup(x =>
@@ -394,7 +387,6 @@ public class CompleteProblemHandlerTests
         var command = new CompleteProblemCommand(game.Id, problemId, submission.Id, userId);
         await _handler.Handle(command, CancellationToken.None);
 
-        // Three problems already seen (initial, then two skips) — the fourth slot is position 3.
         Assert.Equal(3, capturedPosition);
     }
 
@@ -455,9 +447,6 @@ public class CompleteProblemHandlerTests
             g.AppendRound(problemId);
             g.StartRoundFor(userId, problemId);
             AllowSubmission(submission.Id);
-            // The next round must already exist for SolveCurrentRoundAndAdvance to find it — the
-            // real GameProblemSequencer would append it itself, but it's mocked here, so the fixture
-            // appends the same winning problem it stubs the mock to return.
             g.AppendRound(winningProblemId);
             return g;
         }
@@ -533,8 +522,6 @@ public class CompleteProblemHandlerTests
         _gameReadRepository
             .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
-        // The real GameProblemSequencer would append the generated problem's round itself; since it's
-        // mocked here, the callback does it instead so SolveCurrentRoundAndAdvance finds the round.
         var generatedProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>

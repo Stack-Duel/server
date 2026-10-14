@@ -75,9 +75,6 @@ public class GetGameProblemsHandlerTests
         var solvedProblemId = Guid.NewGuid();
         var submissionId = Guid.NewGuid();
 
-        // Solving a round is the only way a problem ends up in the solved list now — there's no
-        // standalone "add a solved problem" call, so this drives the full round lifecycle: start on
-        // the problem, then advance past it naming the submission that solved it.
         game.AppendRound(solvedProblemId);
         game.StartRoundFor(requesterId, solvedProblemId);
         game.AppendRound(nextProblemId);

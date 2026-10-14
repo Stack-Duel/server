@@ -22,10 +22,6 @@ public class GameRoundResultTests
         Assert.Equal(submissionId, result.SolvingSubmissionId);
     }
 
-    /// <summary>
-    /// The solving submission is required rather than a nullable column guarded by a check, so an
-    /// unusable id has to be rejected at construction.
-    /// </summary>
     [Fact]
     public void Solved_EmptySubmissionId_Throws()
     {
@@ -57,10 +53,6 @@ public class GameRoundResultTests
         Assert.Throws<ArgumentException>(() => GameRoundResult.Solved(Guid.Empty, StartedAt, Guid.NewGuid()));
     }
 
-    /// <summary>
-    /// A result only exists for a finished round, so its completion time is always set — there is no
-    /// in-progress state here to leave it null for.
-    /// </summary>
     [Fact]
     public void Skipped_SetsCompletedAt()
     {

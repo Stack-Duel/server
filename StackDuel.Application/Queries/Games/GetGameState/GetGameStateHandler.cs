@@ -38,11 +38,6 @@ internal sealed class GetGameStateHandler(
         }
         else if (game.CompleteIfEveryoneStopped())
         {
-            // Self-healing for the race where two participants stop playing (forfeit/finish) via
-            // concurrent requests and each writes before seeing the other's — neither call
-            // completes the game, so it's left Running with nobody left to act in it until the
-            // next read notices. Early completion (not via the clock), so cancel the now-moot
-            // scheduled expiry too, same as Forfeit/CompleteProblem do for their own completions.
             await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
             await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);

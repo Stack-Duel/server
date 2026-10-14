@@ -300,9 +300,6 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 problem.Setups.Any(setup => allowedLanguageVersionIdList.Contains(setup.LanguageVersionId))
             );
 
-        // Ordered so the seeded pick below is reproducible across calls — without a stable
-        // order, the same seed could land on a different problem if the database returned
-        // candidates in a different sequence.
         var candidateIds = await query
             .OrderBy(problem => problem.Id)
             .Select(problem => problem.Id)

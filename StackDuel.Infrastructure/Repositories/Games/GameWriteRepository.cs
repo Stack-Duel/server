@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Npgsql;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Infrastructure.Persistence;
@@ -9,8 +8,6 @@ namespace StackDuel.Infrastructure.Repositories.Games;
 
 internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWriteRepository
 {
-    private const string RoundsPositionIndexName = "IX_game_rounds_game_id_position";
-
     public async Task AddAsync(Game entity, CancellationToken cancellationToken = default)
     {
         await context.Games.AddAsync(entity, cancellationToken);
@@ -24,66 +21,34 @@ internal sealed class GameWriteRepository(StackDuelDbContext context) : IGameWri
 
     public async Task SaveChangesAsync(Game entity, CancellationToken cancellationToken = default)
     {
-        // Every Entity subclass gets its Id assigned client-side (Entity's constructor calls
-        // Guid.NewGuid()), so whenever a new child is appended to an already-tracked collection
-        // (Game.Join() -> Participants, Game.AppendRound() -> Rounds), EF's change detection can't
-        // tell it's new from a default/temporary key value — it sees a real Guid already set and
-        // assumes the row already exists, generating an UPDATE instead of an INSERT. That UPDATE
-        // matches 0 rows and throws DbUpdateConcurrencyException.
-        //
-        // Auto-detect-changes is disabled for this loop because context.Entry(...) itself triggers
-        // a full change-detection pass — with it left on, the very first Entry() call (for a
-        // still-Unchanged existing row) would already discover and misclassify the new ones as
-        // Modified before this loop ever reaches them, making the Detached check below always
-        // false. With it off, Entry() reports each entity's real tracked-or-not status, so only
-        // genuinely new rows get forced to Added; re-enabling it before SaveChanges still detects
-        // ordinary scalar edits (e.g. score, problem session) on existing rows.
-        context.ChangeTracker.AutoDetectChangesEnabled = false;
-        foreach (EntityEntry<GameParticipant> entry in entity.Participants.Select(context.Entry))
-        {
-            if (entry.State == EntityState.Detached)
-            {
-                entry.State = EntityState.Added;
-            }
-        }
-        foreach (EntityEntry<GameRound> entry in entity.Rounds.Select(context.Entry))
-        {
-            if (entry.State == EntityState.Detached)
-            {
-                entry.State = EntityState.Added;
-            }
-        }
-        context.ChangeTracker.AutoDetectChangesEnabled = true;
+        MarkUntrackedChildrenAsAdded(entity);
 
-        try
-        {
-            await context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (IsRoundPositionConflict(ex))
-        {
-            // The losing side of the (game_id, position) unique index race (see
-            // GameRoundConfiguration). The failed SaveChanges leaves every entity from this
-            // attempt sitting in the context's change tracker in whatever state it was pushed to
-            // (Added/Modified) — detach the whole graph so a retry's fresh FindGameByIdAsync, on
-            // this same scoped DbContext, actually hits the database instead of being handed back
-            // this same stale, half-failed instance by EF's identity map.
-            DetachGraph(entity);
-            throw new GameProblemPositionConflictException(entity.Id, ex);
-        }
+        await context.SaveChangesAsync(cancellationToken);
     }
 
-    private static bool IsRoundPositionConflict(DbUpdateException ex) =>
-        ex.InnerException
-            is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RoundsPositionIndexName };
-
-    private void DetachGraph(Game entity)
+    private void MarkUntrackedChildrenAsAdded(Game entity)
     {
-        context.Entry(entity).State = EntityState.Detached;
-        foreach (GameParticipant participant in entity.Participants)
-            context.Entry(participant).State = EntityState.Detached;
-        foreach (GameRound round in entity.Rounds)
-            context.Entry(round).State = EntityState.Detached;
-        foreach (GameTrack track in entity.Tracks)
-            context.Entry(track).State = EntityState.Detached;
+        context.ChangeTracker.AutoDetectChangesEnabled = false;
+
+        IReadOnlyList<GameRoundResult> roundResults = [.. entity.Participants.SelectMany(p => p.RoundResults)];
+
+        MarkDetachedAsAdded(entity.Participants);
+        MarkDetachedAsAdded(entity.Rounds);
+        MarkDetachedAsAdded(roundResults);
+        MarkDetachedAsAdded(roundResults.Select(result => result.Solution).OfType<GameRoundSolution>());
+
+        context.ChangeTracker.AutoDetectChangesEnabled = true;
+    }
+
+    private void MarkDetachedAsAdded<TEntity>(IEnumerable<TEntity> entities)
+        where TEntity : class
+    {
+        foreach (EntityEntry<TEntity> entry in entities.Select(context.Entry))
+        {
+            if (entry.State == EntityState.Detached)
+            {
+                entry.State = EntityState.Added;
+            }
+        }
     }
 }

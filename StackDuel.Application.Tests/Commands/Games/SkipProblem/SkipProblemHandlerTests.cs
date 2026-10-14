@@ -295,8 +295,6 @@ public class SkipProblemHandlerTests
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         await _handler.Handle(command, CancellationToken.None);
 
-        // Two problems already seen (the initial one, then the one skipped to) — the third slot
-        // is position 2.
         Assert.Equal(2, capturedPosition);
     }
 
@@ -352,9 +350,6 @@ public class SkipProblemHandlerTests
             g.Start();
             g.AppendRound(problemId);
             g.StartRoundFor(userId, problemId);
-            // The next round must already exist for SkipCurrentRoundAndAdvance to find it — the real
-            // GameProblemSequencer would append it itself, but it's mocked here, so the fixture
-            // appends the same winning problem it stubs the mock to return.
             g.AppendRound(winningProblemId);
             return g;
         }
@@ -421,8 +416,6 @@ public class SkipProblemHandlerTests
         _gameReadRepository
             .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
-        // The real GameProblemSequencer would append the generated problem's round itself; since it's
-        // mocked here, the callback does it instead so SkipCurrentRoundAndAdvance finds the round.
         var generatedProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>
