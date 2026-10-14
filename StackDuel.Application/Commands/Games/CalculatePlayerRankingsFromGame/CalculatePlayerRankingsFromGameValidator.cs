@@ -1,3 +1,4 @@
+using FluentValidation;
 
 namespace StackDuel.Application.Commands.Games.CalculatePlayerRankingsFromGame;
 
