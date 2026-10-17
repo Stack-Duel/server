@@ -57,7 +57,7 @@ internal sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder
             .HasMany(game => game.Participants)
             .WithOne()
-            .HasForeignKey("game_id")
+            .HasForeignKey(nameof(GameParticipant.GameId))
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -78,7 +78,7 @@ internal sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder
             .HasMany(game => game.Rounds)
             .WithOne()
-            .HasForeignKey("game_id")
+            .HasForeignKey(nameof(GameRound.GameId))
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -162,7 +162,7 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
         builder.Property(participant => participant.Id).HasColumnName("id");
 
-        builder.Property<Guid>("game_id").HasColumnName("game_id").IsRequired();
+        builder.Property(participant => participant.GameId).HasColumnName("game_id").IsRequired();
 
         builder.Property(participant => participant.UserId).HasColumnName("user_id").IsRequired();
 
@@ -182,10 +182,7 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
 
         builder.Property(participant => participant.FinishedAt).HasColumnName("finished_at").IsRequired(false);
 
-        builder
-            .Property(participant => participant.CurrentRoundId)
-            .HasColumnName("current_round_id")
-            .IsRequired(false);
+        builder.Property(participant => participant.CurrentRoundId).HasColumnName("current_round_id").IsRequired(false);
 
         builder
             .Property(participant => participant.CurrentRoundStartedAt)
@@ -199,21 +196,17 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex("game_id", nameof(GameParticipant.UserId)).IsUnique();
+        builder.HasIndex(nameof(GameParticipant.GameId), nameof(GameParticipant.UserId)).IsUnique();
 
-        builder.HasIndex("game_id", nameof(GameParticipant.SeatNo)).IsUnique();
+        builder.HasIndex(nameof(GameParticipant.GameId), nameof(GameParticipant.SeatNo)).IsUnique();
 
-        builder.HasAlternateKey("Id", "game_id");
+        builder.HasAlternateKey(nameof(GameParticipant.Id), nameof(GameParticipant.GameId));
 
-        builder.HasAlternateKey("Id", "game_id", nameof(GameParticipant.UserId));
-
-        builder
-            .HasMany<GameRoundResult>()
-            .WithOne()
-            .HasForeignKey("participant_id", "game_id")
-            .HasPrincipalKey("Id", "game_id")
-            .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasAlternateKey(
+            nameof(GameParticipant.Id),
+            nameof(GameParticipant.GameId),
+            nameof(GameParticipant.UserId)
+        );
 
         builder
             .HasMany<GameRoundSubmission>()
@@ -223,14 +216,15 @@ internal sealed class GameParticipantConfiguration : IEntityTypeConfiguration<Ga
                 nameof(GameRoundSubmission.GameId),
                 nameof(GameRoundSubmission.UserId)
             )
-            .HasPrincipalKey("Id", "game_id", nameof(GameParticipant.UserId))
+            .HasPrincipalKey(nameof(GameParticipant.Id), nameof(GameParticipant.GameId), nameof(GameParticipant.UserId))
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasMany(participant => participant.RoundResults)
             .WithOne()
-            .HasForeignKey("participant_id")
+            .HasForeignKey("participant_id", "game_id")
+            .HasPrincipalKey(nameof(GameParticipant.Id), nameof(GameParticipant.GameId))
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 

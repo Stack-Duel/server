@@ -23,7 +23,12 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
 
         builder.Property(s => s.ProblemSetupId).HasColumnName("problem_setup_id").IsRequired();
 
-        builder.HasAlternateKey(s => new { s.Id, s.ProblemSetupId, s.UserId });
+        builder.HasAlternateKey(s => new
+        {
+            s.Id,
+            s.ProblemSetupId,
+            s.UserId,
+        });
 
         builder.Property(s => s.GameId).HasColumnName("game_id").IsRequired(false);
 

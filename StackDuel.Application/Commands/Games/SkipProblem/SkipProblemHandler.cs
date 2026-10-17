@@ -1,16 +1,15 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.Games.SkipProblem;
 
 internal sealed class SkipProblemHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,

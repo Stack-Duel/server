@@ -19,6 +19,12 @@ public interface IGameReadRepository
         Guid problemId,
         CancellationToken cancellationToken = default
     );
+    Task<GameLatestSubmissionDto?> FindLatestRoundSubmissionAsync(
+        Guid roundId,
+        Guid participantId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<GameMode>> GetActiveGameModesAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Game>> GetRunningGamesPastExpiryAsync(

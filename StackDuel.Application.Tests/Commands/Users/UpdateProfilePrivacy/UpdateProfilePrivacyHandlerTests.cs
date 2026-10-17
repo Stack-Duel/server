@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Events;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
@@ -12,12 +13,18 @@ namespace StackDuel.Application.Tests.Commands.Users.UpdateProfilePrivacy;
 public class UpdateProfilePrivacyHandlerTests
 {
     private Mock<IUserWriteRepository> _userRepository = null!;
+    private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private UpdateProfilePrivacyHandler _handler = null!;
 
     public UpdateProfilePrivacyHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
-        _handler = new UpdateProfilePrivacyHandler(new UpdateProfilePrivacyValidator(), _userRepository.Object);
+        _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
+        _handler = new UpdateProfilePrivacyHandler(
+            new UpdateProfilePrivacyValidator(),
+            _userRepository.Object,
+            _domainEventDispatcher.Object
+        );
     }
 
     [Fact]

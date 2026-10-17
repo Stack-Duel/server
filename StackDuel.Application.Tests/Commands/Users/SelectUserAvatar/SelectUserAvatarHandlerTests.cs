@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Events;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
@@ -14,17 +15,20 @@ public class SelectUserAvatarHandlerTests
 {
     private Mock<IUserWriteRepository> _userRepository = null!;
     private Mock<IUserAvatarWriteRepository> _userAvatarRepository = null!;
+    private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private SelectUserAvatarHandler _handler = null!;
 
     public SelectUserAvatarHandlerTests()
     {
         _userRepository = new Mock<IUserWriteRepository>();
         _userAvatarRepository = new Mock<IUserAvatarWriteRepository>();
+        _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new SelectUserAvatarHandler(
             new SelectUserAvatarValidator(),
             _userRepository.Object,
-            _userAvatarRepository.Object
+            _userAvatarRepository.Object,
+            _domainEventDispatcher.Object
         );
     }
 

@@ -1,4 +1,3 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using MediatR;
@@ -7,12 +6,12 @@ using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.Games.StartGame;
 
 internal sealed class StartGameHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     IProblemSelectionStrategyResolver problemSelectionStrategyResolver,
     IGameProblemSequencer gameProblemSequencer,

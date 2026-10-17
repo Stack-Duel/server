@@ -17,7 +17,7 @@ internal sealed class GameRoundConfiguration : IEntityTypeConfiguration<GameRoun
 
         builder.Property(round => round.Id).HasColumnName("id");
 
-        builder.Property<Guid>("game_id").HasColumnName("game_id").IsRequired();
+        builder.Property(round => round.GameId).HasColumnName("game_id").IsRequired();
 
         builder.Property(round => round.ProblemId).HasColumnName("problem_id").IsRequired();
 
@@ -31,29 +31,29 @@ internal sealed class GameRoundConfiguration : IEntityTypeConfiguration<GameRoun
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasIndex("game_id", nameof(GameRound.Position))
+            .HasIndex(nameof(GameRound.GameId), nameof(GameRound.Position))
             .IsUnique()
             .HasDatabaseName("IX_game_rounds_game_id_position");
 
-        builder.HasIndex("game_id", nameof(GameRound.ProblemId)).IsUnique();
+        builder.HasIndex(nameof(GameRound.GameId), nameof(GameRound.ProblemId)).IsUnique();
 
-        builder.HasAlternateKey("Id", "game_id");
+        builder.HasAlternateKey(nameof(GameRound.Id), nameof(GameRound.GameId));
 
-        builder.HasAlternateKey("Id", nameof(GameRound.ProblemId), "game_id");
+        builder.HasAlternateKey(nameof(GameRound.Id), nameof(GameRound.ProblemId), nameof(GameRound.GameId));
 
         builder
             .HasMany<GameRoundResult>()
             .WithOne()
             .HasForeignKey(nameof(GameRoundResult.RoundId), "game_id")
-            .HasPrincipalKey("Id", "game_id")
+            .HasPrincipalKey(nameof(GameRound.Id), nameof(GameRound.GameId))
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasMany<GameParticipant>()
             .WithOne()
-            .HasForeignKey(nameof(GameParticipant.CurrentRoundId), "game_id")
-            .HasPrincipalKey("Id", "game_id")
+            .HasForeignKey(nameof(GameParticipant.CurrentRoundId), nameof(GameParticipant.GameId))
+            .HasPrincipalKey(nameof(GameRound.Id), nameof(GameRound.GameId))
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -61,11 +61,11 @@ internal sealed class GameRoundConfiguration : IEntityTypeConfiguration<GameRoun
             .HasMany<GameRoundSubmission>()
             .WithOne()
             .HasForeignKey(
-                "RoundId",
+                nameof(GameRoundSubmission.RoundId),
                 nameof(GameRoundSubmission.ProblemId),
                 nameof(GameRoundSubmission.GameId)
             )
-            .HasPrincipalKey("Id", nameof(GameRound.ProblemId), "game_id")
+            .HasPrincipalKey(nameof(GameRound.Id), nameof(GameRound.ProblemId), nameof(GameRound.GameId))
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
     }
@@ -96,7 +96,6 @@ internal sealed class GameRoundResultConfiguration : IEntityTypeConfiguration<Ga
         builder.HasIndex("participant_id", nameof(GameRoundResult.RoundId)).IsUnique();
 
         builder.HasAlternateKey(nameof(GameRoundResult.Id), nameof(GameRoundResult.Outcome));
-
     }
 }
 
@@ -106,8 +105,7 @@ internal sealed class GameRoundSolutionConfiguration : IEntityTypeConfiguration<
     {
         builder.ToTable(
             "game_round_solutions",
-            table =>
-                table.HasCheckConstraint("ck_game_round_solutions_outcome", "outcome = 0")
+            table => table.HasCheckConstraint("ck_game_round_solutions_outcome", "outcome = 0")
         );
 
         builder.HasKey(solution => solution.Id);
@@ -116,11 +114,7 @@ internal sealed class GameRoundSolutionConfiguration : IEntityTypeConfiguration<
 
         builder.Property<Guid>("round_result_id").HasColumnName("round_result_id").IsRequired();
 
-        builder
-            .Property<GameRoundOutcome>("outcome")
-            .HasColumnName("outcome")
-            .HasConversion<int>()
-            .IsRequired();
+        builder.Property<GameRoundOutcome>("outcome").HasColumnName("outcome").HasConversion<int>().IsRequired();
 
         builder.Property(solution => solution.SubmissionId).HasColumnName("submission_id").IsRequired();
 
@@ -164,16 +158,28 @@ internal sealed class GameRoundSubmissionConfiguration : IEntityTypeConfiguratio
 
         builder.HasIndex(grs => grs.SubmissionId).IsUnique();
 
-        builder.HasIndex(grs => new { grs.ParticipantId, grs.RoundId, grs.CreatedAt });
-
-
-
+        builder.HasIndex(grs => new
+        {
+            grs.ParticipantId,
+            grs.RoundId,
+            grs.CreatedAt,
+        });
 
         builder
             .HasOne<Submission>()
             .WithMany()
-            .HasForeignKey(grs => new { grs.SubmissionId, grs.SetupId, grs.UserId })
-            .HasPrincipalKey(submission => new { submission.Id, submission.ProblemSetupId, submission.UserId })
+            .HasForeignKey(grs => new
+            {
+                grs.SubmissionId,
+                grs.SetupId,
+                grs.UserId,
+            })
+            .HasPrincipalKey(submission => new
+            {
+                submission.Id,
+                submission.ProblemSetupId,
+                submission.UserId,
+            })
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
     }

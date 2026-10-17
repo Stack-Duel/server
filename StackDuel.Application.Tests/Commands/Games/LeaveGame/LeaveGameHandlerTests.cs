@@ -15,7 +15,6 @@ namespace StackDuel.Application.Tests.Commands.Games.LeaveGame;
 public class LeaveGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private LeaveGameHandler _handler = null!;
@@ -23,13 +22,11 @@ public class LeaveGameHandlerTests
     public LeaveGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
         _unitOfWork = new Mock<IUnitOfWork>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new LeaveGameHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
             _unitOfWork.Object,
             _domainEventDispatcher.Object,
             new LeaveGameValidator()

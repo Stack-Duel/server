@@ -1,10 +1,10 @@
-using StackDuel.Domain.SeedWork;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Events;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Events.Games;
 

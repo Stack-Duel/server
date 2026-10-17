@@ -1,5 +1,4 @@
 ﻿using Ardalis.Result;
-using StackDuel.Domain.SeedWork;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Events;
@@ -7,12 +6,12 @@ using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.Games.CompleteExpiredGame;
 
 internal sealed partial class CompleteExpiredGameHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     IValidator<CompleteExpiredGameCommand> validator,
     IDomainEventDispatcher domainEventDispatcher,

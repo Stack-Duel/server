@@ -1,8 +1,8 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using Moq;
 using StackDuel.Application.Problems;
 using StackDuel.Domain.Problems.Entities;
+using StackDuel.Domain.SeedWork;
 using ReorderProblemPoolCommand = StackDuel.Application.Commands.ProblemPools.ReorderProblemPool.ReorderProblemPoolCommand;
 using ReorderProblemPoolHandler = StackDuel.Application.Commands.ProblemPools.ReorderProblemPool.ReorderProblemPoolHandler;
 using ReorderProblemPoolValidator = StackDuel.Application.Commands.ProblemPools.ReorderProblemPool.ReorderProblemPoolValidator;
@@ -84,10 +84,7 @@ public class ReorderProblemPoolHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _unitOfWork.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

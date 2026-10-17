@@ -7,14 +7,18 @@ public sealed class GameParticipant : Entity
 {
     public const int TotalSkips = 3;
 
-    public GameParticipant(Guid userId, int seatNo)
+    public GameParticipant(Guid gameId, Guid userId, int seatNo)
     {
+        if (gameId == Guid.Empty)
+            throw new ArgumentException("Game id must not be empty.", nameof(gameId));
+
         if (userId == Guid.Empty)
             throw new ArgumentException("User id must not be empty.", nameof(userId));
 
         if (seatNo <= 0)
             throw new ArgumentException("Seat number must be greater than zero.", nameof(seatNo));
 
+        GameId = gameId;
         UserId = userId;
         SeatNo = seatNo;
         JoinedAt = DateTime.UtcNow;
@@ -23,6 +27,8 @@ public sealed class GameParticipant : Entity
     }
 
     private GameParticipant() { }
+
+    public Guid GameId { get; private set; }
 
     public Guid UserId { get; private set; }
 

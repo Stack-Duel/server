@@ -63,7 +63,7 @@ public sealed class Game : AggregateRoot
         int seatNo = 1;
         foreach (Guid userId in participantIds)
         {
-            _participants.Add(new GameParticipant(userId, seatNo));
+            _participants.Add(new GameParticipant(Id, userId, seatNo));
             seatNo++;
         }
     }
@@ -83,7 +83,7 @@ public sealed class Game : AggregateRoot
             throw new InvalidOperationException("Game is already full.");
 
         int nextSeatNo = _participants.Count == 0 ? 1 : _participants.Max(p => p.SeatNo) + 1;
-        _participants.Add(new GameParticipant(userId, nextSeatNo));
+        _participants.Add(new GameParticipant(Id, userId, nextSeatNo));
 
         AddDomainEvent(new GameLobbyUpdatedDomainEvent(Id));
     }
@@ -278,7 +278,7 @@ public sealed class Game : AggregateRoot
         if (_rounds.Any(round => round.ProblemId == problemId))
             throw new DuplicateGameProblemException(Id, problemId);
 
-        _rounds.Add(new GameRound(_rounds.Count, problemId));
+        _rounds.Add(new GameRound(Id, _rounds.Count, problemId));
     }
 
     public Guid? CurrentProblemIdFor(Guid userId)

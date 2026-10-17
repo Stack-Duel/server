@@ -10,6 +10,7 @@ using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.SeedWork;
+using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Tracks.Entities;
 using GetGameStateHandler = StackDuel.Application.Queries.Games.GetGameState.GetGameStateHandler;
 using GetGameStateQuery = StackDuel.Application.Queries.Games.GetGameState.GetGameStateQuery;
@@ -19,7 +20,6 @@ namespace StackDuel.Application.Tests.Queries.Games.GetGameState;
 public class GetGameStateHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IGameExpiryCanceller> _gameExpiryCanceller = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
@@ -30,7 +30,6 @@ public class GetGameStateHandlerTests
     public GetGameStateHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
         _unitOfWork = new Mock<IUnitOfWork>();
         _gameExpiryCanceller = new Mock<IGameExpiryCanceller>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
@@ -42,7 +41,6 @@ public class GetGameStateHandlerTests
 
         _handler = new GetGameStateHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
             _unitOfWork.Object,
             _gameExpiryCanceller.Object,
             _domainEventDispatcher.Object,
@@ -157,10 +155,7 @@ public class GetGameStateHandlerTests
         Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        _unitOfWork.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -226,5 +221,77 @@ public class GetGameStateHandlerTests
         Assert.Equal(string.Empty, unknownDto.Username);
         Assert.Null(unknownDto.ImageUrl);
         Assert.Null(unknownDto.CurrentProblem);
+    }
+
+    [Fact]
+    public async Task Handle_CurrentRoundHasASubmission_ReportsItForTheViewerOnly()
+    {
+        var viewerUserId = Guid.NewGuid();
+        var opponentUserId = Guid.NewGuid();
+        var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [viewerUserId, opponentUserId], 600);
+        game.Start();
+
+        var problemId = Guid.NewGuid();
+        game.AppendRound(problemId);
+        game.StartRoundFor(viewerUserId, problemId);
+        game.StartRoundFor(opponentUserId, problemId);
+
+        GameParticipant viewer = game.Participants.Single(p => p.UserId == viewerUserId);
+        GameRound round = game.Rounds.Single();
+        var latestSubmission = new GameLatestSubmissionDto(Guid.NewGuid(), SubmissionStatus.Running, DateTime.UtcNow);
+
+        _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
+        _gameReadRepository
+            .Setup(x => x.FindGameModeByIdIncludingInactiveAsync(game.GameModeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid()));
+        _userReadRepository
+            .Setup(x => x.FindByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, UserDto>());
+        _gameReadRepository
+            .Setup(x => x.FindLatestRoundSubmissionAsync(round.Id, viewer.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(latestSubmission);
+
+        var query = new GetGameStateQuery(game.Id, viewerUserId);
+        Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        GameParticipantDto viewerDto = result.Value.Participants.Single(p => p.UserId == viewerUserId);
+        Assert.Equal(latestSubmission, viewerDto.CurrentProblem!.LatestSubmission);
+
+        GameParticipantDto opponentDto = result.Value.Participants.Single(p => p.UserId == opponentUserId);
+        Assert.Equal(problemId, opponentDto.CurrentProblem!.ProblemId);
+        Assert.Null(opponentDto.CurrentProblem!.LatestSubmission);
+
+        _gameReadRepository.Verify(
+            x => x.FindLatestRoundSubmissionAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Handle_ViewerNotOnARound_NeverLooksUpASubmission()
+    {
+        var viewerUserId = Guid.NewGuid();
+        var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [viewerUserId], 600);
+        game.Start();
+
+        _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
+        _gameReadRepository
+            .Setup(x => x.FindGameModeByIdIncludingInactiveAsync(game.GameModeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GameMode("blitz", "Blitz", "desc", true, 1, 4, Guid.NewGuid()));
+        _userReadRepository
+            .Setup(x => x.FindByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, UserDto>());
+
+        var query = new GetGameStateQuery(game.Id, viewerUserId);
+        Result<GameStateDto> result = await _handler.Handle(query, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Participants.Single().CurrentProblem);
+        _gameReadRepository.Verify(
+            x => x.FindLatestRoundSubmissionAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

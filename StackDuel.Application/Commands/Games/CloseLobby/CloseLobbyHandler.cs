@@ -1,4 +1,3 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Events;
@@ -6,12 +5,12 @@ using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.Games.CloseLobby;
 
 internal sealed class CloseLobbyHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IValidator<CloseLobbyCommand> validator

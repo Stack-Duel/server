@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using StackDuel.Domain.Achievements.Entities;
 using StackDuel.Domain.Audit.Entities;
 using StackDuel.Domain.Authorization.Rbac.Entities;
@@ -16,6 +17,7 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.RequiredLanguages.Entities;
 using StackDuel.Domain.ProblemValidation.Entities;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.TestCaseGeneration.Entities;
@@ -141,10 +143,28 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
             t => t.Namespace is null || !t.Namespace.StartsWith("StackDuel.Infrastructure.Persistence.Read")
         );
 
+        MarkDomainAssignedIdentifiersAsNotStoreGenerated(modelBuilder);
+
         modelBuilder.Entity<Problem>().HasQueryFilter(problem => problem.Status == ProblemStatus.Published);
         modelBuilder.Entity<Language>().HasQueryFilter(language => language.Status == LanguageStatus.Active);
         modelBuilder
             .Entity<LanguageVersionEntry>()
             .HasQueryFilter(version => version.Status == LanguageVersionStatus.Active);
+    }
+
+    private static void MarkDomainAssignedIdentifiersAsNotStoreGenerated(ModelBuilder modelBuilder)
+    {
+        IEnumerable<IMutableProperty> domainAssignedKeyProperties = modelBuilder
+            .Model.GetEntityTypes()
+            .Where(entityType => typeof(Entity).IsAssignableFrom(entityType.ClrType))
+            .Select(entityType => entityType.FindPrimaryKey())
+            .Where(primaryKey => primaryKey is not null)
+            .SelectMany(primaryKey => primaryKey!.Properties)
+            .Where(property => property.ClrType == typeof(Guid));
+
+        foreach (IMutableProperty property in domainAssignedKeyProperties)
+        {
+            property.ValueGenerated = ValueGenerated.Never;
+        }
     }
 }

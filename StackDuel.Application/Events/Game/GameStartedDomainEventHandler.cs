@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using StackDuel.Domain.SeedWork;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Games;
 using StackDuel.Application.Messaging;
@@ -7,13 +6,13 @@ using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Events;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Events.Games;
 
 internal sealed partial class GameStartedDomainEventHandler(
     IMessagePublisher messagePublisher,
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     ILogger<GameStartedDomainEventHandler> logger
 ) : INotificationHandler<DomainEventNotification<GameStartedDomainEvent>>

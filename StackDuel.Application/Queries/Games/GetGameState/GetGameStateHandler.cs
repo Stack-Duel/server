@@ -1,4 +1,3 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
@@ -8,13 +7,13 @@ using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Tracks.Entities;
 
 namespace StackDuel.Application.Queries.Games.GetGameState;
 
 internal sealed class GetGameStateHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     IGameExpiryCanceller gameExpiryCanceller,
     IDomainEventDispatcher domainEventDispatcher,
@@ -64,15 +63,23 @@ internal sealed class GetGameStateHandler(
         );
         Dictionary<Guid, string> trackNamesById = tracks.ToDictionary(t => t.Id, t => t.Name);
 
+        GameLatestSubmissionDto? viewerLatestSubmission = await FindViewerLatestSubmissionAsync(
+            game,
+            request.RequestedByUserId,
+            cancellationToken
+        );
+
         var participants = game
             .Participants.Select(p =>
             {
                 userMap.TryGetValue(p.UserId, out UserDto? user);
 
-                GameCurrentProblemDto? currentProblem =
-                    game.CurrentProblemIdFor(p.UserId) is { } currentProblemId
-                        ? new GameCurrentProblemDto(currentProblemId)
-                        : null;
+                Guid? currentProblemId = game.CurrentProblemIdFor(p.UserId);
+                bool isViewer = p.UserId == request.RequestedByUserId;
+
+                GameCurrentProblemDto? currentProblem = currentProblemId.HasValue
+                    ? new GameCurrentProblemDto(currentProblemId.Value, isViewer ? viewerLatestSubmission : null)
+                    : null;
 
                 return new GameParticipantDto(
                     p.UserId,
@@ -109,6 +116,24 @@ internal sealed class GetGameStateHandler(
                 game.JoinCode,
                 game.SkipsEnabled
             )
+        );
+    }
+
+    private async Task<GameLatestSubmissionDto?> FindViewerLatestSubmissionAsync(
+        Game game,
+        Guid requestedByUserId,
+        CancellationToken cancellationToken
+    )
+    {
+        GameParticipant? viewer = game.Participants.FirstOrDefault(p => p.UserId == requestedByUserId);
+
+        if (viewer is null || !viewer.CurrentRoundId.HasValue)
+            return null;
+
+        return await gameReadRepository.FindLatestRoundSubmissionAsync(
+            viewer.CurrentRoundId.Value,
+            viewer.Id,
+            cancellationToken
         );
     }
 }

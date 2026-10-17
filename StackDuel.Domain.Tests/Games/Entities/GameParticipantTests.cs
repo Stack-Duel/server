@@ -38,7 +38,7 @@ public class GameParticipantTests
     [Fact]
     public void Constructor_StartsWithTotalSkipsRemaining()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
 
         Assert.Equal(GameParticipant.TotalSkips, participant.SkipsRemaining);
     }
@@ -188,7 +188,7 @@ public class GameParticipantTests
     [Fact]
     public void UseSkip_DecrementsSkipsRemaining()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
 
         participant.UseSkip();
 
@@ -198,7 +198,7 @@ public class GameParticipantTests
     [Fact]
     public void UseSkip_NoSkipsRemaining_Throws()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
         for (int i = 0; i < GameParticipant.TotalSkips; i++)
             participant.UseSkip();
 
@@ -208,7 +208,7 @@ public class GameParticipantTests
     [Fact]
     public void PlayState_FreshParticipant_IsInProgress()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
 
         Assert.Equal(ParticipantPlayState.InProgress, participant.PlayState);
     }
@@ -216,7 +216,7 @@ public class GameParticipantTests
     [Fact]
     public void PlayState_AfterForfeit_IsForfeited()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
 
         participant.Forfeit();
 
@@ -226,7 +226,7 @@ public class GameParticipantTests
     [Fact]
     public void PlayState_AfterFinishProblems_IsFinished()
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
 
         participant.FinishProblems();
 
@@ -239,7 +239,7 @@ public class GameParticipantTests
     [InlineData(ParticipantAction.Forfeit)]
     public void CanPerform_WhileInProgress_AllowsEveryAction(ParticipantAction action)
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
 
         Assert.True(participant.CanPerform(action));
     }
@@ -250,7 +250,7 @@ public class GameParticipantTests
     [InlineData(ParticipantAction.Forfeit)]
     public void CanPerform_AfterForfeit_DisallowsEveryAction(ParticipantAction action)
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
         participant.Forfeit();
 
         Assert.False(participant.CanPerform(action));
@@ -262,7 +262,7 @@ public class GameParticipantTests
     [InlineData(ParticipantAction.Forfeit)]
     public void CanPerform_AfterFinishProblems_DisallowsEveryAction(ParticipantAction action)
     {
-        var participant = new GameParticipant(Guid.NewGuid(), seatNo: 1);
+        var participant = new GameParticipant(Guid.NewGuid(), Guid.NewGuid(), seatNo: 1);
         participant.FinishProblems();
 
         Assert.False(participant.CanPerform(action));

@@ -106,7 +106,15 @@ internal sealed class VitestJavaScriptBatchTemplateStrategy : IBatchCodeTemplate
     public IReadOnlyList<BatchCaseResult> ParseBatchOutput(string? stdout, IReadOnlyList<Guid> orderedTestCaseIds)
     {
         if (string.IsNullOrWhiteSpace(stdout))
-            return [.. orderedTestCaseIds.Select(id => new BatchCaseResult(id, BatchCaseStatus.RuntimeError, null, "No output from Vitest."))];
+            return
+            [
+                .. orderedTestCaseIds.Select(id => new BatchCaseResult(
+                    id,
+                    BatchCaseStatus.RuntimeError,
+                    null,
+                    "No output from Vitest."
+                )),
+            ];
 
         (string reportJson, Dictionary<string, string>? actualOutputs) = SplitStdout(stdout);
 
@@ -117,7 +125,15 @@ internal sealed class VitestJavaScriptBatchTemplateStrategy : IBatchCodeTemplate
         }
         catch (JsonException)
         {
-            return [.. orderedTestCaseIds.Select(id => new BatchCaseResult(id, BatchCaseStatus.RuntimeError, null, "Could not parse Vitest report."))];
+            return
+            [
+                .. orderedTestCaseIds.Select(id => new BatchCaseResult(
+                    id,
+                    BatchCaseStatus.RuntimeError,
+                    null,
+                    "Could not parse Vitest report."
+                )),
+            ];
         }
 
         Dictionary<string, VitestAssertionResult> byTitle = (report?.TestResults ?? [])
@@ -130,10 +146,16 @@ internal sealed class VitestJavaScriptBatchTemplateStrategy : IBatchCodeTemplate
             .. orderedTestCaseIds.Select(id =>
             {
                 string caseId = id.ToString();
-                string? actual = actualOutputs is not null && actualOutputs.TryGetValue(caseId, out string? o) ? o : null;
+                string? actual =
+                    actualOutputs is not null && actualOutputs.TryGetValue(caseId, out string? o) ? o : null;
 
                 if (!byTitle.TryGetValue(caseId, out VitestAssertionResult? assertion))
-                    return new BatchCaseResult(id, BatchCaseStatus.RuntimeError, actual, "No matching Vitest result for this case.");
+                    return new BatchCaseResult(
+                        id,
+                        BatchCaseStatus.RuntimeError,
+                        actual,
+                        "No matching Vitest result for this case."
+                    );
 
                 string? failureMessage = assertion.FailureMessages.FirstOrDefault();
 
@@ -187,7 +209,10 @@ internal sealed class VitestJavaScriptBatchTemplateStrategy : IBatchCodeTemplate
 
     private static bool IsAssertionFailure(string? message) =>
         message is not null
-        && (message.Contains("AssertionError", StringComparison.Ordinal) || message.Contains("expected", StringComparison.OrdinalIgnoreCase));
+        && (
+            message.Contains("AssertionError", StringComparison.Ordinal)
+            || message.Contains("expected", StringComparison.OrdinalIgnoreCase)
+        );
 
     private static JsonElement ToJsonElement(CodeTemplateInput input)
     {
@@ -210,7 +235,9 @@ internal sealed class VitestJavaScriptBatchTemplateStrategy : IBatchCodeTemplate
         [property: JsonPropertyName("caseSensitive")] bool CaseSensitive
     );
 
-    private sealed record VitestReport([property: JsonPropertyName("testResults")] List<VitestTestFileResult> TestResults);
+    private sealed record VitestReport(
+        [property: JsonPropertyName("testResults")] List<VitestTestFileResult> TestResults
+    );
 
     private sealed record VitestTestFileResult(
         [property: JsonPropertyName("assertionResults")] List<VitestAssertionResult> AssertionResults

@@ -1,27 +1,25 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Logging;
-using StackDuel.Application.Commands.Submissions.CreateSubmission;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Application.Problems;
+using StackDuel.Application.Submissions;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Submissions.Enums;
 
 namespace StackDuel.Application.Commands.Games.SubmitGameProblem;
 
 internal sealed partial class SubmitGameProblemHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
     IUnitOfWork unitOfWork,
     IGameRoundSubmissionWriteRepository gameRoundSubmissionWriteRepository,
     IProblemReadRepository problemReadRepository,
     IDomainEventDispatcher domainEventDispatcher,
-    IMediator mediator,
+    ISubmissionCreator submissionCreator,
     IValidator<SubmitGameProblemCommand> validator,
     ILogger<SubmitGameProblemHandler> logger
 ) : AbstractCommandHandler<SubmitGameProblemCommand, Guid>(validator)
@@ -62,9 +60,7 @@ internal sealed partial class SubmitGameProblemHandler(
 
         Guid? currentProblemId = game.CurrentProblemIdFor(participant.UserId);
         if (currentProblemId is null)
-            return Result<Guid>.Invalid(
-                new ValidationError(nameof(currentProblemId), "Round not started.")
-            );
+            return Result<Guid>.Invalid(new ValidationError(nameof(currentProblemId), "Round not started."));
 
         if (currentProblemId != request.ProblemId)
             return Result<Guid>.Invalid(
@@ -94,13 +90,12 @@ internal sealed partial class SubmitGameProblemHandler(
         if (roundId is null)
             return Result<Guid>.Error("Game round not found for the current problem.");
 
-        var submissionResult = await mediator.Send(
-            new CreateSubmissionCommand(
+        var submissionResult = await submissionCreator.CreateAsync(
+            new SubmissionCreationRequest(
                 request.ProblemSetupId,
                 SubmissionType.Submit,
                 request.Code,
                 request.RequestedByUserId,
-                null,
                 GameId: request.GameId
             ),
             cancellationToken

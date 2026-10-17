@@ -15,7 +15,6 @@ namespace StackDuel.Application.Tests.Commands.Games.StartGame;
 public class StartGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IProblemSelectionStrategyResolver> _strategyResolver = null!;
     private Mock<IProblemSelectionStrategy> _strategy = null!;
@@ -26,7 +25,6 @@ public class StartGameHandlerTests
     public StartGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
         _unitOfWork = new Mock<IUnitOfWork>();
         _strategyResolver = new Mock<IProblemSelectionStrategyResolver>();
         _strategy = new Mock<IProblemSelectionStrategy>();
@@ -35,7 +33,6 @@ public class StartGameHandlerTests
 
         _handler = new StartGameHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
             _unitOfWork.Object,
             _strategyResolver.Object,
             _gameProblemSequencer.Object,
@@ -170,10 +167,7 @@ public class StartGameHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.NotFound, result.Status);
-        _unitOfWork.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -199,10 +193,7 @@ public class StartGameHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _unitOfWork.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

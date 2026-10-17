@@ -1,4 +1,3 @@
-using StackDuel.Domain.SeedWork;
 using Ardalis.Result;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -6,6 +5,7 @@ using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.SeedWork;
 using CompleteExpiredGameCommand = StackDuel.Application.Commands.Games.CompleteExpiredGame.CompleteExpiredGameCommand;
 using CompleteExpiredGameHandler = StackDuel.Application.Commands.Games.CompleteExpiredGame.CompleteExpiredGameHandler;
 using CompleteExpiredGameOutcome = StackDuel.Application.Commands.Games.CompleteExpiredGame.CompleteExpiredGameOutcome;
@@ -17,7 +17,6 @@ namespace StackDuel.Application.Tests.Commands.Games.CompleteExpiredGame;
 public class CompleteExpiredGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private CompleteExpiredGameHandler _handler = null!;
@@ -25,13 +24,11 @@ public class CompleteExpiredGameHandlerTests
     public CompleteExpiredGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
         _unitOfWork = new Mock<IUnitOfWork>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new CompleteExpiredGameHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
             _unitOfWork.Object,
             new CompleteExpiredGameValidator(),
             _domainEventDispatcher.Object,
@@ -102,10 +99,7 @@ public class CompleteExpiredGameHandlerTests
         Assert.Equal(CompleteExpiredGameOutcome.NotYetExpired_Rescheduled, result.Value.Outcome);
         Assert.NotNull(result.Value.RescheduleForUtc);
         Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Running, game.Status);
-        _unitOfWork.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -151,10 +145,7 @@ public class CompleteExpiredGameHandlerTests
         Result<CompleteExpiredGameResult> result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(CompleteExpiredGameOutcome.NotYetExpired_ImplausibleDelay_Dropped, result.Value.Outcome);
-        _unitOfWork.Verify(
-            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

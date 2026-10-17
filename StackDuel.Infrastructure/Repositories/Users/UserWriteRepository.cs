@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using StackDuel.Domain.Authorization.Rbac.Entities;
 using StackDuel.Domain.Authorization.Rbac.ValueObjects;
 using StackDuel.Domain.Users;
@@ -10,11 +12,50 @@ namespace StackDuel.Infrastructure.Repositories.Users;
 
 internal sealed class UserWriteRepository(StackDuelDbContext context) : IUserWriteRepository
 {
+    private const string InsertUserOnConflictDoNothing = """
+        INSERT INTO users (
+            id, sub, tenant, username, bio, image_url,
+            username_last_changed_at, created_at, setup_completed_at, is_private
+        )
+        VALUES (
+            @id, @sub, @tenant, @username, @bio, @image_url,
+            @username_last_changed_at, @created_at, @setup_completed_at, @is_private
+        )
+        ON CONFLICT (sub) DO NOTHING
+        """;
+
     public async Task AddAsync(User user, CancellationToken cancellationToken)
     {
         await context.Users.AddAsync(user, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<bool> TryAddBySubAsync(User user, CancellationToken cancellationToken = default)
+    {
+        NpgsqlParameter[] parameters =
+        [
+            new("id", NpgsqlDbType.Uuid) { Value = user.Id },
+            new("sub", NpgsqlDbType.Varchar) { Value = user.Sub },
+            new("tenant", NpgsqlDbType.Varchar) { Value = AsDbValue(user.Tenant) },
+            new("username", NpgsqlDbType.Varchar) { Value = user.Username.Value },
+            new("bio", NpgsqlDbType.Varchar) { Value = AsDbValue(user.Bio?.Value) },
+            new("image_url", NpgsqlDbType.Varchar) { Value = AsDbValue(user.ImageUrl?.Value) },
+            new("username_last_changed_at", NpgsqlDbType.TimestampTz) { Value = AsDbValue(user.UsernameLastChangedAt) },
+            new("created_at", NpgsqlDbType.TimestampTz) { Value = user.CreatedAt },
+            new("setup_completed_at", NpgsqlDbType.TimestampTz) { Value = AsDbValue(user.SetupCompletedAt) },
+            new("is_private", NpgsqlDbType.Boolean) { Value = user.IsPrivate },
+        ];
+
+        int rowsInserted = await context.Database.ExecuteSqlRawAsync(
+            InsertUserOnConflictDoNothing,
+            parameters,
+            cancellationToken
+        );
+
+        return rowsInserted == 1;
+    }
+
+    private static object AsDbValue<T>(T? value) => value is null ? DBNull.Value : value;
 
     public async Task AddToGroupAsync(Guid userId, string groupName, CancellationToken cancellationToken = default)
     {

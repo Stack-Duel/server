@@ -1133,14 +1133,6 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("CurrentRoundId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("current_round_id");
-
-                    b.Property<DateTime?>("CurrentRoundStartedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("current_round_started_at");
-
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("finished_at");
@@ -1152,6 +1144,10 @@ namespace StackDuel.Infrastructure.Migrations
                     b.Property<DateTime>("JoinedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
+
+                    b.Property<string>("ProblemSession")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("problem_session");
 
                     b.Property<int>("Score")
                         .ValueGeneratedOnAdd()
@@ -1181,21 +1177,16 @@ namespace StackDuel.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("CurrentRoundId", "game_id");
-
                     b.HasIndex("game_id", "SeatNo")
                         .IsUnique();
 
                     b.HasIndex("game_id", "UserId")
                         .IsUnique();
 
-                    b.ToTable("game_participants", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_game_participants_current_round_pair", "(current_round_id IS NULL) = (current_round_started_at IS NULL)");
-                        });
+                    b.ToTable("game_participants", (string)null);
                 });
 
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRound", b =>
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameProblem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1219,146 +1210,9 @@ namespace StackDuel.Infrastructure.Migrations
                     b.HasIndex("ProblemId");
 
                     b.HasIndex("game_id", "Position")
-                        .IsUnique()
-                        .HasDatabaseName("IX_game_rounds_game_id_position");
-
-                    b.HasIndex("game_id", "ProblemId")
                         .IsUnique();
 
-                    b.ToTable("game_rounds", (string)null);
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<int>("Outcome")
-                        .HasColumnType("integer")
-                        .HasColumnName("outcome");
-
-                    b.Property<Guid>("RoundId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("round_id");
-
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("started_at");
-
-                    b.Property<Guid>("game_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_id");
-
-                    b.Property<Guid>("participant_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("participant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoundId", "game_id");
-
-                    b.HasIndex("participant_id", "RoundId")
-                        .IsUnique();
-
-                    b.HasIndex("participant_id", "game_id");
-
-                    b.ToTable("game_round_results", (string)null);
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSolution", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("SubmissionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("submission_id");
-
-                    b.Property<int>("outcome")
-                        .HasColumnType("integer")
-                        .HasColumnName("outcome");
-
-                    b.Property<Guid>("round_result_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("round_result_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("round_result_id")
-                        .IsUnique();
-
-                    b.HasIndex("round_result_id", "outcome")
-                        .IsUnique();
-
-                    b.ToTable("game_round_solutions", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_game_round_solutions_outcome", "outcome = 0");
-                        });
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSubmission", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_id");
-
-                    b.Property<Guid>("ParticipantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("participant_id");
-
-                    b.Property<Guid>("ProblemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("problem_id");
-
-                    b.Property<Guid>("RoundId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("round_id");
-
-                    b.Property<Guid>("SetupId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("setup_id");
-
-                    b.Property<Guid>("SubmissionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("submission_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubmissionId")
-                        .IsUnique();
-
-                    b.HasIndex("SetupId", "ProblemId");
-
-                    b.HasIndex("ParticipantId", "GameId", "UserId");
-
-                    b.HasIndex("ParticipantId", "RoundId", "CreatedAt");
-
-                    b.HasIndex("RoundId", "ProblemId", "GameId");
-
-                    b.HasIndex("SubmissionId", "SetupId", "UserId");
-
-                    b.ToTable("game_round_submissions", (string)null);
+                    b.ToTable("game_problems", (string)null);
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameTrack", b =>
@@ -2933,15 +2787,9 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasForeignKey("game_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameRound", null)
-                        .WithMany()
-                        .HasForeignKey("CurrentRoundId", "game_id")
-                        .HasPrincipalKey("Id", "game_id")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRound", b =>
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameProblem", b =>
                 {
                     b.HasOne("StackDuel.Domain.Problems.Entities.Problem", null)
                         .WithMany()
@@ -2950,72 +2798,8 @@ namespace StackDuel.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("StackDuel.Domain.Games.Entities.Game", null)
-                        .WithMany("Rounds")
+                        .WithMany("ProblemSequence")
                         .HasForeignKey("game_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
-                {
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameParticipant", null)
-                        .WithMany("RoundResults")
-                        .HasForeignKey("participant_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameRound", null)
-                        .WithMany()
-                        .HasForeignKey("RoundId", "game_id")
-                        .HasPrincipalKey("Id", "game_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameParticipant", null)
-                        .WithMany()
-                        .HasForeignKey("participant_id", "game_id")
-                        .HasPrincipalKey("Id", "game_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSolution", b =>
-                {
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameRoundResult", null)
-                        .WithOne("Solution")
-                        .HasForeignKey("StackDuel.Domain.Games.Entities.GameRoundSolution", "round_result_id", "outcome")
-                        .HasPrincipalKey("StackDuel.Domain.Games.Entities.GameRoundResult", "Id", "Outcome")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSubmission", b =>
-                {
-                    b.HasOne("StackDuel.Domain.Problems.Entities.ProblemSetup", null)
-                        .WithMany()
-                        .HasForeignKey("SetupId", "ProblemId")
-                        .HasPrincipalKey("Id", "problem_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameParticipant", null)
-                        .WithMany()
-                        .HasForeignKey("ParticipantId", "GameId", "UserId")
-                        .HasPrincipalKey("Id", "game_id", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StackDuel.Domain.Games.Entities.GameRound", null)
-                        .WithMany()
-                        .HasForeignKey("RoundId", "ProblemId", "GameId")
-                        .HasPrincipalKey("Id", "ProblemId", "game_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StackDuel.Domain.Submissions.Entities.Submission", null)
-                        .WithMany()
-                        .HasForeignKey("SubmissionId", "SetupId", "UserId")
-                        .HasPrincipalKey("Id", "ProblemSetupId", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -3115,7 +2899,7 @@ namespace StackDuel.Infrastructure.Migrations
 
                             b1.HasKey("ProblemId");
 
-                            b1.ToTable("problems");
+                            b1.ToTable("problems", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProblemId");
@@ -3169,7 +2953,7 @@ namespace StackDuel.Infrastructure.Migrations
                             b1.HasIndex("Value")
                                 .IsUnique();
 
-                            b1.ToTable("problems");
+                            b1.ToTable("problems", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProblemId");
@@ -3188,7 +2972,7 @@ namespace StackDuel.Infrastructure.Migrations
 
                             b1.HasKey("ProblemId");
 
-                            b1.ToTable("problems");
+                            b1.ToTable("problems", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProblemId");
@@ -3516,7 +3300,7 @@ namespace StackDuel.Infrastructure.Migrations
                 {
                     b.Navigation("Participants");
 
-                    b.Navigation("Rounds");
+                    b.Navigation("ProblemSequence");
 
                     b.Navigation("Tracks");
                 });
@@ -3524,16 +3308,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameMode", b =>
                 {
                     b.Navigation("TimeOptions");
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameParticipant", b =>
-                {
-                    b.Navigation("RoundResults");
-                });
-
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
-                {
-                    b.Navigation("Solution");
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameTrack", b =>
