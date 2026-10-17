@@ -12,8 +12,8 @@ using StackDuel.Infrastructure.Persistence;
 namespace StackDuel.Infrastructure.Migrations
 {
     [DbContext(typeof(StackDuelDbContext))]
-    [Migration("20261017200557_AddGameRounds")]
-    partial class AddGameRounds
+    [Migration("20261017201452_DropRedundantGameRoundResultParticipantFk")]
+    partial class DropRedundantGameRoundResultParticipantFk
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
