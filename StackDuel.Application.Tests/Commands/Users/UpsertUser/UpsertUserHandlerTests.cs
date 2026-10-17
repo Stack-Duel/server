@@ -7,6 +7,7 @@ using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Domain.Users.Factories;
+using StackDuel.Domain.Users.ValueObjects;
 using UpsertUserCommand = StackDuel.Application.Commands.Users.UpsertUser.UpsertUserCommand;
 using UpsertUserHandler = StackDuel.Application.Commands.Users.UpsertUser.UpsertUserHandler;
 using UpsertUserValidator = StackDuel.Application.Commands.Users.UpsertUser.UpsertUserValidator;
@@ -20,7 +21,6 @@ public class UpsertUserHandlerTests
     private Mock<IUserWriteRepository> _userRepository = null!;
     private Mock<IUsernameGeneratorService> _usernameGenerator = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
-    private UserContext _userContext = null!;
     private UpsertUserHandler _handler = null!;
 
     public UpsertUserHandlerTests()
@@ -28,20 +28,51 @@ public class UpsertUserHandlerTests
         _userRepository = new Mock<IUserWriteRepository>();
         _usernameGenerator = new Mock<IUsernameGeneratorService>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
-        _userContext = new UserContext();
+
+        _userRepository
+            .Setup(x => x.TryAddBySubAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         _handler = new UpsertUserHandler(
             new UpsertUserValidator(),
             new UserFactory(),
             _usernameGenerator.Object,
             _userRepository.Object,
-            _domainEventDispatcher.Object,
-            _userContext
+            _domainEventDispatcher.Object
         );
     }
 
-    private static UserDto ToDto(User user) =>
-        new(user.Id, user.Sub, user.Username.Value, null, null, false, null, user.CreatedAt, null, []);
+    [Fact]
+    public async Task Handle_SubAlreadyExists_UpdatesInsteadOfInserting()
+    {
+        var existingUser = new UserFactory().Create(new CreateUserParams("bob", ValidSub, null));
+        _userRepository
+            .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingUser);
+
+        var command = new UpsertUserCommand(ValidSub, "alice", null, null);
+        Result result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        _userRepository.Verify(x => x.TryAddBySubAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _userRepository.Verify(x => x.UpdateAsync(existingUser, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_RequestedUsernameBelongsToAnotherUser_ReturnsInvalid()
+    {
+        var otherUser = new UserFactory().Create(new CreateUserParams("alice", "sub_other", null));
+        _userRepository.Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        _userRepository
+            .Setup(x => x.FindByUsername(It.IsAny<Username>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(otherUser);
+
+        var command = new UpsertUserCommand(ValidSub, "alice", null, null);
+        Result result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        _userRepository.Verify(x => x.TryAddBySubAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     [Fact]
     public async Task Handle_NewUser_NoUsernameProvided_GeneratesUsername()
@@ -54,7 +85,11 @@ public class UpsertUserHandlerTests
 
         Assert.True(result.IsSuccess);
         _userRepository.Verify(
-            x => x.AddAsync(It.Is<User>(u => u.Username.Value == "generated_name42"), It.IsAny<CancellationToken>()),
+            x =>
+                x.TryAddBySubAsync(
+                    It.Is<User>(u => u.Username.Value == "generated_name42"),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
     }
@@ -67,9 +102,9 @@ public class UpsertUserHandlerTests
 
         User? createdUser = null;
         _userRepository
-            .Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.TryAddBySubAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
             .Callback<User, CancellationToken>((u, _) => createdUser = u)
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         await _handler.Handle(command, CancellationToken.None);
@@ -84,9 +119,9 @@ public class UpsertUserHandlerTests
 
         User? createdUser = null;
         _userRepository
-            .Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.TryAddBySubAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
             .Callback<User, CancellationToken>((u, _) => createdUser = u)
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         var command = new UpsertUserCommand(ValidSub, "alice", null, null);
         await _handler.Handle(command, CancellationToken.None);
@@ -130,9 +165,9 @@ public class UpsertUserHandlerTests
 
         User? createdUser = null;
         _userRepository
-            .Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.TryAddBySubAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
             .Callback<User, CancellationToken>((u, _) => createdUser = u)
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         var command = new UpsertUserCommand(ValidSub, "alice", null, null, Tenant: "stackduel");
         await _handler.Handle(command, CancellationToken.None);
@@ -147,7 +182,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, "alice", null, null, Tenant: "some-other-tenant");
         await _handler.Handle(command, CancellationToken.None);
@@ -162,7 +196,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, "alice", null, null);
         Result result = await _handler.Handle(command, CancellationToken.None);
@@ -180,7 +213,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, "dave", null, null);
         Result result = await _handler.Handle(command, CancellationToken.None);
@@ -196,7 +228,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(
             ValidSub,
@@ -219,7 +250,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         await _handler.Handle(command, CancellationToken.None);
@@ -235,7 +265,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, null, null, "");
         await _handler.Handle(command, CancellationToken.None);
@@ -252,7 +281,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, null, null, null);
         await _handler.Handle(command, CancellationToken.None);
@@ -269,7 +297,6 @@ public class UpsertUserHandlerTests
         _userRepository
             .Setup(x => x.FindBySubAsync(ValidSub, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
-        _userContext.User = ToDto(existingUser);
 
         var command = new UpsertUserCommand(ValidSub, null, "https://example.com/other.png", null);
         await _handler.Handle(command, CancellationToken.None);

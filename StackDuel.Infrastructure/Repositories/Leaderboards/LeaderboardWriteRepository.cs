@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Infrastructure.Persistence;
@@ -28,23 +27,4 @@ internal sealed class LeaderboardWriteRepository(StackDuelDbContext context) : I
             );
     }
 
-    public async Task SaveChangesAsync(Leaderboard entity, CancellationToken cancellationToken = default)
-    {
-        // See GameWriteRepository.SaveChangesAsync — LeaderboardParticipant.Id is likewise
-        // assigned client-side, so a newly appended participant on an already-tracked
-        // Leaderboard is indistinguishable from an existing one to EF's change detection
-        // unless we force it to Added explicitly.
-        context.ChangeTracker.AutoDetectChangesEnabled = false;
-        foreach (LeaderboardParticipant participant in entity.Participants)
-        {
-            EntityEntry<LeaderboardParticipant> entry = context.Entry(participant);
-            if (entry.State == EntityState.Detached)
-            {
-                entry.State = EntityState.Added;
-            }
-        }
-        context.ChangeTracker.AutoDetectChangesEnabled = true;
-
-        await context.SaveChangesAsync(cancellationToken);
-    }
 }

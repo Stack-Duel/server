@@ -34,10 +34,10 @@ internal sealed partial class DailyChallengeAssignmentService(
             return;
         }
 
-        List<Guid> orderedProblemIds = [.. await problemReadRepository.GetOrderedEligibleProblemIdsAsync(
-            pool.Id,
-            cancellationToken
-        )];
+        List<Guid> orderedProblemIds =
+        [
+            .. await problemReadRepository.GetOrderedEligibleProblemIdsAsync(pool.Id, cancellationToken),
+        ];
         if (orderedProblemIds.Count == 0)
         {
             LogPoolEmpty();

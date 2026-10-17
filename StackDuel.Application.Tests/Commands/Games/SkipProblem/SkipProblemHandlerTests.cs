@@ -4,6 +4,8 @@ using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 using SkipProblemCommand = StackDuel.Application.Commands.Games.SkipProblem.SkipProblemCommand;
 using SkipProblemHandler = StackDuel.Application.Commands.Games.SkipProblem.SkipProblemHandler;
 using SkipProblemResultDto = StackDuel.Application.Commands.Games.SkipProblem.SkipProblemResultDto;
@@ -14,7 +16,7 @@ namespace StackDuel.Application.Tests.Commands.Games.SkipProblem;
 public class SkipProblemHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IGameExpiryCanceller> _gameExpiryCanceller = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private Mock<IProblemSelectionStrategyResolver> _strategyResolver = null!;
@@ -25,7 +27,7 @@ public class SkipProblemHandlerTests
     public SkipProblemHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _gameExpiryCanceller = new Mock<IGameExpiryCanceller>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
         _strategyResolver = new Mock<IProblemSelectionStrategyResolver>();
@@ -42,7 +44,7 @@ public class SkipProblemHandlerTests
 
         _handler = new SkipProblemHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _domainEventDispatcher.Object,
             gameProblemAdvancer,
             new SkipProblemValidator()
@@ -51,6 +53,12 @@ public class SkipProblemHandlerTests
 
     private static GameMode CreateGameMode(string key = "solo_rush") =>
         new(key, "Solo Rush", "Solo rush mode", true, 1, 1, Guid.NewGuid());
+
+    private static void StartParticipantOnProblem(Game game, Guid userId, Guid problemId)
+    {
+        game.AppendRound(problemId);
+        game.StartRoundFor(userId, problemId);
+    }
 
     [Fact]
     public async Task Handle_InvalidCommand_ReturnsInvalid()
@@ -109,7 +117,7 @@ public class SkipProblemHandlerTests
         game.Start();
         var participant = game.Participants.First(p => p.UserId == userId);
         var problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
+        StartParticipantOnProblem(game, userId, problemId);
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
 
         var command = new SkipProblemCommand(game.Id, problemId, userId);
@@ -135,7 +143,7 @@ public class SkipProblemHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ProblemSessionNotInitialized_ReturnsInvalid()
+    public async Task Handle_RoundNotStarted_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
@@ -154,8 +162,7 @@ public class SkipProblemHandlerTests
         var userId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
         game.Start();
-        var participant = game.Participants.First(p => p.UserId == userId);
-        participant.InitializeProblemSession(Guid.NewGuid());
+        StartParticipantOnProblem(game, userId, Guid.NewGuid());
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
 
         var command = new SkipProblemCommand(game.Id, Guid.NewGuid(), userId);
@@ -172,7 +179,7 @@ public class SkipProblemHandlerTests
         game.Start();
         var participant = game.Participants.First(p => p.UserId == userId);
         var problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
+        StartParticipantOnProblem(game, userId, problemId);
         for (int i = 0; i < GameParticipant.TotalSkips; i++)
             participant.UseSkip();
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
@@ -191,7 +198,7 @@ public class SkipProblemHandlerTests
         game.Start();
         var participant = game.Participants.First(p => p.UserId == userId);
         var problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
+        StartParticipantOnProblem(game, userId, problemId);
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _gameReadRepository
             .Setup(x => x.FindGameModeByIdAsync(game.GameModeId, It.IsAny<CancellationToken>()))
@@ -211,8 +218,9 @@ public class SkipProblemHandlerTests
         game.Start();
         var participant = game.Participants.First(p => p.UserId == userId);
         var problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
+        StartParticipantOnProblem(game, userId, problemId);
         var nextProblemId = Guid.NewGuid();
+        game.AppendRound(nextProblemId);
         var gameMode = CreateGameMode();
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
@@ -237,14 +245,18 @@ public class SkipProblemHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(nextProblemId, result.Value.NextProblemId);
         Assert.Equal(GameParticipant.TotalSkips - 1, result.Value.SkipsRemaining);
-        Assert.Equal(nextProblemId, participant.ProblemSession!.CurrentProblemId);
-        Assert.Contains(problemId, participant.ProblemSession.SkippedProblemIds);
+        Assert.Equal(nextProblemId, game.CurrentProblemIdFor(userId));
+        Guid skippedRoundId = game.Rounds.First(r => r.ProblemId == problemId).Id;
+        Assert.Contains(
+            participant.RoundResults,
+            result => result.RoundId == skippedRoundId && result.Outcome == GameRoundOutcome.Skipped
+        );
         Assert.Equal(0, participant.Score);
         _gameExpiryCanceller.Verify(
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -253,10 +265,12 @@ public class SkipProblemHandlerTests
         var userId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
         game.Start();
-        var participant = game.Participants.First(p => p.UserId == userId);
-        participant.InitializeProblemSession(Guid.NewGuid());
-        participant.SkipToProblem(Guid.NewGuid());
-        var problemId = participant.ProblemSession!.CurrentProblemId;
+        var firstProblemId = Guid.NewGuid();
+        StartParticipantOnProblem(game, userId, firstProblemId);
+        var secondProblemId = Guid.NewGuid();
+        game.AppendRound(secondProblemId);
+        game.SkipCurrentRoundAndAdvance(userId, secondProblemId);
+        var problemId = game.CurrentProblemIdFor(userId)!.Value;
         var gameMode = CreateGameMode();
         int? capturedPosition = null;
 
@@ -277,13 +291,16 @@ public class SkipProblemHandlerTests
             .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
                 (_, position, _, _, _) => capturedPosition = position
             )
-            .ReturnsAsync(Guid.NewGuid());
+            .ReturnsAsync(() =>
+            {
+                Guid next = Guid.NewGuid();
+                game.AppendRound(next);
+                return next;
+            });
 
         var command = new SkipProblemCommand(game.Id, problemId, userId);
         await _handler.Handle(command, CancellationToken.None);
 
-        // Two problems already seen (the initial one, then the one skipped to) — the third slot
-        // is position 2.
         Assert.Equal(2, capturedPosition);
     }
 
@@ -295,7 +312,7 @@ public class SkipProblemHandlerTests
         game.Start();
         var participant = game.Participants.First(p => p.UserId == userId);
         var problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
+        StartParticipantOnProblem(game, userId, problemId);
         var gameMode = CreateGameMode();
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
@@ -321,6 +338,12 @@ public class SkipProblemHandlerTests
         Assert.Null(result.Value.NextProblemId);
         Assert.Equal(GameParticipant.TotalSkips - 1, result.Value.SkipsRemaining);
         Assert.True(participant.HasFinishedProblems);
+        Assert.Null(participant.CurrentRoundId);
+
+        GameRoundResult finalRound = participant.RoundResults.Single();
+        Assert.Equal(GameRoundOutcome.Skipped, finalRound.Outcome);
+        Assert.Null(finalRound.SolvingSubmissionId);
+
         _gameExpiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -337,7 +360,9 @@ public class SkipProblemHandlerTests
         {
             var g = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
             g.Start();
-            g.Participants.First(p => p.UserId == userId).InitializeProblemSession(problemId);
+            g.AppendRound(problemId);
+            g.StartRoundFor(userId, problemId);
+            g.AppendRound(winningProblemId);
             return g;
         }
 
@@ -359,8 +384,8 @@ public class SkipProblemHandlerTests
                 )
             )
             .ReturnsAsync(winningProblemId);
-        _gameWriteRepository
-            .SetupSequence(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
+        _unitOfWork
+            .SetupSequence(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new GameProblemPositionConflictException(gameId, new InvalidOperationException("conflict")))
             .Returns(Task.CompletedTask);
 
@@ -373,10 +398,7 @@ public class SkipProblemHandlerTests
             x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2)
         );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -391,7 +413,8 @@ public class SkipProblemHandlerTests
         {
             var g = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
             g.Start();
-            g.Participants.First(p => p.UserId == userId).InitializeProblemSession(problemId);
+            g.AppendRound(problemId);
+            g.StartRoundFor(userId, problemId);
             return g;
         }
 
@@ -402,6 +425,7 @@ public class SkipProblemHandlerTests
         _gameReadRepository
             .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
+        var generatedProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(
@@ -412,9 +436,12 @@ public class SkipProblemHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(Guid.NewGuid());
-        _gameWriteRepository
-            .Setup(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(generatedProblemId)
+            )
+            .ReturnsAsync(generatedProblemId);
+        _unitOfWork
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new GameProblemPositionConflictException(gameId, new InvalidOperationException("conflict")));
 
         var command = new SkipProblemCommand(gameId, problemId, userId);
@@ -422,9 +449,6 @@ public class SkipProblemHandlerTests
         await Assert.ThrowsAsync<GameProblemPositionConflictException>(() =>
             _handler.Handle(command, CancellationToken.None)
         );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

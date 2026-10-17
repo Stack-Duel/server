@@ -1,0 +1,256 @@
+using Ardalis.Result;
+using Moq;
+using StackDuel.Application.Events;
+using StackDuel.Application.Submissions;
+using StackDuel.Application.Submissions.Dtos;
+using StackDuel.Domain.ExecutionPipelines;
+using StackDuel.Domain.ExecutionPipelines.Enums;
+using StackDuel.Domain.SeedWork;
+using StackDuel.Domain.SubmissionJobs;
+using StackDuel.Domain.Submissions;
+using StackDuel.Domain.Submissions.Entities;
+using StackDuel.Domain.Submissions.Enums;
+using StackDuel.Domain.Submissions.Factories;
+using StackDuel.Domain.TestSuites;
+
+namespace StackDuel.Application.Tests.Submissions;
+
+public class SubmissionCreatorTests
+{
+    private const int OfficialGradingCaseCount = 20;
+
+    private Mock<ISubmissionWriteRepository> _submissionRepository = null!;
+    private Mock<ISubmissionJobRepository> _submissionJobRepository = null!;
+    private Mock<IExecutionPipelineRepository> _pipelineRepository = null!;
+    private Mock<ITestSuiteWriteRepository> _testSuiteRepository = null!;
+    private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
+    private SubmissionCreator _creator = null!;
+
+    public SubmissionCreatorTests()
+    {
+        _submissionRepository = new Mock<ISubmissionWriteRepository>();
+        _submissionJobRepository = new Mock<ISubmissionJobRepository>();
+        _pipelineRepository = new Mock<IExecutionPipelineRepository>();
+        _testSuiteRepository = new Mock<ITestSuiteWriteRepository>();
+        _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
+
+        _creator = new SubmissionCreator(
+            new SubmissionFactory(),
+            _submissionRepository.Object,
+            _submissionJobRepository.Object,
+            _pipelineRepository.Object,
+            _testSuiteRepository.Object,
+            _domainEventDispatcher.Object
+        );
+    }
+
+    private static SubmissionCreationRequest ValidRequest(
+        SubmissionType type = SubmissionType.Run,
+        IReadOnlyCollection<CreateSubmissionCustomTestCaseDto>? customTestCases = null,
+        Guid? gameId = null
+    ) => new(Guid.NewGuid(), type, "return 42;", Guid.NewGuid(), customTestCases, GameId: gameId);
+
+    private static ExecutionPipeline CreatePipelineWithStep()
+    {
+        var pipeline = new ExecutionPipeline("default");
+        pipeline.AddStep(ExecutionPipelineStepType.Judge0Execute, 1, 3, 10, false, "execute");
+        return pipeline;
+    }
+
+    private void SetUpRunTypeTestCases(params Guid[] publicCaseIds)
+    {
+        _testSuiteRepository
+            .Setup(x => x.FindPublicTestCaseIdsByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(publicCaseIds);
+        _testSuiteRepository
+            .Setup(x =>
+                x.CreateAdHocTestCasesAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<IReadOnlyCollection<IReadOnlyCollection<string>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([]);
+    }
+
+    private void SetUpPipeline(Guid pipelineId, ExecutionPipeline pipeline)
+    {
+        _testSuiteRepository
+            .Setup(x => x.FindPipelineIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pipelineId);
+        _pipelineRepository
+            .Setup(x => x.FindByIdWithStepsAsync(pipelineId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pipeline);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RunType_Success_ReturnsSubmissionIdAndPersists()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        var pipeline = CreatePipelineWithStep();
+        SetUpPipeline(Guid.NewGuid(), pipeline);
+
+        Result<Guid> result = await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotEqual(Guid.Empty, result.Value);
+        _submissionRepository.Verify(
+            x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        _submissionJobRepository.Verify(
+            x =>
+                x.AddAsync(
+                    It.Is<SubmissionJob>(j =>
+                        j.PipelineId == pipeline.Id && j.CurrentStepId == pipeline.FirstStep()!.Id
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        _domainEventDispatcher.Verify(
+            x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithGameId_PersistsSubmissionWithGameId()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        SetUpPipeline(Guid.NewGuid(), CreatePipelineWithStep());
+        var gameId = Guid.NewGuid();
+
+        await _creator.CreateAsync(ValidRequest(gameId: gameId), CancellationToken.None);
+
+        _submissionRepository.Verify(
+            x => x.AddAsync(It.Is<Submission>(s => s.GameId == gameId), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_RunType_PassesCustomTestCaseInputsToRepository()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        SetUpPipeline(Guid.NewGuid(), CreatePipelineWithStep());
+
+        var customTestCases = new List<CreateSubmissionCustomTestCaseDto> { new(["1", "2"]) };
+
+        await _creator.CreateAsync(ValidRequest(customTestCases: customTestCases), CancellationToken.None);
+
+        _testSuiteRepository.Verify(
+            x =>
+                x.CreateAdHocTestCasesAsync(
+                    It.IsAny<Guid>(),
+                    It.Is<IReadOnlyCollection<IReadOnlyCollection<string>>>(cases =>
+                        cases.Count == 1 && cases.First().SequenceEqual(new[] { "1", "2" })
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_SubmitType_UsesGradingTestCaseIdsAndSkipsRunTypeLookups()
+    {
+        _testSuiteRepository
+            .Setup(x =>
+                x.FindGradingTestCaseIdsByProblemSetupIdAsync(
+                    It.IsAny<Guid>(),
+                    OfficialGradingCaseCount,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([Guid.NewGuid()]);
+        SetUpPipeline(Guid.NewGuid(), CreatePipelineWithStep());
+
+        Result<Guid> result = await _creator.CreateAsync(
+            ValidRequest(type: SubmissionType.Submit),
+            CancellationToken.None
+        );
+
+        Assert.True(result.IsSuccess);
+        _testSuiteRepository.Verify(
+            x => x.FindPublicTestCaseIdsByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        _testSuiteRepository.Verify(
+            x =>
+                x.CreateAdHocTestCasesAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<IReadOnlyCollection<IReadOnlyCollection<string>>>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_NoTestCasesAvailable_ReturnsErrorAndDoesNotLookUpPipeline()
+    {
+        SetUpRunTypeTestCases();
+
+        Result<Guid> result = await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        Assert.Equal(ResultStatus.Error, result.Status);
+        _testSuiteRepository.Verify(
+            x => x.FindPipelineIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        _submissionRepository.Verify(
+            x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_PipelineIdNotFound_ReturnsNotFound()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        _testSuiteRepository
+            .Setup(x => x.FindPipelineIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid?)null);
+
+        Result<Guid> result = await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+        _submissionRepository.Verify(
+            x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_PipelineNotFound_ReturnsNotFound()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        var pipelineId = Guid.NewGuid();
+        _testSuiteRepository
+            .Setup(x => x.FindPipelineIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pipelineId);
+        _pipelineRepository
+            .Setup(x => x.FindByIdWithStepsAsync(pipelineId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ExecutionPipeline?)null);
+
+        Result<Guid> result = await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+    }
+
+    [Fact]
+    public async Task CreateAsync_PipelineHasNoSteps_ReturnsError()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        SetUpPipeline(Guid.NewGuid(), new ExecutionPipeline("empty"));
+
+        Result<Guid> result = await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        Assert.Equal(ResultStatus.Error, result.Status);
+        _submissionRepository.Verify(
+            x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+}

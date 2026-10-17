@@ -4,6 +4,7 @@ using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Events;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Events.Games;
 
@@ -16,6 +17,7 @@ namespace StackDuel.Application.Events.Games;
 internal sealed partial class RecordLeaderboardScoresOnGameCompletedHandler(
     IGameReadRepository gameReadRepository,
     ILeaderboardWriteRepository leaderboardWriteRepository,
+    IUnitOfWork unitOfWork,
     ILogger<RecordLeaderboardScoresOnGameCompletedHandler> logger
 ) : INotificationHandler<DomainEventNotification<GameCompletedDomainEvent>>
 {
@@ -51,7 +53,7 @@ internal sealed partial class RecordLeaderboardScoresOnGameCompletedHandler(
             foreach (GameParticipant participant in game.Participants)
                 leaderboard.RecordScore(participant.UserId, participant.Score);
 
-            await leaderboardWriteRepository.SaveChangesAsync(leaderboard, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {

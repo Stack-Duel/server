@@ -154,7 +154,12 @@ internal sealed partial class Judge0ExecutionStepHandler(
         return new StepHandlerResult(Succeeded: true, ResponsePayload: JsonSerializer.Serialize(payload));
     }
 
-    private sealed record BatchExecutionContext(Problem Problem, ProblemSetup Setup, string LanguageName, int Judge0LanguageId);
+    private sealed record BatchExecutionContext(
+        Problem Problem,
+        ProblemSetup Setup,
+        string LanguageName,
+        int Judge0LanguageId
+    );
 
     private (IReadOnlyList<BatchTestCase>? Cases, string? Error) BuildBatchCases(
         IReadOnlyList<TestCase> testCases,
@@ -185,7 +190,10 @@ internal sealed partial class Judge0ExecutionStepHandler(
             IReadOnlyList<CodeTemplateInput> inputs =
                 testCase.Source == TestCaseSource.Generated
                     ? testCaseGenerator
-                        .GenerateInputs(generationSpecs[testCase.GenerationSpecId!.Value], testCase.GenerationCaseIndex!.Value)
+                        .GenerateInputs(
+                            generationSpecs[testCase.GenerationSpecId!.Value],
+                            testCase.GenerationCaseIndex!.Value
+                        )
                         .Select(v => new CodeTemplateInput(v.Value, v.ValueType))
                         .ToList()
                     : testCase.Inputs.Select(i => new CodeTemplateInput(i.Value, i.ValueType)).ToList();
@@ -207,9 +215,10 @@ internal sealed partial class Judge0ExecutionStepHandler(
 
     private async Task<AssertStepConfiguration?> FindAssertConfigurationAsync(Guid pipelineId, CancellationToken ct)
     {
-        Guid? evaluateStepId = await db
-            .Set<ExecutionPipelineStep>()
-            .Where(s => EF.Property<Guid>(s, "pipeline_id") == pipelineId && s.StepType == ExecutionPipelineStepType.Evaluate)
+        Guid? evaluateStepId = await db.Set<ExecutionPipelineStep>()
+            .Where(s =>
+                EF.Property<Guid>(s, "pipeline_id") == pipelineId && s.StepType == ExecutionPipelineStepType.Evaluate
+            )
             .Select(s => (Guid?)s.Id)
             .FirstOrDefaultAsync(ct);
 

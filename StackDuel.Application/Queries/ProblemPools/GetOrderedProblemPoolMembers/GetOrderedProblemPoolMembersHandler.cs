@@ -23,8 +23,8 @@ internal sealed class GetOrderedProblemPoolMembersHandler(
         var rows = await problemReadRepository.FindByIdsAsync(orderedIds, cancellationToken);
         Dictionary<Guid, AdminProblemListRowDto> rowsById = rows.ToDictionary(row => row.Id);
 
-        return Result.Success<IReadOnlyList<AdminProblemListRowDto>>(
-            [.. orderedIds.Where(rowsById.ContainsKey).Select(id => rowsById[id])]
-        );
+        return Result.Success<IReadOnlyList<AdminProblemListRowDto>>([
+            .. orderedIds.Where(rowsById.ContainsKey).Select(id => rowsById[id]),
+        ]);
     }
 }

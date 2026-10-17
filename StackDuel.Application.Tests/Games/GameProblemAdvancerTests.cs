@@ -29,8 +29,10 @@ public class GameProblemAdvancerTests
         Guid userId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
         game.Start();
+        var problemId = Guid.NewGuid();
+        game.AppendRound(problemId);
+        game.StartRoundFor(userId, problemId);
         participant = game.Participants.First(p => p.UserId == userId);
-        participant.InitializeProblemSession(Guid.NewGuid());
         return game;
     }
 
@@ -126,8 +128,6 @@ public class GameProblemAdvancerTests
             CancellationToken.None
         );
 
-        // Mirrors SkipProblemHandler's original ordering: UseSkip() ran before FinishProblemsFor,
-        // so a skip is always consumed even when the finish was caused by pool exhaustion.
         Assert.False(participantAlreadyFinishedWhenOnFinishRan);
     }
 

@@ -4,12 +4,13 @@ using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.Games.SkipProblem;
 
 internal sealed class SkipProblemHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,
     IValidator<SkipProblemCommand> validator
@@ -20,11 +21,6 @@ internal sealed class SkipProblemHandler(
         CancellationToken cancellationToken
     )
     {
-        // Retried once: GetOrGenerateProblemAsync (via gameProblemAdvancer) can race another
-        // participant who's also first to reach this position (see GameProblemConfiguration's
-        // (game_id, position) unique index). The loser gets GameProblemPositionConflictException
-        // out of SaveChangesAsync — re-fetching from scratch picks up the winner's already-persisted
-        // problem via Game.ProblemIdAtPosition instead of generating a conflicting second one.
         int saveAttempt = 0;
         while (true)
         {
@@ -39,11 +35,9 @@ internal sealed class SkipProblemHandler(
                 DateTime.UtcNow
             );
 
-            // The expiry check inside EvaluateProblemAttempt may have just completed the game —
-            // that must be persisted regardless of whether this request itself goes on to succeed.
             if (attempt.GameJustExpired)
             {
-                await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
                 await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
             }
 
@@ -66,18 +60,27 @@ internal sealed class SkipProblemHandler(
             if (gameMode is null)
                 return Result<SkipProblemResultDto>.NotFound("Game references a mode that no longer exists.");
 
-            Guid? nextProblemId = await gameProblemAdvancer.AdvanceAsync(
-                game,
-                participant,
-                gameMode.Key,
-                onAdvance: participant.SkipToProblem,
-                onFinish: participant.UseSkip,
-                cancellationToken
-            );
+            Guid? nextProblemId;
+            try
+            {
+                nextProblemId = await gameProblemAdvancer.AdvanceAsync(
+                    game,
+                    participant,
+                    gameMode.Key,
+                    onAdvance: nextProblemId =>
+                        game.SkipCurrentRoundAndAdvance(request.RequestedByUserId, nextProblemId),
+                    onFinish: () => game.SkipCurrentRound(request.RequestedByUserId),
+                    cancellationToken
+                );
+            }
+            catch (DuplicateGameProblemException)
+            {
+                return Result<SkipProblemResultDto>.Error("Failed to advance to the next problem.");
+            }
 
             try
             {
-                await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
             }
             catch (GameProblemPositionConflictException) when (saveAttempt == 0)
             {
