@@ -87,12 +87,11 @@ internal sealed class TestCaseGenerationService(
         // only looks at whether a spec is attached, not whether generation actually finished.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        int previousVersion = await db
-            .Set<TestCaseGenerationSpec>()
-            .Where(s => s.ProblemSetupId == request.ProblemSetupId)
-            .Select(s => s.Version)
-            .DefaultIfEmpty(0)
-            .MaxAsync(cancellationToken);
+        int previousVersion =
+            await db
+                .Set<TestCaseGenerationSpec>()
+                .Where(s => s.ProblemSetupId == request.ProblemSetupId)
+                .MaxAsync(s => (int?)s.Version, cancellationToken) ?? 0;
 
         var spec = new TestCaseGenerationSpec(
             request.ProblemSetupId,
