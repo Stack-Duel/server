@@ -40,7 +40,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Achievements.Entities.AchievementDefinition", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -116,7 +115,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Achievements.Entities.UserAchievement", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -145,7 +143,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Achievements.Entities.UserAchievementStatLanguage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -170,7 +167,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Achievements.Entities.UserAchievementStats", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -429,7 +425,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.Campaign", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -487,7 +482,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.CampaignEnrollment", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -524,7 +518,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.CampaignModule", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -561,7 +554,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.CampaignPrerequisite", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -589,7 +581,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.CampaignUnit", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -634,7 +625,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.UnitCompletion", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -663,7 +653,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Campaigns.Entities.UnitProblem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -695,7 +684,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.DailyChallenges.Entities.DailyChallenge", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -720,7 +708,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.ExecutionAssets.Entities.AdditionalFileBundle", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -750,7 +737,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.ExecutionPipelines.Entities.ExecutionPipelineStep", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -794,7 +780,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.ExecutionPipelines.ExecutionPipeline", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -910,7 +895,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Feedback.Entities.FeedbackSubmission", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -977,7 +961,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.Game", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1043,7 +1026,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameMode", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1102,7 +1084,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameModeTimeOption", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1129,9 +1110,16 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameParticipant", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("CurrentRoundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("current_round_id");
+
+                    b.Property<DateTime?>("CurrentRoundStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_round_started_at");
 
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1141,13 +1129,13 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("forfeited_at");
 
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
                     b.Property<DateTime>("JoinedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
-
-                    b.Property<string>("ProblemSession")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("problem_session");
 
                     b.Property<int>("Score")
                         .ValueGeneratedOnAdd()
@@ -1169,29 +1157,33 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<Guid>("game_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("game_id", "SeatNo")
+                    b.HasIndex("CurrentRoundId", "GameId");
+
+                    b.HasIndex("GameId", "SeatNo")
                         .IsUnique();
 
-                    b.HasIndex("game_id", "UserId")
+                    b.HasIndex("GameId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("game_participants", (string)null);
+                    b.ToTable("game_participants", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_game_participants_current_round_pair", "(current_round_id IS NULL) = (current_round_started_at IS NULL)");
+                        });
                 });
 
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameProblem", b =>
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRound", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
 
                     b.Property<int>("Position")
                         .HasColumnType("integer")
@@ -1201,24 +1193,153 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("problem_id");
 
-                    b.Property<Guid>("game_id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProblemId");
 
-                    b.HasIndex("game_id", "Position")
+                    b.HasIndex("GameId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("IX_game_rounds_game_id_position");
+
+                    b.HasIndex("GameId", "ProblemId")
                         .IsUnique();
 
-                    b.ToTable("game_problems", (string)null);
+                    b.ToTable("game_rounds", (string)null);
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("integer")
+                        .HasColumnName("outcome");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("round_id");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<Guid>("game_id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
+                    b.Property<Guid>("participant_id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("participant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoundId", "game_id");
+
+                    b.HasIndex("participant_id", "RoundId")
+                        .IsUnique();
+
+                    b.HasIndex("participant_id", "game_id");
+
+                    b.ToTable("game_round_results", (string)null);
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSolution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submission_id");
+
+                    b.Property<int>("outcome")
+                        .HasColumnType("integer")
+                        .HasColumnName("outcome");
+
+                    b.Property<Guid>("round_result_id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("round_result_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("round_result_id")
+                        .IsUnique();
+
+                    b.HasIndex("round_result_id", "outcome")
+                        .IsUnique();
+
+                    b.ToTable("game_round_solutions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_game_round_solutions_outcome", "outcome = 0");
+                        });
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
+                    b.Property<Guid>("ParticipantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("participant_id");
+
+                    b.Property<Guid>("ProblemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("problem_id");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("round_id");
+
+                    b.Property<Guid>("SetupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("setup_id");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submission_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId")
+                        .IsUnique();
+
+                    b.HasIndex("SetupId", "ProblemId");
+
+                    b.HasIndex("ParticipantId", "GameId", "UserId");
+
+                    b.HasIndex("ParticipantId", "RoundId", "CreatedAt");
+
+                    b.HasIndex("RoundId", "ProblemId", "GameId");
+
+                    b.HasIndex("SubmissionId", "SetupId", "UserId");
+
+                    b.ToTable("game_round_submissions", (string)null);
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameTrack", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1243,7 +1364,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameTrackLanguage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1268,7 +1388,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.Leaderboard", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1291,7 +1410,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.LeaderboardParticipant", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1322,7 +1440,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Languages.Entities.Language", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1356,7 +1473,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Languages.Entities.LanguageVersionEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1394,7 +1510,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationJob", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1441,7 +1556,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.Problem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1492,7 +1606,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemHistory", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1538,7 +1651,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemPool", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1573,7 +1685,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemPoolItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1608,7 +1719,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemReaction", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1656,7 +1766,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemReactionType", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1700,7 +1809,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemSetup", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1761,7 +1869,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemTag", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1782,7 +1889,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Problems.RequiredLanguages.Entities.RequiredProblemLanguage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1809,7 +1915,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.SubmissionJobs.Entities.SubmissionJobAttempt", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1865,7 +1970,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.SubmissionJobs.SubmissionJob", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1918,7 +2022,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Submissions.Entities.Submission", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1971,7 +2074,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Submissions.Entities.SubmissionResult", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2033,7 +2135,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.TestCaseGeneration.Entities.TestCaseGenerationJob", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2099,7 +2200,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.TestCaseGeneration.Entities.TestCaseGenerationSpec", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2142,7 +2242,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.TestSuites.Entities.TestCase", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2190,7 +2289,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.TestSuites.Entities.TestCaseExpectedOutput", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2219,7 +2317,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.TestSuites.Entities.TestCaseInput", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2252,7 +2349,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.TestSuites.Entities.TestSuite", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2278,7 +2374,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Tracks.Entities.Track", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2313,7 +2408,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Users.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2374,7 +2468,6 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Users.Entities.UserAvatar", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -2776,30 +2869,94 @@ namespace StackDuel.Infrastructure.Migrations
 
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameParticipant", b =>
                 {
+                    b.HasOne("StackDuel.Domain.Games.Entities.Game", null)
+                        .WithMany("Participants")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("StackDuel.Domain.Users.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("StackDuel.Domain.Games.Entities.Game", null)
-                        .WithMany("Participants")
-                        .HasForeignKey("game_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("StackDuel.Domain.Games.Entities.GameRound", null)
+                        .WithMany()
+                        .HasForeignKey("CurrentRoundId", "GameId")
+                        .HasPrincipalKey("Id", "GameId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameProblem", b =>
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRound", b =>
                 {
+                    b.HasOne("StackDuel.Domain.Games.Entities.Game", null)
+                        .WithMany("Rounds")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("StackDuel.Domain.Problems.Entities.Problem", null)
                         .WithMany()
                         .HasForeignKey("ProblemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
 
-                    b.HasOne("StackDuel.Domain.Games.Entities.Game", null)
-                        .WithMany("ProblemSequence")
-                        .HasForeignKey("game_id")
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
+                {
+                    b.HasOne("StackDuel.Domain.Games.Entities.GameRound", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId", "game_id")
+                        .HasPrincipalKey("Id", "GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Games.Entities.GameParticipant", null)
+                        .WithMany("RoundResults")
+                        .HasForeignKey("participant_id", "game_id")
+                        .HasPrincipalKey("Id", "GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSolution", b =>
+                {
+                    b.HasOne("StackDuel.Domain.Games.Entities.GameRoundResult", null)
+                        .WithOne("Solution")
+                        .HasForeignKey("StackDuel.Domain.Games.Entities.GameRoundSolution", "round_result_id", "outcome")
+                        .HasPrincipalKey("StackDuel.Domain.Games.Entities.GameRoundResult", "Id", "Outcome")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundSubmission", b =>
+                {
+                    b.HasOne("StackDuel.Domain.Problems.Entities.ProblemSetup", null)
+                        .WithMany()
+                        .HasForeignKey("SetupId", "ProblemId")
+                        .HasPrincipalKey("Id", "problem_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Games.Entities.GameParticipant", null)
+                        .WithMany()
+                        .HasForeignKey("ParticipantId", "GameId", "UserId")
+                        .HasPrincipalKey("Id", "GameId", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Games.Entities.GameRound", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId", "ProblemId", "GameId")
+                        .HasPrincipalKey("Id", "ProblemId", "GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Submissions.Entities.Submission", null)
+                        .WithMany()
+                        .HasForeignKey("SubmissionId", "SetupId", "UserId")
+                        .HasPrincipalKey("Id", "ProblemSetupId", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -2899,7 +3056,7 @@ namespace StackDuel.Infrastructure.Migrations
 
                             b1.HasKey("ProblemId");
 
-                            b1.ToTable("problems", (string)null);
+                            b1.ToTable("problems");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProblemId");
@@ -2953,7 +3110,7 @@ namespace StackDuel.Infrastructure.Migrations
                             b1.HasIndex("Value")
                                 .IsUnique();
 
-                            b1.ToTable("problems", (string)null);
+                            b1.ToTable("problems");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProblemId");
@@ -2972,7 +3129,7 @@ namespace StackDuel.Infrastructure.Migrations
 
                             b1.HasKey("ProblemId");
 
-                            b1.ToTable("problems", (string)null);
+                            b1.ToTable("problems");
 
                             b1.WithOwner()
                                 .HasForeignKey("ProblemId");
@@ -3300,7 +3457,7 @@ namespace StackDuel.Infrastructure.Migrations
                 {
                     b.Navigation("Participants");
 
-                    b.Navigation("ProblemSequence");
+                    b.Navigation("Rounds");
 
                     b.Navigation("Tracks");
                 });
@@ -3308,6 +3465,16 @@ namespace StackDuel.Infrastructure.Migrations
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameMode", b =>
                 {
                     b.Navigation("TimeOptions");
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameParticipant", b =>
+                {
+                    b.Navigation("RoundResults");
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
+                {
+                    b.Navigation("Solution");
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameTrack", b =>
