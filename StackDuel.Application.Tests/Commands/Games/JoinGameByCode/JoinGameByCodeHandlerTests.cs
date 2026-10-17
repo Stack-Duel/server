@@ -1,29 +1,27 @@
 using Ardalis.Result;
-using MediatR;
 using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games.Entities;
 using JoinGameByCodeCommand = StackDuel.Application.Commands.Games.JoinGameByCode.JoinGameByCodeCommand;
 using JoinGameByCodeHandler = StackDuel.Application.Commands.Games.JoinGameByCode.JoinGameByCodeHandler;
 using JoinGameByCodeValidator = StackDuel.Application.Commands.Games.JoinGameByCode.JoinGameByCodeValidator;
-using JoinGameCommand = StackDuel.Application.Commands.Games.JoinGame.JoinGameCommand;
 
 namespace StackDuel.Application.Tests.Commands.Games.JoinGameByCode;
 
 public class JoinGameByCodeHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IMediator> _mediator = null!;
+    private Mock<IGameJoiner> _gameJoiner = null!;
     private JoinGameByCodeHandler _handler = null!;
 
     public JoinGameByCodeHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _mediator = new Mock<IMediator>();
+        _gameJoiner = new Mock<IGameJoiner>();
 
         _handler = new JoinGameByCodeHandler(
             _gameReadRepository.Object,
-            _mediator.Object,
+            _gameJoiner.Object,
             new JoinGameByCodeValidator()
         );
     }
@@ -53,7 +51,10 @@ public class JoinGameByCodeHandlerTests
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.NotFound, result.Status);
-        _mediator.Verify(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _gameJoiner.Verify(
+            x => x.JoinAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -84,7 +85,10 @@ public class JoinGameByCodeHandlerTests
         Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _mediator.Verify(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _gameJoiner.Verify(
+            x => x.JoinAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -102,7 +106,10 @@ public class JoinGameByCodeHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(game.Id, result.Value);
-        _mediator.Verify(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _gameJoiner.Verify(
+            x => x.JoinAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -131,8 +138,8 @@ public class JoinGameByCodeHandlerTests
         _gameReadRepository
             .Setup(x => x.FindGameByJoinCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(game);
-        _mediator
-            .Setup(x => x.Send(It.IsAny<JoinGameCommand>(), It.IsAny<CancellationToken>()))
+        _gameJoiner
+            .Setup(x => x.JoinAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Forbidden());
 
         var command = new JoinGameByCodeCommand(game.JoinCode, Guid.NewGuid());
@@ -150,13 +157,8 @@ public class JoinGameByCodeHandlerTests
         _gameReadRepository
             .Setup(x => x.FindGameByJoinCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(game);
-        _mediator
-            .Setup(x =>
-                x.Send(
-                    It.Is<JoinGameCommand>(c => c.GameId == game.Id && c.RequestedByUserId == requesterId),
-                    It.IsAny<CancellationToken>()
-                )
-            )
+        _gameJoiner
+            .Setup(x => x.JoinAsync(game.Id, requesterId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         var command = new JoinGameByCodeCommand(game.JoinCode, requesterId);

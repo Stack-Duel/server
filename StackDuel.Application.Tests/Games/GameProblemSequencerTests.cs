@@ -43,7 +43,7 @@ public class GameProblemSequencerTests
     {
         var game = CreateGame();
         var existingProblemId = Guid.NewGuid();
-        game.AppendProblem(existingProblemId);
+        game.AppendRound(existingProblemId);
 
         Guid? result = await _sequencer.GetOrGenerateProblemAsync(
             game,
@@ -98,7 +98,7 @@ public class GameProblemSequencerTests
         );
 
         Assert.Null(result);
-        Assert.Empty(game.ProblemSequence);
+        Assert.Empty(game.Rounds);
     }
 
     [Fact]
@@ -107,8 +107,8 @@ public class GameProblemSequencerTests
         var game = CreateGame();
         var firstProblemId = Guid.NewGuid();
         var secondProblemId = Guid.NewGuid();
-        game.AppendProblem(firstProblemId);
-        game.AppendProblem(secondProblemId);
+        game.AppendRound(firstProblemId);
+        game.AppendRound(secondProblemId);
         ProblemSelectionContext? capturedContext = null;
         _strategy
             .Setup(x => x.SelectNextProblemIdAsync(It.IsAny<ProblemSelectionContext>(), It.IsAny<CancellationToken>()))

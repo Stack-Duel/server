@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.ExecutionAssets.Entities;
 using StackDuel.Domain.ExecutionPipelines;
+using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -22,6 +23,16 @@ internal sealed class ProblemSetupConfiguration : IEntityTypeConfiguration<Probl
         builder.Property(s => s.Id).HasColumnName("id");
 
         builder.Property<Guid>("problem_id").HasColumnName("problem_id").IsRequired();
+
+        builder.HasAlternateKey("Id", "problem_id");
+
+        builder
+            .HasMany<GameRoundSubmission>()
+            .WithOne()
+            .HasForeignKey("SetupId", "ProblemId")
+            .HasPrincipalKey("Id", "problem_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(s => s.LanguageVersionId).HasColumnName("language_version_id").IsRequired();
 

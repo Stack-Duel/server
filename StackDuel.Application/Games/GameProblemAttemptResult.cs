@@ -4,11 +4,6 @@ using StackDuel.Domain.Games.Enums;
 
 namespace StackDuel.Application.Games;
 
-/// <summary>
-/// Translates a <see cref="GameProblemAttempt"/> that failed eligibility into the Result each
-/// handler needs to return — shared by CompleteProblemHandler and SkipProblemHandler so the four
-/// failure messages live in exactly one place instead of copy-pasted in both.
-/// </summary>
 internal static class GameProblemAttemptResult
 {
     public static Result<T> ToFailure<T>(GameProblemAttempt attempt, ParticipantAction action)
@@ -35,8 +30,8 @@ internal static class GameProblemAttemptResult
                 )
             ),
 
-            ProblemAttemptEligibility.ProblemSessionNotInitialized => Result<T>.Invalid(
-                new ValidationError(nameof(GameParticipant.ProblemSession), "Problem session not initialized.")
+            ProblemAttemptEligibility.RoundNotStarted => Result<T>.Invalid(
+                new ValidationError("CurrentRoundId", "Round not started.")
             ),
 
             ProblemAttemptEligibility.ProblemMismatch => Result<T>.Invalid(

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using StackDuel.Domain.Achievements.Entities;
 using StackDuel.Domain.Audit.Entities;
 using StackDuel.Domain.Authorization.Rbac.Entities;
@@ -16,6 +17,7 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.RequiredLanguages.Entities;
 using StackDuel.Domain.ProblemValidation.Entities;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.SubmissionJobs;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.TestCaseGeneration.Entities;
@@ -77,6 +79,14 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
 
     public DbSet<GameParticipant> GameParticipants { get; init; }
 
+    public DbSet<GameRound> GameRounds { get; init; }
+
+    public DbSet<GameRoundResult> GameRoundResults { get; init; }
+
+    public DbSet<GameRoundSolution> GameRoundSolutions { get; init; }
+
+    public DbSet<GameRoundSubmission> GameRoundSubmissions { get; init; }
+
     public DbSet<GameTrack> GameTracks { get; init; }
 
     public DbSet<Leaderboard> Leaderboards { get; init; }
@@ -123,7 +133,6 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
 
     public DbSet<UserAvatar> UserAvatars { get; init; }
 
-    // Infrastructure-only — not domain aggregates
     public DbSet<Judge0StepConfiguration> Judge0StepConfigurations { get; init; }
     public DbSet<AssertStepConfiguration> AssertStepConfigurations { get; init; }
 
@@ -134,10 +143,28 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
             t => t.Namespace is null || !t.Namespace.StartsWith("StackDuel.Infrastructure.Persistence.Read")
         );
 
+        MarkDomainAssignedIdentifiersAsNotStoreGenerated(modelBuilder);
+
         modelBuilder.Entity<Problem>().HasQueryFilter(problem => problem.Status == ProblemStatus.Published);
         modelBuilder.Entity<Language>().HasQueryFilter(language => language.Status == LanguageStatus.Active);
         modelBuilder
             .Entity<LanguageVersionEntry>()
             .HasQueryFilter(version => version.Status == LanguageVersionStatus.Active);
+    }
+
+    private static void MarkDomainAssignedIdentifiersAsNotStoreGenerated(ModelBuilder modelBuilder)
+    {
+        IEnumerable<IMutableProperty> domainAssignedKeyProperties = modelBuilder
+            .Model.GetEntityTypes()
+            .Where(entityType => typeof(Entity).IsAssignableFrom(entityType.ClrType))
+            .Select(entityType => entityType.FindPrimaryKey())
+            .Where(primaryKey => primaryKey is not null)
+            .SelectMany(primaryKey => primaryKey!.Properties)
+            .Where(property => property.ClrType == typeof(Guid));
+
+        foreach (IMutableProperty property in domainAssignedKeyProperties)
+        {
+            property.ValueGenerated = ValueGenerated.Never;
+        }
     }
 }

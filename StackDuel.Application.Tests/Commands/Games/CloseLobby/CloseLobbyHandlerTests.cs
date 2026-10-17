@@ -4,6 +4,7 @@ using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.SeedWork;
 using CloseLobbyCommand = StackDuel.Application.Commands.Games.CloseLobby.CloseLobbyCommand;
 using CloseLobbyHandler = StackDuel.Application.Commands.Games.CloseLobby.CloseLobbyHandler;
 using CloseLobbyValidator = StackDuel.Application.Commands.Games.CloseLobby.CloseLobbyValidator;
@@ -13,19 +14,19 @@ namespace StackDuel.Application.Tests.Commands.Games.CloseLobby;
 public class CloseLobbyHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private CloseLobbyHandler _handler = null!;
 
     public CloseLobbyHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new CloseLobbyHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _domainEventDispatcher.Object,
             new CloseLobbyValidator()
         );
@@ -76,10 +77,7 @@ public class CloseLobbyHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Forbidden, result.Status);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -106,7 +104,7 @@ public class CloseLobbyHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(StackDuel.Domain.Games.Enums.GameStatus.Cancelled, game.Status);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x =>
                 x.DispatchAsync(

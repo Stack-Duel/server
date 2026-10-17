@@ -1,14 +1,17 @@
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Application.Events;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
+using StackDuel.Domain.Users.Events;
 
 namespace StackDuel.Application.Commands.Users.SelectUserAvatar;
 
 internal sealed class SelectUserAvatarHandler(
     IValidator<SelectUserAvatarCommand> validator,
     IUserWriteRepository userRepository,
-    IUserAvatarWriteRepository userAvatarRepository
+    IUserAvatarWriteRepository userAvatarRepository,
+    IDomainEventDispatcher domainEventDispatcher
 ) : AbstractCommandHandler<SelectUserAvatarCommand>(validator)
 {
     protected override async Task<Result> HandleValidated(
@@ -32,6 +35,11 @@ internal sealed class SelectUserAvatarHandler(
 
         user.UpdateImageUrl(avatar.ImageUrl);
         await userRepository.UpdateAsync(user, cancellationToken);
+
+        await domainEventDispatcher.DispatchAsync(
+            [new UserAccessContextChangedDomainEvent(user.Sub)],
+            cancellationToken
+        );
 
         return Result.Success();
     }

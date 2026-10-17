@@ -6,6 +6,6 @@ public enum ProblemAttemptEligibility
     ParticipantNotFound = 1,
     GameNotRunning = 2,
     ParticipantStopped = 3,
-    ProblemSessionNotInitialized = 4,
+    RoundNotStarted = 4,
     ProblemMismatch = 5,
 }

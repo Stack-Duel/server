@@ -17,6 +17,4 @@ public interface IProblemPoolRepository
     );
 
     Task AddAsync(ProblemPool pool, CancellationToken cancellationToken = default);
-
-    Task UpdateAsync(ProblemPool pool, CancellationToken cancellationToken = default);
 }

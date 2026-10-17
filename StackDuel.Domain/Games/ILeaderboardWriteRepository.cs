@@ -10,5 +10,4 @@ public interface ILeaderboardWriteRepository
         int timeLimitInSeconds,
         CancellationToken cancellationToken = default
     );
-    Task SaveChangesAsync(Leaderboard entity, CancellationToken cancellationToken = default);
 }

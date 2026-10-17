@@ -16,12 +16,6 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
 
     public async Task UpdateAsync(Problem entity, CancellationToken cancellationToken = default)
     {
-        if (context.Entry(entity).State == EntityState.Detached)
-            context.Problems.Update(entity);
-
-        await NewChildEntityTracker.MarkNewAsAddedAsync(context, entity.History, cancellationToken);
-        await NewChildEntityTracker.MarkNewAsAddedAsync(context, entity.Setups, cancellationToken);
-
         await context.SaveChangesAsync(cancellationToken);
     }
 

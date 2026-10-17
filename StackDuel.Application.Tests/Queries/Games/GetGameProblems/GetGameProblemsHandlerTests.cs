@@ -47,7 +47,7 @@ public class GetGameProblemsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ParticipantWithoutProblemSession_ReturnsEmptyHistories()
+    public async Task Handle_ParticipantWithNoFinishedRounds_ReturnsEmptyHistories()
     {
         var participantId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [participantId], 300);
@@ -65,20 +65,20 @@ public class GetGameProblemsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ParticipantWithProblemSession_ReturnsSolvedProblemsAndSubmissions()
+    public async Task Handle_ParticipantWithSolvedRound_ReturnsSolvedProblemsAndSubmissions()
     {
         var requesterId = Guid.NewGuid();
         var otherParticipantId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [requesterId, otherParticipantId], 300);
 
-        var initialProblemId = Guid.NewGuid();
+        var nextProblemId = Guid.NewGuid();
         var solvedProblemId = Guid.NewGuid();
         var submissionId = Guid.NewGuid();
 
-        GameParticipant requester = game.Participants.Single(p => p.UserId == requesterId);
-        requester.InitializeProblemSession(initialProblemId);
-        requester.ProblemSession!.AddSolvedProblem(solvedProblemId);
-        requester.ProblemSession!.RecordSolvedSubmission(solvedProblemId, submissionId);
+        game.AppendRound(solvedProblemId);
+        game.StartRoundFor(requesterId, solvedProblemId);
+        game.AppendRound(nextProblemId);
+        game.SolveCurrentRoundAndAdvance(requesterId, nextProblemId, submissionId);
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
 

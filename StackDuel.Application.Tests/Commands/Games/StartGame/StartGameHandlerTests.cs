@@ -15,7 +15,7 @@ namespace StackDuel.Application.Tests.Commands.Games.StartGame;
 public class StartGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IProblemSelectionStrategyResolver> _strategyResolver = null!;
     private Mock<IProblemSelectionStrategy> _strategy = null!;
     private Mock<IGameProblemSequencer> _gameProblemSequencer = null!;
@@ -25,7 +25,7 @@ public class StartGameHandlerTests
     public StartGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _strategyResolver = new Mock<IProblemSelectionStrategyResolver>();
         _strategy = new Mock<IProblemSelectionStrategy>();
         _gameProblemSequencer = new Mock<IGameProblemSequencer>();
@@ -33,7 +33,7 @@ public class StartGameHandlerTests
 
         _handler = new StartGameHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _strategyResolver.Object,
             _gameProblemSequencer.Object,
             _domainEventDispatcher.Object,
@@ -167,10 +167,7 @@ public class StartGameHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.NotFound, result.Status);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -196,14 +193,11 @@ public class StartGameHandlerTests
         Result result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task Handle_Success_StartsGameAndInitializesProblemSessions()
+    public async Task Handle_Success_StartsGameAndPutsEveryParticipantOnTheFirstRound()
     {
         var hostId = Guid.NewGuid();
         var otherId = Guid.NewGuid();
@@ -221,6 +215,9 @@ public class StartGameHandlerTests
         _strategyResolver.Setup(x => x.Resolve("duel")).Returns(_strategy.Object);
         _gameProblemSequencer
             .Setup(x => x.GetOrGenerateProblemAsync(game, 0, "duel", _strategy.Object, It.IsAny<CancellationToken>()))
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(initialProblemId)
+            )
             .ReturnsAsync(initialProblemId);
 
         var command = new StartGameCommand(game.Id, hostId);
@@ -228,8 +225,8 @@ public class StartGameHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(GameStatus.Running, game.Status);
-        Assert.True(game.Participants.All(p => p.ProblemSession!.CurrentProblemId == initialProblemId));
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.True(game.Participants.All(p => game.CurrentProblemIdFor(p.UserId) == initialProblemId));
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once
@@ -254,11 +251,15 @@ public class StartGameHandlerTests
             .Setup(x => x.FindGameModeByIdAsync(gameModeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
         _strategyResolver.Setup(x => x.Resolve(gameModeKey)).Returns(_strategy.Object);
+        var initialProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(game, 0, gameModeKey, _strategy.Object, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Guid.NewGuid());
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(initialProblemId)
+            )
+            .ReturnsAsync(initialProblemId);
 
         var command = new StartGameCommand(game.Id, hostId);
         Result result = await _handler.Handle(command, CancellationToken.None);
@@ -286,11 +287,15 @@ public class StartGameHandlerTests
             .Setup(x => x.FindGameModeByIdAsync(gameModeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
         _strategyResolver.Setup(x => x.Resolve("solo_rush")).Returns(_strategy.Object);
+        var initialProblemId = Guid.NewGuid();
         _gameProblemSequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(game, 0, "solo_rush", _strategy.Object, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Guid.NewGuid());
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(initialProblemId)
+            )
+            .ReturnsAsync(initialProblemId);
 
         var command = new StartGameCommand(game.Id, hostId);
         Result result = await _handler.Handle(command, CancellationToken.None);

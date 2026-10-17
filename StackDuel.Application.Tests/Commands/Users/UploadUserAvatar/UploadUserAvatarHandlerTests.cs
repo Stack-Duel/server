@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Events;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
@@ -20,6 +21,7 @@ public class UploadUserAvatarHandlerTests
     private Mock<IUserWriteRepository> _userRepository = null!;
     private Mock<IUserAvatarWriteRepository> _userAvatarRepository = null!;
     private Mock<IAvatarBlobStorage> _avatarBlobStorage = null!;
+    private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private UploadUserAvatarHandler _handler = null!;
 
     public UploadUserAvatarHandlerTests()
@@ -27,6 +29,7 @@ public class UploadUserAvatarHandlerTests
         _userRepository = new Mock<IUserWriteRepository>();
         _userAvatarRepository = new Mock<IUserAvatarWriteRepository>();
         _avatarBlobStorage = new Mock<IAvatarBlobStorage>();
+        _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _userAvatarRepository
             .Setup(x => x.GetAllByUserIdNewestFirstAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -36,7 +39,8 @@ public class UploadUserAvatarHandlerTests
             new UploadUserAvatarValidator(),
             _userRepository.Object,
             _userAvatarRepository.Object,
-            _avatarBlobStorage.Object
+            _avatarBlobStorage.Object,
+            _domainEventDispatcher.Object
         );
     }
 

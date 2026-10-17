@@ -1,7 +1,5 @@
 using Ardalis.Result;
 using FluentValidation;
-using MediatR;
-using StackDuel.Application.Commands.Games.JoinGame;
 using StackDuel.Application.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
@@ -10,7 +8,7 @@ namespace StackDuel.Application.Commands.Games.JoinGameByCode;
 
 internal sealed class JoinGameByCodeHandler(
     IGameReadRepository gameReadRepository,
-    IMediator mediator,
+    IGameJoiner gameJoiner,
     IValidator<JoinGameByCodeCommand> validator
 ) : AbstractCommandHandler<JoinGameByCodeCommand, Guid>(validator)
 {
@@ -35,10 +33,7 @@ internal sealed class JoinGameByCodeHandler(
                 new ValidationError(nameof(game.Status), "This game is no longer accepting new players.")
             );
 
-        Result joinResult = await mediator.Send(
-            new JoinGameCommand(game.Id, request.RequestedByUserId),
-            cancellationToken
-        );
+        Result joinResult = await gameJoiner.JoinAsync(game.Id, request.RequestedByUserId, cancellationToken);
 
         if (!joinResult.IsSuccess)
             return joinResult;

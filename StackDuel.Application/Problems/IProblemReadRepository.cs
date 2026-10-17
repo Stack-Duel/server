@@ -46,18 +46,6 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>
-    /// Picks a problem in the given difficulty range, excluding the given ids. Selection is
-    /// deterministic for a given <paramref name="selectionSeed"/> and set of matching problems —
-    /// the same seed always yields the same problem — so callers that need multiple participants
-    /// in the same game to land on the same problem (e.g. a shared round in Duel/FFA) can derive
-    /// the seed from the game and round rather than the problem being picked independently at
-    /// random for each participant.
-    /// </summary>
-    /// <param name="allowedLanguageVersionIds">
-    /// Restricts candidates to problems with a setup for at least one of these language versions
-    /// (e.g. the tracks/languages a player selected for the game). Empty means unrestricted.
-    /// </param>
     Task<Guid?> GetRandomProblemIdByDifficultyAsync(
         Guid poolId,
         int minDifficulty,
@@ -73,10 +61,7 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>
-    /// Returns the pool's published members' ids, ordered by their position in the pool. Used by the
-    /// daily-challenge job for strict sequential assignment (as opposed to <see cref="GetRandomProblemIdByDifficultyAsync"/>,
-    /// which game modes use for random selection).
-    /// </summary>
+    Task<Guid?> GetProblemIdByProblemSetupIdAsync(Guid problemSetupId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(Guid poolId, CancellationToken cancellationToken = default);
 }

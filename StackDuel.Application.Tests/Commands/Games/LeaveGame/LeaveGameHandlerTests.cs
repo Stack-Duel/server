@@ -15,19 +15,19 @@ namespace StackDuel.Application.Tests.Commands.Games.LeaveGame;
 public class LeaveGameHandlerTests
 {
     private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private LeaveGameHandler _handler = null!;
 
     public LeaveGameHandlerTests()
     {
         _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
 
         _handler = new LeaveGameHandler(
             _gameReadRepository.Object,
-            _gameWriteRepository.Object,
+            _unitOfWork.Object,
             _domainEventDispatcher.Object,
             new LeaveGameValidator()
         );
@@ -108,7 +108,7 @@ public class LeaveGameHandlerTests
         Assert.True(result.IsSuccess);
         Assert.DoesNotContain(game.Participants, p => p.UserId == userId);
         Assert.Equal(GameStatus.Pending, game.Status);
-        _gameWriteRepository.Verify(x => x.SaveChangesAsync(game, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _domainEventDispatcher.Verify(
             x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()),
             Times.Once
