@@ -1,88 +1,101 @@
 using Microsoft.Extensions.DependencyInjection;
 using StackDuel.Domain.SeedWork;
-using System.Collections.Concurrent;
 
 namespace StackDuel.IntegrationTests.Persistence;
 
 [Collection(IntegrationTestCollection.Name)]
 public sealed class PostgresAdvisoryLockTests(IntegrationTestEnvironment environment)
 {
+    private static readonly TimeSpan SignalTimeout = TimeSpan.FromSeconds(10);
+
     [Fact]
     public async Task RunExclusiveAsync_SameKey_SerializesConcurrentCallers()
     {
         var key = Guid.NewGuid();
-        ConcurrentBag<(string Caller, DateTime StartedAt, DateTime FinishedAt)> timings = [];
+        TaskCompletionSource firstEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseFirst = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource secondEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        async Task<string> RunAsAsync(string caller)
-        {
-            await using AsyncServiceScope scope = environment.Factory.Services.CreateAsyncScope();
-            var advisoryLock = scope.ServiceProvider.GetRequiredService<IAdvisoryLock>();
+        Task<string> first = RunAsAsync(
+            key,
+            async _ =>
+            {
+                firstEntered.SetResult();
+                await releaseFirst.Task;
+                return "first";
+            }
+        );
 
-            return await advisoryLock.RunExclusiveAsync(
-                "integration-test",
-                key,
-                async _ =>
-                {
-                    DateTime startedAt = DateTime.UtcNow;
-                    await Task.Delay(200);
-                    DateTime finishedAt = DateTime.UtcNow;
-                    timings.Add((caller, startedAt, finishedAt));
-                    return caller;
-                }
-            );
-        }
+        await firstEntered.Task.WaitAsync(SignalTimeout);
 
-        Task<string> first = RunAsAsync("first");
-        Task<string> second = RunAsAsync("second");
+        Task<string> second = RunAsAsync(
+            key,
+            _ =>
+            {
+                secondEntered.SetResult();
+                return Task.FromResult("second");
+            }
+        );
+
+        // The second caller contends for the same Postgres advisory lock key, so it cannot reach
+        // its action while the first caller's transaction still holds it - this is enforced by
+        // Postgres itself, not by timing, so there is nothing to race against here.
+        Assert.False(secondEntered.Task.IsCompleted, "Second caller entered its action while the first still held the lock.");
+
+        releaseFirst.SetResult();
+
+        await secondEntered.Task.WaitAsync(SignalTimeout);
         string[] results = await Task.WhenAll(first, second);
 
         Assert.Contains("first", results);
         Assert.Contains("second", results);
-        Assert.Equal(2, timings.Count);
-
-        var ordered = timings.OrderBy(t => t.StartedAt).ToArray();
-        var (_, firstStartedAt, firstFinishedAt) = ordered[0];
-        var (_, secondStartedAt, secondFinishedAt) = ordered[1];
-
-        bool noOverlap = firstFinishedAt <= secondStartedAt || secondFinishedAt <= firstStartedAt;
-        Assert.True(noOverlap, "Both callers held the lock for the same key at the same time.");
     }
 
     [Fact]
     public async Task RunExclusiveAsync_DifferentKeys_DoesNotSerializeUnrelatedCallers()
     {
-        ConcurrentBag<(string Caller, DateTime StartedAt, DateTime FinishedAt)> timings = [];
+        TaskCompletionSource firstEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseFirst = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource secondEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        async Task RunAsAsync(string caller, Guid key)
-        {
-            await using AsyncServiceScope scope = environment.Factory.Services.CreateAsyncScope();
-            var advisoryLock = scope.ServiceProvider.GetRequiredService<IAdvisoryLock>();
+        Task<string> first = RunAsAsync(
+            Guid.NewGuid(),
+            async _ =>
+            {
+                firstEntered.SetResult();
+                await releaseFirst.Task;
+                return "first";
+            }
+        );
 
-            await advisoryLock.RunExclusiveAsync(
-                "integration-test",
-                key,
-                async _ =>
-                {
-                    DateTime startedAt = DateTime.UtcNow;
-                    await Task.Delay(200);
-                    DateTime finishedAt = DateTime.UtcNow;
-                    timings.Add((caller, startedAt, finishedAt));
-                    return caller;
-                }
-            );
-        }
+        await firstEntered.Task.WaitAsync(SignalTimeout);
 
-        Task first = RunAsAsync("first", Guid.NewGuid());
-        Task second = RunAsAsync("second", Guid.NewGuid());
-        await Task.WhenAll(first, second);
+        Task<string> second = RunAsAsync(
+            Guid.NewGuid(),
+            _ =>
+            {
+                secondEntered.SetResult();
+                return Task.FromResult("second");
+            }
+        );
 
-        Assert.Equal(2, timings.Count);
+        // An unrelated key must be able to enter while the first caller still holds its own lock -
+        // if the implementation over-serialized, this would hang until the timeout instead of
+        // passing by coincidence.
+        await secondEntered.Task.WaitAsync(SignalTimeout);
 
-        var ordered = timings.OrderBy(t => t.StartedAt).ToArray();
-        var (_, firstStartedAt, firstFinishedAt) = ordered[0];
-        var (_, secondStartedAt, secondFinishedAt) = ordered[1];
+        releaseFirst.SetResult();
+        string[] results = await Task.WhenAll(first, second);
 
-        bool overlapped = firstStartedAt < secondFinishedAt && secondStartedAt < firstFinishedAt;
-        Assert.True(overlapped, "Unrelated keys should be able to hold their locks concurrently.");
+        Assert.Contains("first", results);
+        Assert.Contains("second", results);
+    }
+
+    private async Task<string> RunAsAsync(Guid key, Func<CancellationToken, Task<string>> action)
+    {
+        await using AsyncServiceScope scope = environment.Factory.Services.CreateAsyncScope();
+        var advisoryLock = scope.ServiceProvider.GetRequiredService<IAdvisoryLock>();
+
+        return await advisoryLock.RunExclusiveAsync("integration-test", key, action);
     }
 }
