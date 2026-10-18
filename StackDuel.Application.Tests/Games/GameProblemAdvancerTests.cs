@@ -1,5 +1,6 @@
 using Moq;
 using StackDuel.Application.Games;
+using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 
 namespace StackDuel.Application.Tests.Games;

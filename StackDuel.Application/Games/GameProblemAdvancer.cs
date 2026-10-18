@@ -26,9 +26,7 @@ internal sealed class GameProblemAdvancer(
         );
 
         if (nextProblemId is { } problemId)
-        {
             game.StartRoundFor(userId, problemId);
-        }
         else
         {
             game.FinishProblemsFor(userId);
