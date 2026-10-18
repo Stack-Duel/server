@@ -23,22 +23,25 @@ internal sealed class SkipProblemHandler(
         CancellationToken cancellationToken
     )
     {
+        (Result<SkipProblemResultDto> result, IReadOnlyList<IDomainEvent> events) outcome;
         try
         {
-            return await gameConcurrencyGuard.RunExclusiveAsync(
+            outcome = await gameConcurrencyGuard.RunExclusiveAsync(
                 request.GameId,
                 async ct =>
                 {
                     var game = await gameReadRepository.FindGameByIdAsync(request.GameId, ct);
                     if (game is null)
-                        return Result<SkipProblemResultDto>.NotFound($"Game '{request.GameId}' was not found.");
+                        return (
+                            Result<SkipProblemResultDto>.NotFound($"Game '{request.GameId}' was not found."),
+                            (IReadOnlyList<IDomainEvent>)[]
+                        );
 
                     Result<SkipProblemResultDto> result = await EvaluateAndAdvanceAsync(game, request, ct);
 
                     await unitOfWork.SaveChangesAsync(ct);
-                    await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), ct);
 
-                    return result;
+                    return (result, game.PopDomainEvents());
                 },
                 cancellationToken
             );
@@ -47,6 +50,10 @@ internal sealed class SkipProblemHandler(
         {
             return Result<SkipProblemResultDto>.Error("Failed to advance to the next problem.");
         }
+
+        await domainEventDispatcher.DispatchAsync(outcome.events, cancellationToken);
+
+        return outcome.result;
     }
 
     private async Task<Result<SkipProblemResultDto>> EvaluateAndAdvanceAsync(

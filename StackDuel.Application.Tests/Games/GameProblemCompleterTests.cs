@@ -45,13 +45,15 @@ public class GameProblemCompleterTests
             .Setup(x =>
                 x.RunExclusiveAsync(
                     It.IsAny<Guid>(),
-                    It.IsAny<Func<CancellationToken, Task<Result<GameProblemCompletionDto>>>>(),
+                    It.IsAny<Func<CancellationToken, Task<(Result<GameProblemCompletionDto>, IReadOnlyList<IDomainEvent>)>>>(),
                     It.IsAny<CancellationToken>()
                 )
             )
-            .Returns<Guid, Func<CancellationToken, Task<Result<GameProblemCompletionDto>>>, CancellationToken>(
-                (_, action, ct) => action(ct)
-            );
+            .Returns<
+                Guid,
+                Func<CancellationToken, Task<(Result<GameProblemCompletionDto>, IReadOnlyList<IDomainEvent>)>>,
+                CancellationToken
+            >((_, action, ct) => action(ct));
 
         var gameProblemAdvancer = new GameProblemAdvancer(
             _gameProblemSequencer.Object,
@@ -572,7 +574,7 @@ public class GameProblemCompleterTests
             x =>
                 x.RunExclusiveAsync(
                     gameId,
-                    It.IsAny<Func<CancellationToken, Task<Result<GameProblemCompletionDto>>>>(),
+                    It.IsAny<Func<CancellationToken, Task<(Result<GameProblemCompletionDto>, IReadOnlyList<IDomainEvent>)>>>(),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once

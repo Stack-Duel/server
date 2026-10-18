@@ -41,13 +41,15 @@ public class SkipProblemHandlerTests
             .Setup(x =>
                 x.RunExclusiveAsync(
                     It.IsAny<Guid>(),
-                    It.IsAny<Func<CancellationToken, Task<Result<SkipProblemResultDto>>>>(),
+                    It.IsAny<Func<CancellationToken, Task<(Result<SkipProblemResultDto>, IReadOnlyList<IDomainEvent>)>>>(),
                     It.IsAny<CancellationToken>()
                 )
             )
-            .Returns<Guid, Func<CancellationToken, Task<Result<SkipProblemResultDto>>>, CancellationToken>(
-                (_, action, ct) => action(ct)
-            );
+            .Returns<
+                Guid,
+                Func<CancellationToken, Task<(Result<SkipProblemResultDto>, IReadOnlyList<IDomainEvent>)>>,
+                CancellationToken
+            >((_, action, ct) => action(ct));
 
         var gameProblemAdvancer = new GameProblemAdvancer(
             _gameProblemSequencer.Object,
@@ -421,7 +423,7 @@ public class SkipProblemHandlerTests
             x =>
                 x.RunExclusiveAsync(
                     gameId,
-                    It.IsAny<Func<CancellationToken, Task<Result<SkipProblemResultDto>>>>(),
+                    It.IsAny<Func<CancellationToken, Task<(Result<SkipProblemResultDto>, IReadOnlyList<IDomainEvent>)>>>(),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once

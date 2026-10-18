@@ -28,15 +28,19 @@ internal sealed class GameProblemCompleter(
         CancellationToken cancellationToken = default
     )
     {
+        (Result<GameProblemCompletionDto> result, IReadOnlyList<IDomainEvent> events) outcome;
         try
         {
-            return await gameConcurrencyGuard.RunExclusiveAsync(
+            outcome = await gameConcurrencyGuard.RunExclusiveAsync(
                 gameId,
                 async ct =>
                 {
                     var game = await gameReadRepository.FindGameByIdAsync(gameId, ct);
                     if (game is null)
-                        return Result<GameProblemCompletionDto>.NotFound($"Game '{gameId}' was not found.");
+                        return (
+                            Result<GameProblemCompletionDto>.NotFound($"Game '{gameId}' was not found."),
+                            (IReadOnlyList<IDomainEvent>)[]
+                        );
 
                     Result<GameProblemCompletionDto> result = await EvaluateAndAdvanceAsync(
                         game,
@@ -47,9 +51,8 @@ internal sealed class GameProblemCompleter(
                     );
 
                     await unitOfWork.SaveChangesAsync(ct);
-                    await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), ct);
 
-                    return result;
+                    return (result, game.PopDomainEvents());
                 },
                 cancellationToken
             );
@@ -58,6 +61,10 @@ internal sealed class GameProblemCompleter(
         {
             return Result<GameProblemCompletionDto>.Error("Failed to advance to the next problem.");
         }
+
+        await domainEventDispatcher.DispatchAsync(outcome.events, cancellationToken);
+
+        return outcome.result;
     }
 
     private async Task<Result<GameProblemCompletionDto>> EvaluateAndAdvanceAsync(
