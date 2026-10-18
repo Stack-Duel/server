@@ -24,22 +24,22 @@ public class GameProblemAdvancerTests
         _advancer = new GameProblemAdvancer(_sequencer.Object, _expiryCanceller.Object, _strategyResolver.Object);
     }
 
-    private static Game CreateRunningGameWithParticipant(out GameParticipant participant)
+    private static Game CreateRunningGameWithParticipant(out Guid userId)
     {
-        Guid userId = Guid.NewGuid();
+        userId = Guid.NewGuid();
         var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
         game.Start();
         var problemId = Guid.NewGuid();
         game.AppendRound(problemId);
         game.StartRoundFor(userId, problemId);
-        participant = game.Participants.First(p => p.UserId == userId);
+        game.SolveCurrentRound(userId, Guid.NewGuid());
         return game;
     }
 
     [Fact]
-    public async Task AdvanceAsync_NextProblemAvailable_InvokesOnAdvanceWithIt()
+    public async Task AdvanceAsync_NextProblemAvailable_StartsTheParticipantOnIt()
     {
-        var game = CreateRunningGameWithParticipant(out var participant);
+        var game = CreateRunningGameWithParticipant(out var userId);
         var nextProblemId = Guid.NewGuid();
         _sequencer
             .Setup(x =>
@@ -51,21 +51,15 @@ public class GameProblemAdvancerTests
                     It.IsAny<CancellationToken>()
                 )
             )
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(nextProblemId)
+            )
             .ReturnsAsync(nextProblemId);
-        Guid? advancedTo = null;
 
-        Guid? result = await _advancer.AdvanceAsync(
-            game,
-            participant,
-            "solo_rush",
-            onAdvance: id => advancedTo = id,
-            onFinish: null,
-            CancellationToken.None
-        );
+        Guid? result = await _advancer.AdvanceAsync(game, userId, "solo_rush", CancellationToken.None);
 
         Assert.Equal(nextProblemId, result);
-        Assert.Equal(nextProblemId, advancedTo);
-        Assert.False(participant.HasFinishedProblems);
+        Assert.Equal(nextProblemId, game.CurrentProblemIdFor(userId));
         _expiryCanceller.Verify(
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -75,7 +69,7 @@ public class GameProblemAdvancerTests
     [Fact]
     public async Task AdvanceAsync_NoNextProblem_FinishesParticipantAndCancelsScheduledExpiry()
     {
-        var game = CreateRunningGameWithParticipant(out var participant);
+        var game = CreateRunningGameWithParticipant(out var userId);
         _sequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(
@@ -88,73 +82,28 @@ public class GameProblemAdvancerTests
             )
             .ReturnsAsync((Guid?)null);
 
-        Guid? result = await _advancer.AdvanceAsync(
-            game,
-            participant,
-            "solo_rush",
-            onAdvance: _ => Assert.Fail("onAdvance should not run when the pool is exhausted."),
-            onFinish: null,
-            CancellationToken.None
-        );
+        Guid? result = await _advancer.AdvanceAsync(game, userId, "solo_rush", CancellationToken.None);
 
         Assert.Null(result);
-        Assert.True(participant.HasFinishedProblems);
+        Assert.True(game.Participants.First(p => p.UserId == userId).HasFinishedProblems);
         _expiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task AdvanceAsync_NoNextProblem_InvokesOnFinishBeforeMarkingParticipantFinished()
-    {
-        var game = CreateRunningGameWithParticipant(out var participant);
-        _sequencer
-            .Setup(x =>
-                x.GetOrGenerateProblemAsync(
-                    game,
-                    It.IsAny<int>(),
-                    It.IsAny<string>(),
-                    _strategy.Object,
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync((Guid?)null);
-        bool participantAlreadyFinishedWhenOnFinishRan = true;
-
-        await _advancer.AdvanceAsync(
-            game,
-            participant,
-            "solo_rush",
-            onAdvance: _ => { },
-            onFinish: () => participantAlreadyFinishedWhenOnFinishRan = participant.HasFinishedProblems,
-            CancellationToken.None
-        );
-
-        Assert.False(participantAlreadyFinishedWhenOnFinishRan);
     }
 
     [Fact]
     public async Task AdvanceAsync_ResolvesStrategyForTheGivenGameModeKey()
     {
-        var game = CreateRunningGameWithParticipant(out var participant);
+        var game = CreateRunningGameWithParticipant(out var userId);
+        var nextProblemId = Guid.NewGuid();
         _sequencer
             .Setup(x =>
-                x.GetOrGenerateProblemAsync(
-                    game,
-                    It.IsAny<int>(),
-                    "duel",
-                    _strategy.Object,
-                    It.IsAny<CancellationToken>()
-                )
+                x.GetOrGenerateProblemAsync(game, It.IsAny<int>(), "duel", _strategy.Object, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(Guid.NewGuid());
+            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
+                (g, _, _, _, _) => g.AppendRound(nextProblemId)
+            )
+            .ReturnsAsync(nextProblemId);
 
-        await _advancer.AdvanceAsync(
-            game,
-            participant,
-            "duel",
-            onAdvance: _ => { },
-            onFinish: null,
-            CancellationToken.None
-        );
+        await _advancer.AdvanceAsync(game, userId, "duel", CancellationToken.None);
 
         _strategyResolver.Verify(x => x.Resolve("duel"), Times.Once);
     }
