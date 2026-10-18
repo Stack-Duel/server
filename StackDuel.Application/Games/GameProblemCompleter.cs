@@ -15,6 +15,7 @@ internal sealed class GameProblemCompleter(
     IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,
+    IGameConcurrencyGuard gameConcurrencyGuard,
     ISubmissionWriteRepository submissionRepository,
     IGameRoundSubmissionReadRepository gameRoundSubmissionReadRepository
 ) : IGameProblemCompleter
@@ -27,18 +28,59 @@ internal sealed class GameProblemCompleter(
         CancellationToken cancellationToken = default
     )
     {
-        var game = await gameReadRepository.FindGameByIdAsync(gameId, cancellationToken);
-        if (game is null)
-            return Result<GameProblemCompletionDto>.NotFound($"Game '{gameId}' was not found.");
+        (Result<GameProblemCompletionDto> result, IReadOnlyList<IDomainEvent> events) outcome;
+        try
+        {
+            outcome = await gameConcurrencyGuard.RunExclusiveAsync(
+                gameId,
+                async ct =>
+                {
+                    var game = await gameReadRepository.FindGameByIdAsync(gameId, ct);
+                    if (game is null)
+                        return (
+                            Result<GameProblemCompletionDto>.NotFound($"Game '{gameId}' was not found."),
+                            (IReadOnlyList<IDomainEvent>)[]
+                        );
 
+                    Result<GameProblemCompletionDto> result = await EvaluateAndAdvanceAsync(
+                        game,
+                        problemId,
+                        submissionId,
+                        requestedByUserId,
+                        ct
+                    );
+
+                    await unitOfWork.SaveChangesAsync(ct);
+
+                    return (result, game.PopDomainEvents());
+                },
+                cancellationToken
+            );
+        }
+        catch (DuplicateGameProblemException)
+        {
+            return Result<GameProblemCompletionDto>.Error("Failed to advance to the next problem.");
+        }
+
+        await domainEventDispatcher.DispatchAsync(outcome.events, cancellationToken);
+
+        return outcome.result;
+    }
+
+    private async Task<Result<GameProblemCompletionDto>> EvaluateAndAdvanceAsync(
+        Game game,
+        Guid problemId,
+        Guid submissionId,
+        Guid requestedByUserId,
+        CancellationToken cancellationToken
+    )
+    {
         var attempt = game.EvaluateProblemAttempt(
             requestedByUserId,
             problemId,
             ParticipantAction.CompleteProblem,
             DateTime.UtcNow
         );
-
-        await PersistExpiryIfNeededAsync(game, attempt, cancellationToken);
 
         if (!attempt.IsEligible)
             return GameProblemAttemptResult.ToFailure<GameProblemCompletionDto>(attempt, ParticipantAction.CompleteProblem);
@@ -60,41 +102,15 @@ internal sealed class GameProblemCompleter(
 
         game.RecordProblemSolved(requestedByUserId);
         game.SolveCurrentRound(requestedByUserId, submissionId);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        GameProblemAdvanceResult advanceResult;
-        try
-        {
-            advanceResult = await gameProblemAdvancer.AdvanceAsync(
-                game,
-                requestedByUserId,
-                gameMode.Key,
-                cancellationToken
-            );
-        }
-        catch (DuplicateGameProblemException)
-        {
-            return Result<GameProblemCompletionDto>.Error("Failed to advance to the next problem.");
-        }
-
-        await domainEventDispatcher.DispatchAsync(advanceResult.Game.PopDomainEvents(), cancellationToken);
-
-        return Result<GameProblemCompletionDto>.Success(
-            new GameProblemCompletionDto(participant.Score, advanceResult.NextProblemId)
+        Guid? nextProblemId = await gameProblemAdvancer.AdvanceAsync(
+            game,
+            requestedByUserId,
+            gameMode.Key,
+            cancellationToken
         );
-    }
 
-    private async Task PersistExpiryIfNeededAsync(
-        Game game,
-        GameProblemAttempt attempt,
-        CancellationToken cancellationToken
-    )
-    {
-        if (!attempt.GameJustExpired)
-            return;
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
+        return Result<GameProblemCompletionDto>.Success(new GameProblemCompletionDto(participant.Score, nextProblemId));
     }
 
     private async Task<Result<GameProblemCompletionDto>?> ValidateSubmissionAsync(

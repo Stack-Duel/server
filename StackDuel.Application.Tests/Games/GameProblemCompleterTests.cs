@@ -24,7 +24,7 @@ public class GameProblemCompleterTests
     private Mock<IGameProblemSequencer> _gameProblemSequencer = null!;
     private Mock<ISubmissionWriteRepository> _submissionRepository = null!;
     private Mock<IGameRoundSubmissionReadRepository> _gameRoundSubmissionReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
+    private Mock<IGameConcurrencyGuard> _gameConcurrencyGuard = null!;
     private GameProblemCompleter _completer = null!;
 
     public GameProblemCompleterTests()
@@ -38,16 +38,27 @@ public class GameProblemCompleterTests
         _gameProblemSequencer = new Mock<IGameProblemSequencer>();
         _submissionRepository = new Mock<ISubmissionWriteRepository>();
         _gameRoundSubmissionReadRepository = new Mock<IGameRoundSubmissionReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
+        _gameConcurrencyGuard = new Mock<IGameConcurrencyGuard>();
 
         _strategyResolver.Setup(x => x.Resolve(It.IsAny<string>())).Returns(_strategy.Object);
+        _gameConcurrencyGuard
+            .Setup(x =>
+                x.RunExclusiveAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Func<CancellationToken, Task<(Result<GameProblemCompletionDto>, IReadOnlyList<IDomainEvent>)>>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns<
+                Guid,
+                Func<CancellationToken, Task<(Result<GameProblemCompletionDto>, IReadOnlyList<IDomainEvent>)>>,
+                CancellationToken
+            >((_, action, ct) => action(ct));
 
         var gameProblemAdvancer = new GameProblemAdvancer(
             _gameProblemSequencer.Object,
             _gameExpiryCanceller.Object,
-            _strategyResolver.Object,
-            _gameReadRepository.Object,
-            _gameWriteRepository.Object
+            _strategyResolver.Object
         );
 
         _completer = new GameProblemCompleter(
@@ -55,6 +66,7 @@ public class GameProblemCompleterTests
             _unitOfWork.Object,
             _domainEventDispatcher.Object,
             gameProblemAdvancer,
+            _gameConcurrencyGuard.Object,
             _submissionRepository.Object,
             _gameRoundSubmissionReadRepository.Object
         );
@@ -377,10 +389,6 @@ public class GameProblemCompleterTests
             Times.Never
         );
         _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Once
-        );
         _domainEventDispatcher.Verify(
             x =>
                 x.DispatchAsync(
@@ -499,47 +507,28 @@ public class GameProblemCompleterTests
     }
 
     [Fact]
-    public async Task CompleteAsync_PositionConflictOnAdvance_CancelsOwnAttemptAndAdoptsTheWinningRound()
+    public async Task CompleteAsync_AdvanceFailsWithDuplicateProblem_DoesNotPersistTheAlreadySolvedRound()
     {
         var userId = Guid.NewGuid();
+        var game = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
+        game.Start();
         var problemId = Guid.NewGuid();
-        var ourAttemptProblemId = Guid.NewGuid();
-        var winningProblemId = Guid.NewGuid();
-        var gameMode = CreateGameMode();
+        StartParticipantOnProblem(game, userId, problemId);
         var submission = CreateAcceptedSubmission(userId);
-
-        Game BuildGame()
-        {
-            var g = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
-            g.Start();
-            g.AppendRound(problemId);
-            g.StartRoundFor(userId, problemId);
-            g.AppendRound(winningProblemId);
-            return g;
-        }
-
-        Game BuildPostPhase1Game()
-        {
-            var g = BuildGame();
-            g.SolveCurrentRound(userId, Guid.NewGuid());
-            return g;
-        }
-
         AllowSubmission(submission.Id);
-        _gameReadRepository
-            .SetupSequence(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(BuildGame())
-            .ReturnsAsync(BuildPostPhase1Game());
+        var gameMode = CreateGameMode();
+
+        _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionRepository
             .Setup(x => x.FindByIdAsync(submission.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
         _gameReadRepository
-            .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.FindGameModeByIdAsync(game.GameModeId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gameMode);
         _gameProblemSequencer
             .Setup(x =>
                 x.GetOrGenerateProblemAsync(
-                    It.IsAny<Game>(),
+                    game,
                     It.IsAny<int>(),
                     gameMode.Key,
                     _strategy.Object,
@@ -547,117 +536,48 @@ public class GameProblemCompleterTests
                 )
             )
             .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
-                (g, _, _, _, _) => g.AppendRound(ourAttemptProblemId)
+                (g, _, _, _, _) => g.AppendRound(problemId)
             )
-            .ReturnsAsync(ourAttemptProblemId);
-        _gameWriteRepository
-            .SetupSequence(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new GameProblemPositionConflictException(Guid.NewGuid(), new InvalidOperationException("conflict"))
-            )
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(problemId);
 
         Result<GameProblemCompletionDto> result = await _completer.CompleteAsync(
-            Guid.NewGuid(),
+            game.Id,
             problemId,
             submission.Id,
             userId,
             CancellationToken.None
         );
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(winningProblemId, result.Value.NextProblemId);
-        _gameReadRepository.Verify(
-            x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
-        _gameProblemSequencer.Verify(
+        Assert.Equal(ResultStatus.Error, result.Status);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _domainEventDispatcher.Verify(
             x =>
-                x.GetOrGenerateProblemAsync(
-                    It.IsAny<Game>(),
-                    It.IsAny<int>(),
-                    gameMode.Key,
-                    _strategy.Object,
+                x.DispatchAsync(
+                    It.IsAny<IEnumerable<StackDuel.Domain.SeedWork.IDomainEvent>>(),
                     It.IsAny<CancellationToken>()
                 ),
-            Times.Once
+            Times.Never
         );
     }
 
     [Fact]
-    public async Task CompleteAsync_PositionConflictPersistsAfterAdoptingTheWinningRound_Propagates()
+    public async Task CompleteAsync_RunsTheWholeOperationUnderTheGameConcurrencyGuard()
     {
-        var userId = Guid.NewGuid();
-        var problemId = Guid.NewGuid();
-        var winningProblemId = Guid.NewGuid();
-        var gameMode = CreateGameMode();
-        var submission = CreateAcceptedSubmission(userId);
-
-        Game BuildGame()
-        {
-            var g = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
-            g.Start();
-            g.AppendRound(problemId);
-            g.StartRoundFor(userId, problemId);
-            g.AppendRound(winningProblemId);
-            return g;
-        }
-
-        Game BuildPostPhase1Game()
-        {
-            var g = BuildGame();
-            g.SolveCurrentRound(userId, Guid.NewGuid());
-            return g;
-        }
-
-        AllowSubmission(submission.Id);
+        var gameId = Guid.NewGuid();
         _gameReadRepository
-            .SetupSequence(x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(BuildGame())
-            .ReturnsAsync(BuildPostPhase1Game());
-        _submissionRepository
-            .Setup(x => x.FindByIdAsync(submission.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(submission);
-        _gameReadRepository
-            .Setup(x => x.FindGameModeByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(gameMode);
-        var ourAttemptProblemId = Guid.NewGuid();
-        _gameProblemSequencer
-            .Setup(x =>
-                x.GetOrGenerateProblemAsync(
-                    It.IsAny<Game>(),
-                    It.IsAny<int>(),
-                    gameMode.Key,
-                    _strategy.Object,
+            .Setup(x => x.FindGameByIdAsync(gameId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Game?)null);
+
+        await _completer.CompleteAsync(gameId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+
+        _gameConcurrencyGuard.Verify(
+            x =>
+                x.RunExclusiveAsync(
+                    gameId,
+                    It.IsAny<Func<CancellationToken, Task<(Result<GameProblemCompletionDto>, IReadOnlyList<IDomainEvent>)>>>(),
                     It.IsAny<CancellationToken>()
-                )
-            )
-            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
-                (g, _, _, _, _) => g.AppendRound(ourAttemptProblemId)
-            )
-            .ReturnsAsync(ourAttemptProblemId);
-        _gameWriteRepository
-            .Setup(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new GameProblemPositionConflictException(Guid.NewGuid(), new InvalidOperationException("conflict"))
-            );
-
-        await Assert.ThrowsAsync<GameProblemPositionConflictException>(() =>
-            _completer.CompleteAsync(Guid.NewGuid(), problemId, submission.Id, userId, CancellationToken.None)
-        );
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
-        _gameReadRepository.Verify(
-            x => x.FindGameByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
+                ),
+            Times.Once
         );
     }
 }

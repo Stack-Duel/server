@@ -11,8 +11,6 @@ public class GameProblemAdvancerTests
     private Mock<IGameExpiryCanceller> _expiryCanceller = null!;
     private Mock<IProblemSelectionStrategyResolver> _strategyResolver = null!;
     private Mock<IProblemSelectionStrategy> _strategy = null!;
-    private Mock<IGameReadRepository> _gameReadRepository = null!;
-    private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private GameProblemAdvancer _advancer = null!;
 
     public GameProblemAdvancerTests()
@@ -21,18 +19,10 @@ public class GameProblemAdvancerTests
         _expiryCanceller = new Mock<IGameExpiryCanceller>();
         _strategyResolver = new Mock<IProblemSelectionStrategyResolver>();
         _strategy = new Mock<IProblemSelectionStrategy>();
-        _gameReadRepository = new Mock<IGameReadRepository>();
-        _gameWriteRepository = new Mock<IGameWriteRepository>();
 
         _strategyResolver.Setup(x => x.Resolve(It.IsAny<string>())).Returns(_strategy.Object);
 
-        _advancer = new GameProblemAdvancer(
-            _sequencer.Object,
-            _expiryCanceller.Object,
-            _strategyResolver.Object,
-            _gameReadRepository.Object,
-            _gameWriteRepository.Object
-        );
+        _advancer = new GameProblemAdvancer(_sequencer.Object, _expiryCanceller.Object, _strategyResolver.Object);
     }
 
     private static Game CreateRunningGameWithParticipant(out Guid userId)
@@ -67,18 +57,13 @@ public class GameProblemAdvancerTests
             )
             .ReturnsAsync(nextProblemId);
 
-        GameProblemAdvanceResult result = await _advancer.AdvanceAsync(game, userId, "solo_rush", CancellationToken.None);
+        Guid? result = await _advancer.AdvanceAsync(game, userId, "solo_rush", CancellationToken.None);
 
-        Assert.Equal(nextProblemId, result.NextProblemId);
-        Assert.Same(game, result.Game);
+        Assert.Equal(nextProblemId, result);
         Assert.Equal(nextProblemId, game.CurrentProblemIdFor(userId));
         _expiryCanceller.Verify(
             x => x.CancelIfScheduledAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
             Times.Never
-        );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Once
         );
     }
 
@@ -98,9 +83,9 @@ public class GameProblemAdvancerTests
             )
             .ReturnsAsync((Guid?)null);
 
-        GameProblemAdvanceResult result = await _advancer.AdvanceAsync(game, userId, "solo_rush", CancellationToken.None);
+        Guid? result = await _advancer.AdvanceAsync(game, userId, "solo_rush", CancellationToken.None);
 
-        Assert.Null(result.NextProblemId);
+        Assert.Null(result);
         Assert.True(game.Participants.First(p => p.UserId == userId).HasFinishedProblems);
         _expiryCanceller.Verify(x => x.CancelIfScheduledAsync(game, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -122,58 +107,5 @@ public class GameProblemAdvancerTests
         await _advancer.AdvanceAsync(game, userId, "duel", CancellationToken.None);
 
         _strategyResolver.Verify(x => x.Resolve("duel"), Times.Once);
-    }
-
-    [Fact]
-    public async Task AdvanceAsync_PositionConflict_CancelsOwnAttemptAndAdoptsTheWinningRoundFromAFreshRead()
-    {
-        var game = CreateRunningGameWithParticipant(out var userId);
-        var ourAttemptProblemId = Guid.NewGuid();
-        var winningProblemId = Guid.NewGuid();
-
-        var freshGame = new Game(Guid.NewGuid(), Guid.NewGuid(), [Guid.NewGuid()], [userId], 600);
-        freshGame.Start();
-        var startingProblemId = Guid.NewGuid();
-        freshGame.AppendRound(startingProblemId);
-        freshGame.StartRoundFor(userId, startingProblemId);
-        freshGame.SolveCurrentRound(userId, Guid.NewGuid());
-        freshGame.AppendRound(winningProblemId);
-
-        _sequencer
-            .Setup(x =>
-                x.GetOrGenerateProblemAsync(game, It.IsAny<int>(), "duel", _strategy.Object, It.IsAny<CancellationToken>())
-            )
-            .Callback<Game, int, string, IProblemSelectionStrategy, CancellationToken>(
-                (g, _, _, _, _) => g.AppendRound(ourAttemptProblemId)
-            )
-            .ReturnsAsync(ourAttemptProblemId);
-        _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(freshGame);
-        _gameWriteRepository
-            .SetupSequence(x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new GameProblemPositionConflictException(Guid.NewGuid(), new InvalidOperationException("conflict"))
-            )
-            .Returns(Task.CompletedTask);
-
-        GameProblemAdvanceResult result = await _advancer.AdvanceAsync(game, userId, "duel", CancellationToken.None);
-
-        Assert.Equal(winningProblemId, result.NextProblemId);
-        Assert.Same(freshGame, result.Game);
-        Assert.Equal(winningProblemId, freshGame.CurrentProblemIdFor(userId));
-        _sequencer.Verify(
-            x =>
-                x.GetOrGenerateProblemAsync(
-                    It.IsAny<Game>(),
-                    It.IsAny<int>(),
-                    It.IsAny<string>(),
-                    It.IsAny<IProblemSelectionStrategy>(),
-                    It.IsAny<CancellationToken>()
-                ),
-            Times.Once
-        );
-        _gameWriteRepository.Verify(
-            x => x.SaveChangesAsync(It.IsAny<Game>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
     }
 }
