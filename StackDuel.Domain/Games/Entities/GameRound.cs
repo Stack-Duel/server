@@ -4,6 +4,8 @@ namespace StackDuel.Domain.Games.Entities;
 
 public sealed class GameRound : Entity
 {
+    public const string GameIdPositionIndexName = "IX_game_rounds_game_id_position";
+
     public GameRound(Guid gameId, int position, Guid problemId)
     {
         if (gameId == Guid.Empty)

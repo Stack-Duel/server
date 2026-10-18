@@ -108,7 +108,8 @@ public class GetAdminGamePlayerHistoryHandlerTests
         game.AppendRound(skippedProblemId);
         game.StartRoundFor(participantId, skippedProblemId);
         game.AppendRound(firstProblemId);
-        game.SkipCurrentRoundAndAdvance(participantId, firstProblemId);
+        game.SkipCurrentRound(participantId);
+        game.StartRoundFor(participantId, firstProblemId);
 
         _gameReadRepository.Setup(r => r.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionReadRepository
@@ -146,7 +147,8 @@ public class GetAdminGamePlayerHistoryHandlerTests
         game.AppendRound(skippedProblemId);
         game.StartRoundFor(participantId, skippedProblemId);
         game.AppendRound(nextProblemId);
-        game.SkipCurrentRoundAndAdvance(participantId, nextProblemId);
+        game.SkipCurrentRound(participantId);
+        game.StartRoundFor(participantId, nextProblemId);
 
         _gameReadRepository.Setup(r => r.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionReadRepository
