@@ -15,6 +15,7 @@ internal sealed class GameProblemCompleter(
     IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IGameProblemAdvancer gameProblemAdvancer,
+    IGameConcurrencyGuard gameConcurrencyGuard,
     ISubmissionWriteRepository submissionRepository,
     IGameRoundSubmissionReadRepository gameRoundSubmissionReadRepository
 ) : IGameProblemCompleter
@@ -27,92 +28,89 @@ internal sealed class GameProblemCompleter(
         CancellationToken cancellationToken = default
     )
     {
-        int saveAttempt = 0;
-        while (true)
+        (Result<GameProblemCompletionDto> result, IReadOnlyList<IDomainEvent> events) outcome;
+        try
         {
-            var game = await gameReadRepository.FindGameByIdAsync(gameId, cancellationToken);
-            if (game is null)
-                return Result<GameProblemCompletionDto>.NotFound($"Game '{gameId}' was not found.");
+            outcome = await gameConcurrencyGuard.RunExclusiveAsync(
+                gameId,
+                async ct =>
+                {
+                    var game = await gameReadRepository.FindGameByIdAsync(gameId, ct);
+                    if (game is null)
+                        return (
+                            Result<GameProblemCompletionDto>.NotFound($"Game '{gameId}' was not found."),
+                            (IReadOnlyList<IDomainEvent>)[]
+                        );
 
-            var attempt = game.EvaluateProblemAttempt(
-                requestedByUserId,
-                problemId,
-                ParticipantAction.CompleteProblem,
-                DateTime.UtcNow
-            );
+                    Result<GameProblemCompletionDto> result = await EvaluateAndAdvanceAsync(
+                        game,
+                        problemId,
+                        submissionId,
+                        requestedByUserId,
+                        ct
+                    );
 
-            await PersistExpiryIfNeededAsync(game, attempt, cancellationToken);
+                    await unitOfWork.SaveChangesAsync(ct);
 
-            if (!attempt.IsEligible)
-                return GameProblemAttemptResult.ToFailure<GameProblemCompletionDto>(
-                    attempt,
-                    ParticipantAction.CompleteProblem
-                );
-
-            var participant = attempt.Participant!;
-
-            Result<GameProblemCompletionDto>? submissionFailure = await ValidateSubmissionAsync(
-                participant,
-                submissionId,
-                requestedByUserId,
+                    return (result, game.PopDomainEvents());
+                },
                 cancellationToken
             );
-            if (submissionFailure is not null)
-                return submissionFailure;
-
-            var gameMode = await gameReadRepository.FindGameModeByIdAsync(game.GameModeId, cancellationToken);
-            if (gameMode is null)
-                return Result<GameProblemCompletionDto>.NotFound("Game references a mode that no longer exists.");
-
-            game.RecordProblemSolved(requestedByUserId);
-
-            Guid? nextProblemId;
-            try
-            {
-                nextProblemId = await gameProblemAdvancer.AdvanceAsync(
-                    game,
-                    participant,
-                    gameMode.Key,
-                    onAdvance: nextProblemId =>
-                        game.SolveCurrentRoundAndAdvance(requestedByUserId, nextProblemId, submissionId),
-                    onFinish: () => game.SolveCurrentRound(requestedByUserId, submissionId),
-                    cancellationToken
-                );
-            }
-            catch (DuplicateGameProblemException)
-            {
-                return Result<GameProblemCompletionDto>.Error("Failed to advance to the next problem.");
-            }
-
-            try
-            {
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-            }
-            catch (GameProblemPositionConflictException) when (saveAttempt == 0)
-            {
-                saveAttempt++;
-                continue;
-            }
-
-            await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
-
-            return Result<GameProblemCompletionDto>.Success(
-                new GameProblemCompletionDto(participant.Score, nextProblemId)
-            );
         }
+        catch (DuplicateGameProblemException)
+        {
+            return Result<GameProblemCompletionDto>.Error("Failed to advance to the next problem.");
+        }
+
+        await domainEventDispatcher.DispatchAsync(outcome.events, cancellationToken);
+
+        return outcome.result;
     }
 
-    private async Task PersistExpiryIfNeededAsync(
+    private async Task<Result<GameProblemCompletionDto>> EvaluateAndAdvanceAsync(
         Game game,
-        GameProblemAttempt attempt,
+        Guid problemId,
+        Guid submissionId,
+        Guid requestedByUserId,
         CancellationToken cancellationToken
     )
     {
-        if (!attempt.GameJustExpired)
-            return;
+        var attempt = game.EvaluateProblemAttempt(
+            requestedByUserId,
+            problemId,
+            ParticipantAction.CompleteProblem,
+            DateTime.UtcNow
+        );
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
+        if (!attempt.IsEligible)
+            return GameProblemAttemptResult.ToFailure<GameProblemCompletionDto>(attempt, ParticipantAction.CompleteProblem);
+
+        var participant = attempt.Participant!;
+
+        Result<GameProblemCompletionDto>? submissionFailure = await ValidateSubmissionAsync(
+            participant,
+            submissionId,
+            requestedByUserId,
+            cancellationToken
+        );
+        if (submissionFailure is not null)
+            return submissionFailure;
+
+        var gameMode = await gameReadRepository.FindGameModeByIdAsync(game.GameModeId, cancellationToken);
+        if (gameMode is null)
+            return Result<GameProblemCompletionDto>.NotFound("Game references a mode that no longer exists.");
+
+        game.RecordProblemSolved(requestedByUserId);
+        game.SolveCurrentRound(requestedByUserId, submissionId);
+
+        Guid? nextProblemId = await gameProblemAdvancer.AdvanceAsync(
+            game,
+            requestedByUserId,
+            gameMode.Key,
+            cancellationToken
+        );
+
+        return Result<GameProblemCompletionDto>.Success(new GameProblemCompletionDto(participant.Score, nextProblemId));
     }
 
     private async Task<Result<GameProblemCompletionDto>?> ValidateSubmissionAsync(

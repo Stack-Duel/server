@@ -96,6 +96,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IGameProblemSequencer, GameProblemSequencer>();
         services.AddScoped<IGameExpiryCanceller, GameExpiryCanceller>();
         services.AddScoped<IGameProblemAdvancer, GameProblemAdvancer>();
+        services.AddScoped<IGameConcurrencyGuard, GameConcurrencyGuard>();
         services.AddScoped<IGameJoiner, GameJoiner>();
         services.AddScoped<IGameProblemCompleter, GameProblemCompleter>();
         services.AddScoped<ISubmissionCreator, SubmissionCreator>();
