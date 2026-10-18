@@ -33,7 +33,7 @@ internal sealed class GameRoundConfiguration : IEntityTypeConfiguration<GameRoun
         builder
             .HasIndex(nameof(GameRound.GameId), nameof(GameRound.Position))
             .IsUnique()
-            .HasDatabaseName("IX_game_rounds_game_id_position");
+            .HasDatabaseName(GameRound.GameIdPositionIndexName);
 
         builder.HasIndex(nameof(GameRound.GameId), nameof(GameRound.ProblemId)).IsUnique();
 

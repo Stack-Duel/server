@@ -78,7 +78,8 @@ public class GetGameProblemsHandlerTests
         game.AppendRound(solvedProblemId);
         game.StartRoundFor(requesterId, solvedProblemId);
         game.AppendRound(nextProblemId);
-        game.SolveCurrentRoundAndAdvance(requesterId, nextProblemId, submissionId);
+        game.SolveCurrentRound(requesterId, submissionId);
+        game.StartRoundFor(requesterId, nextProblemId);
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
 

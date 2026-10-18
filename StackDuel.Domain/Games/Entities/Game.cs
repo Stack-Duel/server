@@ -318,28 +318,6 @@ public sealed class Game : AggregateRoot
         CompleteCurrentRound(userId, GameRoundOutcome.Skipped, solvingSubmissionId: null);
     }
 
-    public void SolveCurrentRoundAndAdvance(Guid userId, Guid nextProblemId, Guid solvingSubmissionId)
-    {
-        Advance(userId, nextProblemId, GameRoundOutcome.Solved, solvingSubmissionId);
-    }
-
-    public void SkipCurrentRoundAndAdvance(Guid userId, Guid nextProblemId)
-    {
-        Advance(userId, nextProblemId, GameRoundOutcome.Skipped, solvingSubmissionId: null);
-    }
-
-    private void Advance(Guid userId, Guid nextProblemId, GameRoundOutcome outcome, Guid? solvingSubmissionId)
-    {
-        GameParticipant participant = RequireParticipant(userId);
-        GameRound nextRound = RequireRoundFor(nextProblemId);
-
-        if (participant.RoundResults.Any(result => result.RoundId == nextRound.Id))
-            throw new InvalidOperationException("Participant has already played the round being advanced to.");
-
-        CompleteCurrentRound(userId, outcome, solvingSubmissionId);
-        participant.StartRound(nextRound.Id);
-    }
-
     private void CompleteCurrentRound(Guid userId, GameRoundOutcome outcome, Guid? solvingSubmissionId)
     {
         GameParticipant participant = RequireParticipant(userId);
