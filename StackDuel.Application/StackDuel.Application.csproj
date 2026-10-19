@@ -4,6 +4,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Games\Dtos\CalculatingPlayerRankingScoreDto.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Ardalis.Result" />

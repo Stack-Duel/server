@@ -1,12 +1,14 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Notifications;
+using StackDuel.Application.Services.Games;
 using StackDuel.Domain.Games.Events;
 
 namespace StackDuel.Application.Events.Games;
 
 internal sealed partial class GameCompletedDomainEventHandler(
     IGameNotificationService gameNotificationService,
+    IPlayerGameRankingService playerGameRankingService,
     ILogger<GameCompletedDomainEventHandler> logger
 ) : INotificationHandler<DomainEventNotification<GameCompletedDomainEvent>>
 {
@@ -19,12 +21,11 @@ internal sealed partial class GameCompletedDomainEventHandler(
 
         try
         {
+            await playerGameRankingService.CalculatePlayerGameRankingAsync(e.GameId, cancellationToken);
             await gameNotificationService.NotifyGameCompletedAsync(e.GameId, e.Status, e.EndedAt, cancellationToken);
         }
         catch (Exception ex)
         {
-            // Push is purely a latency optimization over the client's own polling/re-fetch, so a
-            // failure here must never fault the command that finalized the game.
             LogNotifyFailed(ex, e.GameId);
         }
     }

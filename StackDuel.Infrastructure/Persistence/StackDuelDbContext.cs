@@ -26,6 +26,7 @@ using StackDuel.Domain.Tracks.Entities;
 using StackDuel.Domain.Users.Entities;
 using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
+using StackDuel.Domain.Rankings.Entities;
 
 namespace StackDuel.Infrastructure.Persistence;
 
@@ -130,6 +131,8 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
     public DbSet<Track> Tracks { get; init; }
 
     public DbSet<User> Users { get; init; }
+
+    public DbSet<PlayerSeasonRating> PlayerSeasonRatings { get; init; }
 
     public DbSet<UserAvatar> UserAvatars { get; init; }
 
