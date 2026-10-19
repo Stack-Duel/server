@@ -7,7 +7,5 @@ internal sealed class CalculatePlayerRankingsFromGameValidator : AbstractValidat
     public CalculatePlayerRankingsFromGameValidator()
     {
         RuleFor(command => command.GameId).NotEmpty();
-
-        RuleFor(command => command.SeasonId).NotEmpty();
     }
 }

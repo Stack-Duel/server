@@ -10,7 +10,6 @@ public interface IPlayerGameRankingService
     Task<Result<IEnumerable<CalculatedPlayerRankingScoreDto>>>
         CalculatePlayerGameRankingAsync(
             Guid gameId,
-            Guid seasonId,
             CancellationToken cancellationToken
         );
 }
@@ -22,14 +21,12 @@ internal sealed class PlayerGameRankingService(
     async Task<Result<IEnumerable<CalculatedPlayerRankingScoreDto>>>
         IPlayerGameRankingService.CalculatePlayerGameRankingAsync(
             Guid gameId,
-            Guid seasonId,
             CancellationToken cancellationToken
         )
     {
         return await mediator.Send(
             new CalculatePlayerRankingsFromGameCommand(
-                gameId,
-                seasonId
+                gameId
             ),
             cancellationToken
         );
