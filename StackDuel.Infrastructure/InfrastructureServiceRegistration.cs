@@ -246,56 +246,62 @@ public static class InfrastructureServiceRegistration
 
         services.AddQuartz(q =>
         {
-            q.AddJob<GameExpirySweepJob>(GameExpirySweepJob.Key, j => j.StoreDurably());
+            q.AddJob<GameExpirySweepJob>(j => j.WithIdentity(GameExpirySweepJob.Key).StoreDurably(true));
             q.AddTrigger(t =>
                 t.ForJob(GameExpirySweepJob.Key)
                     .WithIdentity("GameExpirySweepJob-trigger")
                     .WithCronSchedule(opts.GameExpirySweepJob.CronExpression)
             );
 
-            q.AddJob<SubmissionCleanupJob>(SubmissionCleanupJob.Key, j => j.StoreDurably());
+            q.AddJob<SubmissionCleanupJob>(j => j.WithIdentity(SubmissionCleanupJob.Key).StoreDurably(true));
             q.AddTrigger(t =>
                 t.ForJob(SubmissionCleanupJob.Key)
                     .WithIdentity("SubmissionCleanupJob-trigger")
                     .WithCronSchedule(opts.SubmissionCleanupJob.CronExpression)
             );
 
-            q.AddJob<SubmissionJobProcessorJob>(SubmissionJobProcessorJob.Key, j => j.StoreDurably());
+            q.AddJob<SubmissionJobProcessorJob>(j => j.WithIdentity(SubmissionJobProcessorJob.Key).StoreDurably(true));
             q.AddTrigger(t =>
                 t.ForJob(SubmissionJobProcessorJob.Key)
                     .WithIdentity("SubmissionJobProcessorJob-trigger")
                     .WithCronSchedule(opts.SubmissionJobProcessorJob.CronExpression)
             );
 
-            q.AddJob<TestCaseGenerationJobProcessorJob>(TestCaseGenerationJobProcessorJob.Key, j => j.StoreDurably());
+            q.AddJob<TestCaseGenerationJobProcessorJob>(j =>
+                j.WithIdentity(TestCaseGenerationJobProcessorJob.Key).StoreDurably(true)
+            );
             q.AddTrigger(t =>
                 t.ForJob(TestCaseGenerationJobProcessorJob.Key)
                     .WithIdentity("TestCaseGenerationJobProcessorJob-trigger")
                     .WithCronSchedule(opts.TestCaseGenerationJobProcessorJob.CronExpression)
             );
 
-            q.AddJob<TestCaseRefreshJob>(TestCaseRefreshJob.Key, j => j.StoreDurably());
+            q.AddJob<TestCaseRefreshJob>(j => j.WithIdentity(TestCaseRefreshJob.Key).StoreDurably(true));
             q.AddTrigger(t =>
                 t.ForJob(TestCaseRefreshJob.Key)
                     .WithIdentity("TestCaseRefreshJob-trigger")
                     .WithCronSchedule(opts.TestCaseRefreshJob.CronExpression)
             );
 
-            q.AddJob<ProblemValidationJobProcessorJob>(ProblemValidationJobProcessorJob.Key, j => j.StoreDurably());
+            q.AddJob<ProblemValidationJobProcessorJob>(j =>
+                j.WithIdentity(ProblemValidationJobProcessorJob.Key).StoreDurably(true)
+            );
             q.AddTrigger(t =>
                 t.ForJob(ProblemValidationJobProcessorJob.Key)
                     .WithIdentity("ProblemValidationJobProcessorJob-trigger")
                     .WithCronSchedule(opts.ProblemValidationJobProcessorJob.CronExpression)
             );
 
-            q.AddJob<AvatarCleanupJob>(AvatarCleanupJob.Key, j => j.StoreDurably());
+            q.AddJob<AvatarCleanupJob>(j => j.WithIdentity(AvatarCleanupJob.Key).StoreDurably(true));
             q.AddTrigger(t =>
                 t.ForJob(AvatarCleanupJob.Key)
                     .WithIdentity("AvatarCleanupJob-trigger")
                     .WithCronSchedule(opts.AvatarCleanupJob.CronExpression)
             );
 
-            q.AddJob<DailyChallengeAssignmentJob>(DailyChallengeAssignmentJob.Key, j => j.StoreDurably());
+            q.AddJob<DailyChallengeAssignmentJob>(j =>
+                j.WithIdentity(DailyChallengeAssignmentJob.Key).StoreDurably(true)
+            );
             q.AddTrigger(t =>
                 t.ForJob(DailyChallengeAssignmentJob.Key)
                     .WithIdentity("DailyChallengeAssignmentJob-trigger")

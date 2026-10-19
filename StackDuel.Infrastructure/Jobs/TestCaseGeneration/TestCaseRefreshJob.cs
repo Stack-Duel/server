@@ -10,10 +10,10 @@ internal sealed partial class TestCaseRefreshJob(ITestCaseRefreshService refresh
 {
     public static readonly JobKey Key = new(nameof(TestCaseRefreshJob), "TestCaseGeneration");
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
         LogExecuting();
-        int enqueued = await refreshService.EnqueueRefreshesAsync(context.CancellationToken);
+        int enqueued = await refreshService.EnqueueRefreshesAsync(cancellationToken);
         LogCompleted(enqueued);
     }
 

@@ -12,10 +12,10 @@ internal sealed partial class SubmissionCleanupJob(
 {
     public static readonly JobKey Key = new(nameof(SubmissionCleanupJob), "Submissions");
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
         LogExecuting();
-        await cleanupService.RunAsync(context.CancellationToken);
+        await cleanupService.RunAsync(cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Executing SubmissionCleanupJob")]

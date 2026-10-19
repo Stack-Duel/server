@@ -12,10 +12,10 @@ internal sealed partial class GameExpirySweepJob(
 {
     public static readonly JobKey Key = new(nameof(GameExpirySweepJob), "Games");
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
         LogExecuting();
-        await sweepService.RunAsync(context.CancellationToken);
+        await sweepService.RunAsync(cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Executing GameExpirySweepJob")]

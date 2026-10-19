@@ -11,11 +11,11 @@ internal sealed partial class SubmissionJobProcessorJob(
 {
     public static readonly JobKey Key = new(nameof(SubmissionJobProcessorJob), "Submissions");
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
         LogExecuting();
 
-        await processorService.RunAsync(context.CancellationToken);
+        await processorService.RunAsync(cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Executing SubmissionJobProcessorJob")]

@@ -11,10 +11,10 @@ internal sealed partial class ProblemValidationJobProcessorJob(
 {
     public static readonly JobKey Key = new(nameof(ProblemValidationJobProcessorJob), "ProblemValidation");
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
         LogExecuting();
-        await processorService.RunAsync(context.CancellationToken);
+        await processorService.RunAsync(cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Executing ProblemValidationJobProcessorJob")]

@@ -12,10 +12,10 @@ internal sealed partial class DailyChallengeAssignmentJob(
 {
     public static readonly JobKey Key = new(nameof(DailyChallengeAssignmentJob), "DailyChallenges");
 
-    public async Task Execute(IJobExecutionContext context)
+    public async ValueTask Execute(IJobExecutionContext context, CancellationToken cancellationToken)
     {
         LogExecuting();
-        await assignmentService.AssignUpcomingChallengesAsync(context.CancellationToken);
+        await assignmentService.AssignUpcomingChallengesAsync(cancellationToken);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Executing DailyChallengeAssignmentJob")]
