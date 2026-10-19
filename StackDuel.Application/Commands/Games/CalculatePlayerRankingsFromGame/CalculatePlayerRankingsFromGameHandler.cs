@@ -1,31 +1,61 @@
-
 using Ardalis.Result;
+using FluentValidation;
 using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Services.Games;
 using StackDuel.Domain.Games;
-using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.Games.Enums;
 
 namespace StackDuel.Application.Commands.Games.CalculatePlayerRankingsFromGame;
 
-internal sealed partial class CalculatePlayerRankingsFromGameHandler(IPlayerScoreCalculationService playerScoreCalculationService, IGameWriteRepository gameWriteRepository) : AbstractCommandHandler<CalculatePlayerRankingsFromGameCommand, IEnumerable<CalculatedPlayerRankingScoreDto>>
+internal sealed class CalculatePlayerRankingsFromGameHandler(
+    IPlayerScoreCalculationService playerScoreCalculationService,
+    IGameWriteRepository gameWriteRepository,
+    IValidator<CalculatePlayerRankingsFromGameCommand> validator
+) : AbstractCommandHandler<
+    CalculatePlayerRankingsFromGameCommand,
+    IEnumerable<CalculatedPlayerRankingScoreDto>
+>(validator)
 {
-    protected override async Task<Result<IEnumerable<CalculatedPlayerRankingScoreDto>>> HandleValidated(
-
+    protected override async Task<
+        Result<IEnumerable<CalculatedPlayerRankingScoreDto>>
+    > HandleValidated(
         CalculatePlayerRankingsFromGameCommand request,
         CancellationToken cancellationToken
     )
     {
-        Game? game = await gameWriteRepository.FindByIdAsync(request.GameId, cancellationToken);
+        var game = await gameWriteRepository.FindByIdAsync(
+            request.GameId,
+            cancellationToken
+        );
 
-        // if the game is null, return a not found result
-
-        // validate that the game is actually over and that the player rankings can be calculated, and haven't already been calculated.
-
-        if (game is null) {
-            return Result.NotFound($"Game with ID {request.GameId} not found.");
+        if (game is null)
+        {
+            return Result.NotFound(
+                $"Game with ID {request.GameId} not found."
+            );
         }
 
-        // Implement the logic to calculate player rankings from the game here.
-        return Result.Success(await playerScoreCalculationService.CalculatePlayerScoresAsync(game, cancellationToken));
+        if (game.Status != GameStatus.Completed)
+        {
+            return Result.Error(
+                "Ratings can only be calculated for completed games."
+            );
+        }
+
+        if (game.Participants.Count < 2)
+        {
+            return Result.Error(
+                "Rating calculation requires at least two players."
+            );
+        }
+
+        var ratings =
+            await playerScoreCalculationService.CalculatePlayerScoresAsync(
+                game,
+                request.SeasonId,
+                cancellationToken
+            );
+
+        return Result.Success(ratings);
     }
-}   
+}

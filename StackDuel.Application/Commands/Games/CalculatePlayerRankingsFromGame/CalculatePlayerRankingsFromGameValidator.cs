@@ -2,10 +2,12 @@ using FluentValidation;
 
 namespace StackDuel.Application.Commands.Games.CalculatePlayerRankingsFromGame;
 
-internal sealed class CalculatPlayerRankingsFromGameValidator : AbstractValidator<CalculatePlayerRankingsFromGameCommand>
+internal sealed class CalculatePlayerRankingsFromGameValidator : AbstractValidator<CalculatePlayerRankingsFromGameCommand>
 {
-    public CalculatPlayerRankingsFromGameValidator()
+    public CalculatePlayerRankingsFromGameValidator()
     {
-        RuleFor(x => x.GameId).NotEmpty();
+        RuleFor(command => command.GameId).NotEmpty();
+
+        RuleFor(command => command.SeasonId).NotEmpty();
     }
 }
