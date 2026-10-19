@@ -63,7 +63,7 @@ public sealed class Game : AggregateRoot
         int seatNo = 1;
         foreach (Guid userId in participantIds)
         {
-            _participants.Add(new GameParticipant(userId, seatNo));
+            _participants.Add(new GameParticipant(Id, userId, seatNo));
             seatNo++;
         }
     }
@@ -82,22 +82,12 @@ public sealed class Game : AggregateRoot
         if (_participants.Count >= maxPlayers)
             throw new InvalidOperationException("Game is already full.");
 
-        // One past the highest seat currently in use, not _participants.Count + 1 — a seat
-        // freed by Leave must never be reissued while a lower-numbered seat is still taken,
-        // or the new participant would collide with it on the (game_id, seat_no) unique index.
         int nextSeatNo = _participants.Count == 0 ? 1 : _participants.Max(p => p.SeatNo) + 1;
-        _participants.Add(new GameParticipant(userId, nextSeatNo));
+        _participants.Add(new GameParticipant(Id, userId, nextSeatNo));
 
         AddDomainEvent(new GameLobbyUpdatedDomainEvent(Id));
     }
 
-    /// <summary>
-    /// Removes a participant from a still-Pending lobby. If they were the last one left, the
-    /// lobby is cancelled outright — there's no one left to host it. Deliberately never
-    /// renumbers the remaining seats: <see cref="HostUserId"/> is always whoever currently holds
-    /// the lowest seat number, so a non-host leaving just shrinks the roster, and a host leaving
-    /// hands the role to the next-lowest seat automatically without touching anyone else's row.
-    /// </summary>
     public void Leave(Guid userId)
     {
         if (Status != GameStatus.Pending)
@@ -119,13 +109,6 @@ public sealed class Game : AggregateRoot
         }
     }
 
-    /// <summary>
-    /// Closes the lobby outright — cancels it regardless of how many participants remain, unlike
-    /// <see cref="Leave"/> (which only removes the caller and keeps the lobby going for whoever's
-    /// left, if anyone). Only valid while still Pending — once the game has started there's no
-    /// "close", only Forfeit or letting the clock run out. Authorization (host-only) is the
-    /// caller's responsibility, matching Start/Forfeit/etc.
-    /// </summary>
     public void CloseLobby()
     {
         if (Status != GameStatus.Pending)
@@ -136,12 +119,6 @@ public sealed class Game : AggregateRoot
         AddDomainEvent(new GameLobbyUpdatedDomainEvent(Id));
     }
 
-    /// <summary>
-    /// The current host: whoever holds the lowest seat number among current participants. Not
-    /// necessarily seat 1 — Leave never renumbers, so if the original seat-1 host leaves, the
-    /// role passes to whoever has the next-lowest seat instead. Null only for an empty
-    /// (Cancelled) game, since every Game always has at least one participant otherwise.
-    /// </summary>
     public Guid? HostUserId => _participants.OrderBy(p => p.SeatNo).FirstOrDefault()?.UserId;
 
     public void Start(int countdownSeconds = 0)
@@ -167,23 +144,11 @@ public sealed class Game : AggregateRoot
         AddDomainEvent(new GameCompletedDomainEvent(Id, Status, EndedAt.Value));
     }
 
-    /// <summary>
-    /// True when a Running game's time limit has elapsed. Used as a defense-in-depth check —
-    /// independent of whether the scheduled GameTimeExpiredMessage/sweep job has finalized the
-    /// game yet — anywhere the game is read or acted on, so a slow/lost message can never let
-    /// the game outlive its clock.
-    /// </summary>
     public bool HasExpired(DateTime nowUtc) =>
         Status == GameStatus.Running
         && StartedAt is not null
         && nowUtc >= StartedAt.Value.AddSeconds(TimeLimitInSeconds);
 
-    /// <summary>
-    /// Completes the game if it has expired, returning whether it did. Callers that mutate
-    /// state on a Running game (submit, complete-problem) or read it (get game state) should
-    /// call this first so an expired game is always finalized before anything else happens,
-    /// regardless of whether the message-bus expiry path has caught up yet.
-    /// </summary>
     public bool CompleteIfExpired(DateTime nowUtc)
     {
         if (!HasExpired(nowUtc))
@@ -202,13 +167,6 @@ public sealed class Game : AggregateRoot
         EndedAt = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Forfeits one participant. The game itself only ends once every participant has stopped
-    /// playing (see <see cref="CompleteIfEveryoneStopped"/>) — in a multiplayer mode, one player
-    /// quitting shouldn't cut the others' run short; they keep playing (and can still improve
-    /// their score) until the clock runs out or everyone else has also stopped, at which point
-    /// the highest score among all participants wins.
-    /// </summary>
     public void Forfeit(Guid userId)
     {
         if (Status != GameStatus.Running)
@@ -223,15 +181,6 @@ public sealed class Game : AggregateRoot
         CompleteIfEveryoneStopped();
     }
 
-    /// <summary>
-    /// Everything CompleteProblemHandler and SkipProblemHandler need to know before touching a
-    /// participant's current problem, in one call: is there such a participant, did the game just
-    /// auto-complete because its clock ran out (checked here, before the running-check, exactly
-    /// like the two handlers used to do it independently), and — if it's still running — is this
-    /// participant actually eligible to attempt <paramref name="action"/> against
-    /// <paramref name="problemId"/>. Forfeit isn't covered here: it doesn't target a problem, so it
-    /// only ever needed <see cref="GameParticipant.CanPerform"/>.
-    /// </summary>
     public GameProblemAttempt EvaluateProblemAttempt(
         Guid userId,
         Guid problemId,
@@ -248,14 +197,36 @@ public sealed class Game : AggregateRoot
         if (Status != GameStatus.Running)
             return new GameProblemAttempt(participant, justExpired, ProblemAttemptEligibility.GameNotRunning);
 
-        return new GameProblemAttempt(participant, justExpired, participant.CanAttemptProblem(action, problemId));
+        return new GameProblemAttempt(participant, justExpired, EvaluateEligibility(participant, action, problemId));
     }
 
-    /// <summary>
-    /// Records a solved problem for a participant — bumps their score and raises
-    /// GameProgressUpdatedDomainEvent so opponents watching the Score tab find out promptly
-    /// instead of seeing stale numbers until something else happens to trigger a refetch.
-    /// </summary>
+    private ProblemAttemptEligibility EvaluateEligibility(
+        GameParticipant participant,
+        ParticipantAction action,
+        Guid problemId
+    )
+    {
+        if (!participant.CanPerform(action))
+            return ProblemAttemptEligibility.ParticipantStopped;
+
+        Guid? currentProblemId = CurrentProblemIdFor(participant);
+        if (!currentProblemId.HasValue)
+            return ProblemAttemptEligibility.RoundNotStarted;
+
+        return currentProblemId.Value == problemId
+            ? ProblemAttemptEligibility.Eligible
+            : ProblemAttemptEligibility.ProblemMismatch;
+    }
+
+    private Guid? CurrentProblemIdFor(GameParticipant participant)
+    {
+        Guid? roundId = participant.CurrentRoundId;
+        if (!roundId.HasValue)
+            return null;
+
+        return _rounds.FirstOrDefault(round => round.Id == roundId.Value)?.ProblemId;
+    }
+
     public void RecordProblemSolved(Guid userId)
     {
         if (Status != GameStatus.Running)
@@ -270,11 +241,6 @@ public sealed class Game : AggregateRoot
         AddDomainEvent(new GameProgressUpdatedDomainEvent(Id));
     }
 
-    /// <summary>
-    /// Marks a participant as having exhausted the problem pool. Same "doesn't end the game alone"
-    /// rule as <see cref="Forfeit"/> — they're just done for a different reason (nothing left to
-    /// solve, rather than quitting).
-    /// </summary>
     public void FinishProblemsFor(Guid userId)
     {
         if (Status != GameStatus.Running)
@@ -289,15 +255,6 @@ public sealed class Game : AggregateRoot
         CompleteIfEveryoneStopped();
     }
 
-    /// <summary>
-    /// Completes the game if every participant has stopped playing (forfeited or run out of
-    /// problems — any mix), returning whether it did. Called after Forfeit/FinishProblemsFor, and
-    /// also safe to call from a read path (e.g. GetGameState) as a self-healing check: two
-    /// participants stopping via concurrent requests can each read the game before the other's
-    /// write lands, so neither sees "everyone's done" and the game is left Running with nothing
-    /// left to happen in it until the expiry sweep eventually catches it. Calling this on the next
-    /// read closes that window immediately instead of waiting for the clock.
-    /// </summary>
     public bool CompleteIfEveryoneStopped()
     {
         if (Status != GameStatus.Running)
@@ -310,48 +267,83 @@ public sealed class Game : AggregateRoot
         return true;
     }
 
-    /// <summary>
-    /// The problem id every participant who has reached <paramref name="position"/> was (or will
-    /// be) given, if anyone has reached it yet. Null means no participant has gotten there —
-    /// the caller is the first, and must generate one and record it via
-    /// <see cref="AppendProblem"/> so every later arrival reuses the exact same problem instead
-    /// of each participant rolling independently.
-    /// </summary>
     public Guid? ProblemIdAtPosition(int position) =>
-        _problemSequence.FirstOrDefault(p => p.Position == position)?.ProblemId;
+        _rounds.FirstOrDefault(round => round.Position == position)?.ProblemId;
 
-    /// <summary>
-    /// Extends the shared problem sequence by one slot, at whatever the next position is. Only
-    /// ever called after <see cref="ProblemIdAtPosition"/> came back null for that position — this
-    /// is what makes the sequence a single shared list instead of independent per-participant
-    /// selection: the first participant to reach a new position generates it, and it's persisted
-    /// here so everyone after them lands on the identical problem.
-    /// </summary>
-    public void AppendProblem(Guid problemId)
+    public void AppendRound(Guid problemId)
     {
         if (problemId == Guid.Empty)
             throw new ArgumentException("Problem id must not be empty.", nameof(problemId));
 
-        int nextPosition = _problemSequence.Count;
-        _problemSequence.Add(new GameProblem(nextPosition, problemId));
+        if (_rounds.Any(round => round.ProblemId == problemId))
+            throw new DuplicateGameProblemException(Id, problemId);
+
+        _rounds.Add(new GameRound(Id, _rounds.Count, problemId));
     }
 
-    /// <summary>
-    /// Records the transport handle (e.g. Azure Service Bus sequence number) for the scheduled
-    /// GameTimeExpiredMessage tied to this run of the game, so it can be cancelled later if the
-    /// game ends early (forfeit) or gets rescheduled.
-    /// </summary>
+    public Guid? CurrentProblemIdFor(Guid userId)
+    {
+        GameParticipant? participant = _participants.FirstOrDefault(p => p.UserId == userId);
+        return participant is null ? null : CurrentProblemIdFor(participant);
+    }
+
+    public IReadOnlyList<Guid> ExcludedProblemIdsFor(Guid userId)
+    {
+        GameParticipant? participant = _participants.FirstOrDefault(p => p.UserId == userId);
+        if (participant is null)
+            return [];
+
+        HashSet<Guid> reachedRoundIds = [.. participant.RoundResults.Select(result => result.RoundId)];
+        if (participant.CurrentRoundId.HasValue)
+            reachedRoundIds.Add(participant.CurrentRoundId.Value);
+
+        return [.. _rounds.Where(round => reachedRoundIds.Contains(round.Id)).Select(round => round.ProblemId)];
+    }
+
+    public int RoundsReachedFor(Guid userId) =>
+        _participants.FirstOrDefault(p => p.UserId == userId)?.RoundsReached ?? 0;
+
+    public void StartRoundFor(Guid userId, Guid problemId)
+    {
+        RequireParticipant(userId).StartRound(RequireRoundFor(problemId).Id);
+    }
+
+    public void SolveCurrentRound(Guid userId, Guid solvingSubmissionId)
+    {
+        CompleteCurrentRound(userId, GameRoundOutcome.Solved, solvingSubmissionId);
+    }
+
+    public void SkipCurrentRound(Guid userId)
+    {
+        CompleteCurrentRound(userId, GameRoundOutcome.Skipped, solvingSubmissionId: null);
+    }
+
+    private void CompleteCurrentRound(Guid userId, GameRoundOutcome outcome, Guid? solvingSubmissionId)
+    {
+        GameParticipant participant = RequireParticipant(userId);
+
+        if (!participant.CurrentRoundId.HasValue)
+            throw new InvalidOperationException("Participant is not on a round.");
+
+        if (outcome == GameRoundOutcome.Skipped)
+            participant.UseSkip();
+
+        participant.CompleteCurrentRound(outcome, solvingSubmissionId);
+    }
+
+    private GameParticipant RequireParticipant(Guid userId) =>
+        _participants.FirstOrDefault(p => p.UserId == userId)
+        ?? throw new InvalidOperationException("User is not a participant in this game.");
+
+    private GameRound RequireRoundFor(Guid problemId) =>
+        _rounds.FirstOrDefault(round => round.ProblemId == problemId)
+        ?? throw new InvalidOperationException($"Game has no round for problem '{problemId}'.");
+
     public void AttachScheduledExpiry(long sequenceNumber)
     {
         ScheduledExpirySequenceNumber = sequenceNumber;
     }
 
-    /// <summary>
-    /// Clears the recorded scheduled-expiry handle once it's no longer relevant — e.g. after a
-    /// cancellation attempt (successful or not) on early forfeit. Safe to call regardless of
-    /// whether the underlying transport could actually honor the cancellation; the
-    /// GameTimeExpiredMessage consumer re-verifies game state independently either way.
-    /// </summary>
     public void ClearScheduledExpiry()
     {
         ScheduledExpirySequenceNumber = null;
@@ -369,11 +361,6 @@ public sealed class Game : AggregateRoot
     public DateTime? StartedAt { get; private set; }
     public DateTime? EndedAt { get; private set; }
 
-    /// <summary>
-    /// Azure Service Bus sequence number for the scheduled expiry message, when the active
-    /// transport supports cancellation by handle. Null on RabbitMQ (no such handle exists) or
-    /// before the domain event handler has attached it.
-    /// </summary>
     public long? ScheduledExpirySequenceNumber { get; private set; }
 
     public Guid PoolId { get; private set; }
@@ -382,14 +369,9 @@ public sealed class Game : AggregateRoot
 
     public IReadOnlyCollection<GameTrack> Tracks => _tracks.AsReadOnly();
 
-    /// <summary>
-    /// The shared problem sequence for this game, in position order. Every participant advances
-    /// through this same list rather than each getting an independently-selected run of
-    /// problems — see <see cref="ProblemIdAtPosition"/> and <see cref="AppendProblem"/>.
-    /// </summary>
-    public IReadOnlyCollection<GameProblem> ProblemSequence => _problemSequence.AsReadOnly();
+    public IReadOnlyCollection<GameRound> Rounds => _rounds.AsReadOnly();
 
     private readonly List<GameParticipant> _participants = [];
     private readonly List<GameTrack> _tracks = [];
-    private readonly List<GameProblem> _problemSequence = [];
+    private readonly List<GameRound> _rounds = [];
 }

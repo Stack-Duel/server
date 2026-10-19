@@ -1,9 +1,11 @@
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Application.Events;
 using StackDuel.Application.Images;
 using StackDuel.Application.Services.Users;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
+using StackDuel.Domain.Users.Events;
 using StackDuel.Domain.Users.ValueObjects;
 
 namespace StackDuel.Application.Commands.Users.UploadUserAvatar;
@@ -12,7 +14,8 @@ internal sealed class UploadUserAvatarHandler(
     IValidator<UploadUserAvatarCommand> validator,
     IUserWriteRepository userRepository,
     IUserAvatarWriteRepository userAvatarRepository,
-    IAvatarBlobStorage avatarBlobStorage
+    IAvatarBlobStorage avatarBlobStorage,
+    IDomainEventDispatcher domainEventDispatcher
 ) : AbstractCommandHandler<UploadUserAvatarCommand, string>(validator)
 {
     private const int MaxAvatarsToKeep = 3;
@@ -43,6 +46,11 @@ internal sealed class UploadUserAvatarHandler(
 
         user.UpdateImageUrl(new ImageUrl(blobUrl));
         await userRepository.UpdateAsync(user, cancellationToken);
+
+        await domainEventDispatcher.DispatchAsync(
+            [new UserAccessContextChangedDomainEvent(user.Sub)],
+            cancellationToken
+        );
 
         await PruneOldAvatarsAsync(request.UserId, cancellationToken);
 

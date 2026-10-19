@@ -27,7 +27,7 @@ internal sealed class CreateGameHandler(
         GameMode? gameMode = await gameReadRepository.FindGameModeByKeyAsync(request.GameModeKey, cancellationToken);
 
         if (gameMode is null)
-            return Result<Guid>.NotFound($"Game mode '{request.GameModeKey}' was not found or is not active.");
+            return Result.NotFound($"Game mode '{request.GameModeKey}' was not found or is not active.");
 
         string[] requestedTrackKeys = [.. request.TrackSelections.Select(s => s.TrackKey).Distinct()];
         IReadOnlyList<Track> tracks = await trackReadRepository.FindByKeysAsync(requestedTrackKeys, cancellationToken);
@@ -35,9 +35,7 @@ internal sealed class CreateGameHandler(
         if (tracks.Count != requestedTrackKeys.Length)
         {
             string[] missingKeys = requestedTrackKeys.Except(tracks.Select(t => t.Key)).ToArray();
-            return Result<Guid>.NotFound(
-                $"Track(s) '{string.Join(", ", missingKeys)}' were not found or are not active."
-            );
+            return Result.NotFound($"Track(s) '{string.Join(", ", missingKeys)}' were not found or are not active.");
         }
 
         Dictionary<string, Track> trackByKey = tracks.ToDictionary(t => t.Key);

@@ -1,5 +1,3 @@
-using StackDuel.Application.Commands;
-
 namespace StackDuel.Application.Commands.Games.SubmitGameProblem;
 
 internal sealed record SubmitGameProblemCommand(

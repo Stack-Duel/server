@@ -7,13 +7,14 @@ using StackDuel.Application.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Tracks.Entities;
 
 namespace StackDuel.Application.Queries.Games.GetGameState;
 
 internal sealed class GetGameStateHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IGameExpiryCanceller gameExpiryCanceller,
     IDomainEventDispatcher domainEventDispatcher,
     IUserReadRepository userReadRepository,
@@ -33,18 +34,13 @@ internal sealed class GetGameStateHandler(
 
         if (game.CompleteIfExpired(DateTime.UtcNow))
         {
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
         }
         else if (game.CompleteIfEveryoneStopped())
         {
-            // Self-healing for the race where two participants stop playing (forfeit/finish) via
-            // concurrent requests and each writes before seeing the other's — neither call
-            // completes the game, so it's left Running with nobody left to act in it until the
-            // next read notices. Early completion (not via the clock), so cancel the now-moot
-            // scheduled expiry too, same as Forfeit/CompleteProblem do for their own completions.
             await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
         }
 
@@ -67,13 +63,23 @@ internal sealed class GetGameStateHandler(
         );
         Dictionary<Guid, string> trackNamesById = tracks.ToDictionary(t => t.Id, t => t.Name);
 
+        GameLatestSubmissionDto? viewerLatestSubmission = await FindViewerLatestSubmissionAsync(
+            game,
+            request.RequestedByUserId,
+            cancellationToken
+        );
+
         var participants = game
             .Participants.Select(p =>
             {
                 userMap.TryGetValue(p.UserId, out UserDto? user);
 
-                GameCurrentProblemDto? currentProblem =
-                    p.ProblemSession != null ? new GameCurrentProblemDto(p.ProblemSession.CurrentProblemId) : null;
+                Guid? currentProblemId = game.CurrentProblemIdFor(p.UserId);
+                bool isViewer = p.UserId == request.RequestedByUserId;
+
+                GameCurrentProblemDto? currentProblem = currentProblemId.HasValue
+                    ? new GameCurrentProblemDto(currentProblemId.Value, isViewer ? viewerLatestSubmission : null)
+                    : null;
 
                 return new GameParticipantDto(
                     p.UserId,
@@ -110,6 +116,24 @@ internal sealed class GetGameStateHandler(
                 game.JoinCode,
                 game.SkipsEnabled
             )
+        );
+    }
+
+    private async Task<GameLatestSubmissionDto?> FindViewerLatestSubmissionAsync(
+        Game game,
+        Guid requestedByUserId,
+        CancellationToken cancellationToken
+    )
+    {
+        GameParticipant? viewer = game.Participants.FirstOrDefault(p => p.UserId == requestedByUserId);
+
+        if (viewer is null || !viewer.CurrentRoundId.HasValue)
+            return null;
+
+        return await gameReadRepository.FindLatestRoundSubmissionAsync(
+            viewer.CurrentRoundId.Value,
+            viewer.Id,
+            cancellationToken
         );
     }
 }

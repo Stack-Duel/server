@@ -1,3 +1,5 @@
+using StackDuel.Domain.Games;
+using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Games.Events;
 using GameEntity = StackDuel.Domain.Games.Entities.Game;
@@ -78,8 +80,6 @@ public class GameTests
 
         var domainEvents = game.PopDomainEvents();
         Assert.Equal(game.Id, domainEvents.OfType<GameStartedDomainEvent>().Single().GameId);
-        // participants still sitting in the lobby need a push to learn the game just started,
-        // not just the players who joined/left it
         Assert.Equal(game.Id, domainEvents.OfType<GameLobbyUpdatedDomainEvent>().Single().GameId);
     }
 
@@ -312,11 +312,6 @@ public class GameTests
     public void CompleteIfEveryoneStopped_EveryoneStopped_CompletesGame_AndReturnsTrue()
     {
         GameEntity game = CreateRunningDuel();
-        // Simulates the race this method exists to close: two concurrent Forfeit/FinishProblemsFor
-        // calls, each reading the game before the other's write lands, so neither one's own
-        // internal "is everyone done" check ever sees the full picture — mutating the participants
-        // directly here (bypassing Game.Forfeit/FinishProblemsFor's own auto-complete) reproduces
-        // that end state: everyone individually stopped, but the game itself never got completed.
         game.Participants.Single(p => p.UserId == OpponentId).Forfeit();
         game.Participants.Single(p => p.UserId == HostId).FinishProblems();
 
@@ -401,7 +396,6 @@ public class GameTests
         game.Leave(HostId);
 
         Assert.Equal(OpponentId, game.HostUserId);
-        // seats are never renumbered — the new host keeps the seat they already had
         Assert.Equal(2, game.Participants.Single(p => p.UserId == OpponentId).SeatNo);
     }
 
@@ -422,8 +416,6 @@ public class GameTests
     {
         GameEntity game = CreatePendingLobby(HostId);
         game.Join(OpponentId, maxPlayers: 3);
-        // OpponentId is seat 2. HostId (seat 1) leaves, freeing seat 1 — but it must not be
-        // reissued, since seat 2 is still taken and _participants.Count + 1 would collide with it.
         game.Leave(HostId);
 
         Guid thirdPlayerId = Guid.NewGuid();
@@ -460,7 +452,6 @@ public class GameTests
 
         Assert.Equal(GameStatus.Cancelled, game.Status);
         Assert.NotNull(game.EndedAt);
-        // closing doesn't clear the roster, just ends the game
         Assert.Equal(2, game.Participants.Count);
     }
 
@@ -503,36 +494,76 @@ public class GameTests
     }
 
     [Fact]
-    public void AppendProblem_FirstCall_OccupiesPositionZero()
+    public void AppendRound_FirstCall_OccupiesPositionZero()
     {
         GameEntity game = CreatePendingLobby(HostId);
         var problemId = Guid.NewGuid();
 
-        game.AppendProblem(problemId);
+        game.AppendRound(problemId);
 
         Assert.Equal(problemId, game.ProblemIdAtPosition(0));
     }
 
     [Fact]
-    public void AppendProblem_SecondCall_OccupiesTheNextPosition()
+    public void AppendRound_SecondCall_OccupiesTheNextPosition()
     {
         GameEntity game = CreatePendingLobby(HostId);
         var firstProblemId = Guid.NewGuid();
         var secondProblemId = Guid.NewGuid();
 
-        game.AppendProblem(firstProblemId);
-        game.AppendProblem(secondProblemId);
+        game.AppendRound(firstProblemId);
+        game.AppendRound(secondProblemId);
 
         Assert.Equal(firstProblemId, game.ProblemIdAtPosition(0));
         Assert.Equal(secondProblemId, game.ProblemIdAtPosition(1));
     }
 
     [Fact]
-    public void AppendProblem_EmptyGuid_Throws()
+    public void AppendRound_EmptyGuid_Throws()
     {
         GameEntity game = CreatePendingLobby(HostId);
 
-        Assert.Throws<ArgumentException>(() => game.AppendProblem(Guid.Empty));
+        Assert.Throws<ArgumentException>(() => game.AppendRound(Guid.Empty));
+    }
+
+    [Fact]
+    public void AppendRound_FirstCall_AlsoRecordsMatchingRound()
+    {
+        GameEntity game = CreatePendingLobby(HostId);
+        var problemId = Guid.NewGuid();
+
+        game.AppendRound(problemId);
+
+        GameRound round = Assert.Single(game.Rounds);
+        Assert.Equal(0, round.Position);
+        Assert.Equal(problemId, round.ProblemId);
+    }
+
+    [Fact]
+    public void AppendRound_TwoDifferentProblems_YieldsTwoRoundsAtSequentialPositions()
+    {
+        GameEntity game = CreatePendingLobby(HostId);
+        var firstProblemId = Guid.NewGuid();
+        var secondProblemId = Guid.NewGuid();
+
+        game.AppendRound(firstProblemId);
+        game.AppendRound(secondProblemId);
+
+        Assert.Equal(2, game.Rounds.Count);
+        Assert.Contains(game.Rounds, r => r.Position == 0 && r.ProblemId == firstProblemId);
+        Assert.Contains(game.Rounds, r => r.Position == 1 && r.ProblemId == secondProblemId);
+    }
+
+    [Fact]
+    public void AppendRound_SameProblemTwice_ThrowsAndLeavesNoPartialEntry()
+    {
+        GameEntity game = CreatePendingLobby(HostId);
+        var problemId = Guid.NewGuid();
+        game.AppendRound(problemId);
+
+        Assert.Throws<DuplicateGameProblemException>(() => game.AppendRound(problemId));
+
+        Assert.Single(game.Rounds);
     }
 
     [Fact]
@@ -571,7 +602,8 @@ public class GameTests
         GameEntity game = CreateRunningDuel();
         var participant = game.Participants.First(p => p.UserId == HostId);
         var problemId = Guid.NewGuid();
-        participant.InitializeProblemSession(problemId);
+        game.AppendRound(problemId);
+        game.StartRoundFor(HostId, problemId);
 
         var attempt = game.EvaluateProblemAttempt(
             HostId,
@@ -588,8 +620,9 @@ public class GameTests
     public void EvaluateProblemAttempt_ProblemIdDoesNotMatchCurrentProblem_ReturnsProblemMismatch()
     {
         GameEntity game = CreateRunningDuel();
-        var participant = game.Participants.First(p => p.UserId == HostId);
-        participant.InitializeProblemSession(Guid.NewGuid());
+        var currentProblemId = Guid.NewGuid();
+        game.AppendRound(currentProblemId);
+        game.StartRoundFor(HostId, currentProblemId);
 
         var attempt = game.EvaluateProblemAttempt(
             HostId,

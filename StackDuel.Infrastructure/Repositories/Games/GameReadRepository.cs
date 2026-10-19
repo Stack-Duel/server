@@ -37,10 +37,54 @@ internal sealed class GameReadRepository(StackDuelDbContext context) : IGameRead
         return await context
             .Games.AsSplitQuery()
             .Include(g => g.Participants)
+                .ThenInclude(p => p.RoundResults)
+                    .ThenInclude(r => r.Solution)
             .Include(g => g.Tracks)
                 .ThenInclude(t => t.Languages)
-            .Include(g => g.ProblemSequence)
+            .Include(g => g.Rounds)
             .FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
+    }
+
+    public async Task<Guid?> FindRoundIdByGameAndProblemAsync(
+        Guid gameId,
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .Games.Where(g => g.Id == gameId)
+            .SelectMany(g => g.Rounds)
+            .Where(r => r.ProblemId == problemId)
+            .Select(r => (Guid?)r.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<GameLatestSubmissionDto?> FindLatestRoundSubmissionAsync(
+        Guid roundId,
+        Guid participantId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .GameRoundSubmissions.AsNoTracking()
+            .Where(roundSubmission =>
+                roundSubmission.RoundId == roundId && roundSubmission.ParticipantId == participantId
+            )
+            .Join(
+                context.Submissions.AsNoTracking(),
+                roundSubmission => roundSubmission.SubmissionId,
+                submission => submission.Id,
+                (roundSubmission, submission) =>
+                    new
+                    {
+                        submission.Id,
+                        submission.Status,
+                        roundSubmission.CreatedAt,
+                    }
+            )
+            .OrderByDescending(submitted => submitted.CreatedAt)
+            .Select(submitted => new GameLatestSubmissionDto(submitted.Id, submitted.Status, submitted.CreatedAt))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<Game?> FindGameByJoinCodeAsync(string joinCode, CancellationToken cancellationToken = default)

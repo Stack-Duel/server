@@ -5,6 +5,7 @@ using StackDuel.Application.Services.Users;
 using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Users;
 using StackDuel.Domain.Users.Entities;
+using StackDuel.Domain.Users.Events;
 using StackDuel.Domain.Users.Factories;
 using StackDuel.Domain.Users.ValueObjects;
 
@@ -15,8 +16,7 @@ internal sealed partial class UpsertUserHandler(
     IAggregateFactory<User, CreateUserParams> userFactory,
     IUsernameGeneratorService usernameGenerator,
     IUserWriteRepository userRepository,
-    IDomainEventDispatcher domainEventDispatcher,
-    UserContext userContext
+    IDomainEventDispatcher domainEventDispatcher
 ) : AbstractCommandHandler<UpsertUserCommand>(validator)
 {
     protected override async Task<Result> HandleValidated(
@@ -24,9 +24,6 @@ internal sealed partial class UpsertUserHandler(
         CancellationToken cancellationToken
     )
     {
-        if (userContext.User is null)
-            return await CreateUserAsync(request, cancellationToken);
-
         User? user = await userRepository.FindBySubAsync(request.Sub, cancellationToken);
 
         return user is null
@@ -34,11 +31,29 @@ internal sealed partial class UpsertUserHandler(
             : await UpdateUserAsync(user, request, cancellationToken);
     }
 
+    private async Task<Result?> RejectIfUsernameTakenAsync(
+        string? requestedUsername,
+        Guid? currentUserId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (string.IsNullOrWhiteSpace(requestedUsername))
+            return null;
+
+        User? owner = await userRepository.FindByUsername(new Username(requestedUsername), cancellationToken);
+        if (owner is null || owner.Id == currentUserId)
+            return null;
+
+        return Result.Invalid(new ValidationError("Username", "That username is already taken."));
+    }
+
     private async Task<Result> CreateUserAsync(UpsertUserCommand request, CancellationToken cancellationToken)
     {
-        string username = string.IsNullOrWhiteSpace(request.Username)
-            ? usernameGenerator.Generate()
-            : request.Username;
+        Result? usernameTaken = await RejectIfUsernameTakenAsync(request.Username, null, cancellationToken);
+        if (usernameTaken is not null)
+            return usernameTaken;
+
+        string username = string.IsNullOrWhiteSpace(request.Username) ? usernameGenerator.Generate() : request.Username;
 
         User newUser = userFactory.Create(
             new CreateUserParams(username, request.Sub, request.ImageUrl, request.Tenant)
@@ -48,7 +63,11 @@ internal sealed partial class UpsertUserHandler(
         if (!string.IsNullOrWhiteSpace(request.Username))
             newUser.CompleteSetup();
 
-        await userRepository.AddAsync(newUser, cancellationToken);
+        bool inserted = await userRepository.TryAddBySubAsync(newUser, cancellationToken);
+
+        if (!inserted)
+            return await UpdateConcurrentlyProvisionedUserAsync(request, cancellationToken);
+
         await domainEventDispatcher.DispatchAsync(newUser.PopDomainEvents(), cancellationToken);
 
         if (request.LanguageIds is not null)
@@ -57,17 +76,32 @@ internal sealed partial class UpsertUserHandler(
         return Result.Success();
     }
 
+    private async Task<Result> UpdateConcurrentlyProvisionedUserAsync(
+        UpsertUserCommand request,
+        CancellationToken cancellationToken
+    )
+    {
+        User? winner = await userRepository.FindBySubAsync(request.Sub, cancellationToken);
+
+        return winner is null
+            ? Result.Error("Failed to provision the account.")
+            : await UpdateUserAsync(winner, request, cancellationToken);
+    }
+
     private async Task<Result> UpdateUserAsync(
         User user,
         UpsertUserCommand request,
         CancellationToken cancellationToken
     )
     {
-        bool usernameChanged =
-            !string.IsNullOrWhiteSpace(request.Username) && request.Username != user.Username.Value;
+        bool usernameChanged = !string.IsNullOrWhiteSpace(request.Username) && request.Username != user.Username.Value;
 
         if (usernameChanged)
         {
+            Result? usernameTaken = await RejectIfUsernameTakenAsync(request.Username, user.Id, cancellationToken);
+            if (usernameTaken is not null)
+                return usernameTaken;
+
             if (
                 user.UsernameLastChangedAt.HasValue
                 && DateTime.UtcNow - user.UsernameLastChangedAt.Value
@@ -93,6 +127,11 @@ internal sealed partial class UpsertUserHandler(
 
         if (request.LanguageIds is not null)
             await userRepository.SetLanguagePreferencesAsync(user.Id, request.LanguageIds, cancellationToken);
+
+        await domainEventDispatcher.DispatchAsync(
+            [new UserAccessContextChangedDomainEvent(user.Sub)],
+            cancellationToken
+        );
 
         return Result.Success();
     }

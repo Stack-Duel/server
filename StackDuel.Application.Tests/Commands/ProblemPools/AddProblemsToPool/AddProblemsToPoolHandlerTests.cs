@@ -4,6 +4,7 @@ using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
+using StackDuel.Domain.SeedWork;
 using AddProblemsToPoolCommand = StackDuel.Application.Commands.ProblemPools.AddProblemsToPool.AddProblemsToPoolCommand;
 using AddProblemsToPoolHandler = StackDuel.Application.Commands.ProblemPools.AddProblemsToPool.AddProblemsToPoolHandler;
 using AddProblemsToPoolValidator = StackDuel.Application.Commands.ProblemPools.AddProblemsToPool.AddProblemsToPoolValidator;
@@ -13,16 +14,19 @@ namespace StackDuel.Application.Tests.Commands.ProblemPools.AddProblemsToPool;
 public class AddProblemsToPoolHandlerTests
 {
     private Mock<IProblemPoolRepository> _problemPoolRepository = null!;
+    private Mock<IUnitOfWork> _unitOfWork = null!;
     private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private AddProblemsToPoolHandler _handler = null!;
 
     public AddProblemsToPoolHandlerTests()
     {
         _problemPoolRepository = new Mock<IProblemPoolRepository>();
+        _unitOfWork = new Mock<IUnitOfWork>();
         _problemReadRepository = new Mock<IProblemReadRepository>();
 
         _handler = new AddProblemsToPoolHandler(
             _problemPoolRepository.Object,
+            _unitOfWork.Object,
             _problemReadRepository.Object,
             new AddProblemsToPoolValidator()
         );
@@ -74,7 +78,7 @@ public class AddProblemsToPoolHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value);
         Assert.Equivalent(new[] { existingId1, existingId2 }, pool.ProblemIds, strict: true);
-        _problemPoolRepository.Verify(x => x.UpdateAsync(pool, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

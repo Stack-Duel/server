@@ -10,34 +10,26 @@ internal sealed class GameProblemAdvancer(
 {
     public async Task<Guid?> AdvanceAsync(
         Game game,
-        GameParticipant participant,
+        Guid userId,
         string gameModeKey,
-        Action<Guid> onAdvance,
-        Action? onFinish,
         CancellationToken cancellationToken = default
     )
     {
+        int position = game.RoundsReachedFor(userId);
         IProblemSelectionStrategy strategy = strategyResolver.Resolve(gameModeKey);
-        int nextPosition = participant.ProblemSession!.ExcludedProblemIds.Count;
-
         Guid? nextProblemId = await gameProblemSequencer.GetOrGenerateProblemAsync(
             game,
-            nextPosition,
+            position,
             gameModeKey,
             strategy,
             cancellationToken
         );
 
         if (nextProblemId is { } problemId)
-        {
-            onAdvance(problemId);
-        }
+            game.StartRoundFor(userId, problemId);
         else
         {
-            // Nothing left anywhere in the pool for this participant. They're done — not the whole
-            // game; other participants may still be mid-run. See Game.FinishProblemsFor.
-            onFinish?.Invoke();
-            game.FinishProblemsFor(participant.UserId);
+            game.FinishProblemsFor(userId);
             await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
         }
 

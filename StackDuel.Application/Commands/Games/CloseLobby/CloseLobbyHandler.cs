@@ -5,12 +5,13 @@ using StackDuel.Application.Games;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.Games.CloseLobby;
 
 internal sealed class CloseLobbyHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
     IDomainEventDispatcher domainEventDispatcher,
     IValidator<CloseLobbyCommand> validator
 ) : AbstractCommandHandler<CloseLobbyCommand>(validator)
@@ -39,7 +40,7 @@ internal sealed class CloseLobbyHandler(
 
         game.CloseLobby();
 
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result.Success();

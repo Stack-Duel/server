@@ -2,11 +2,13 @@ using Ardalis.Result;
 using FluentValidation;
 using StackDuel.Application.Problems;
 using StackDuel.Domain.Problems.Entities;
+using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Commands.ProblemPools.RemoveProblemFromPool;
 
 internal sealed class RemoveProblemFromPoolHandler(
     IProblemPoolRepository problemPoolRepository,
+    IUnitOfWork unitOfWork,
     IValidator<RemoveProblemFromPoolCommand> validator
 ) : AbstractCommandHandler<RemoveProblemFromPoolCommand>(validator)
 {
@@ -21,7 +23,7 @@ internal sealed class RemoveProblemFromPoolHandler(
 
         pool.RemoveProblem(request.ProblemId);
 
-        await problemPoolRepository.UpdateAsync(pool, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

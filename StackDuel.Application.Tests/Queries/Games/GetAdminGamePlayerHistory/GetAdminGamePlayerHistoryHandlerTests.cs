@@ -105,9 +105,11 @@ public class GetAdminGamePlayerHistoryHandlerTests
         var firstProblemId = Guid.NewGuid();
         var skippedProblemId = Guid.NewGuid();
 
-        GameParticipant participant = game.Participants.Single(p => p.UserId == participantId);
-        participant.InitializeProblemSession(firstProblemId);
-        participant.ProblemSession!.AddSkippedProblem(skippedProblemId);
+        game.AppendRound(skippedProblemId);
+        game.StartRoundFor(participantId, skippedProblemId);
+        game.AppendRound(firstProblemId);
+        game.SkipCurrentRound(participantId);
+        game.StartRoundFor(participantId, firstProblemId);
 
         _gameReadRepository.Setup(r => r.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionReadRepository
@@ -141,9 +143,12 @@ public class GetAdminGamePlayerHistoryHandlerTests
         var skippedProblemId = Guid.NewGuid();
         var lastAttemptAt = new DateTime(2026, 1, 1, 0, 5, 0, DateTimeKind.Utc);
 
-        GameParticipant participant = game.Participants.Single(p => p.UserId == participantId);
-        participant.InitializeProblemSession(skippedProblemId);
-        participant.ProblemSession!.AddSkippedProblem(skippedProblemId);
+        var nextProblemId = Guid.NewGuid();
+        game.AppendRound(skippedProblemId);
+        game.StartRoundFor(participantId, skippedProblemId);
+        game.AppendRound(nextProblemId);
+        game.SkipCurrentRound(participantId);
+        game.StartRoundFor(participantId, nextProblemId);
 
         _gameReadRepository.Setup(r => r.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
         _submissionReadRepository

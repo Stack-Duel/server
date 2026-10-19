@@ -1,21 +1,27 @@
 using Ardalis.Result;
 using FluentValidation;
-using MediatR;
-using StackDuel.Application.Commands.Submissions.CreateSubmission;
+using Microsoft.Extensions.Logging;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
+using StackDuel.Application.Problems;
+using StackDuel.Application.Submissions;
 using StackDuel.Domain.Games;
+using StackDuel.Domain.Games.Entities;
 using StackDuel.Domain.Games.Enums;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Submissions.Enums;
 
 namespace StackDuel.Application.Commands.Games.SubmitGameProblem;
 
-internal sealed class SubmitGameProblemHandler(
+internal sealed partial class SubmitGameProblemHandler(
     IGameReadRepository gameReadRepository,
-    IGameWriteRepository gameWriteRepository,
+    IUnitOfWork unitOfWork,
+    IGameRoundSubmissionWriteRepository gameRoundSubmissionWriteRepository,
+    IProblemReadRepository problemReadRepository,
     IDomainEventDispatcher domainEventDispatcher,
-    IMediator mediator,
-    IValidator<SubmitGameProblemCommand> validator
+    ISubmissionCreator submissionCreator,
+    IValidator<SubmitGameProblemCommand> validator,
+    ILogger<SubmitGameProblemHandler> logger
 ) : AbstractCommandHandler<SubmitGameProblemCommand, Guid>(validator)
 {
     protected override async Task<Result<Guid>> HandleValidated(
@@ -33,7 +39,7 @@ internal sealed class SubmitGameProblemHandler(
 
         if (game.CompleteIfExpired(DateTime.UtcNow))
         {
-            await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
         }
 
@@ -52,12 +58,11 @@ internal sealed class SubmitGameProblemHandler(
                 )
             );
 
-        if (participant.ProblemSession is null)
-            return Result<Guid>.Invalid(
-                new ValidationError(nameof(participant.ProblemSession), "Problem session not initialized.")
-            );
+        Guid? currentProblemId = game.CurrentProblemIdFor(participant.UserId);
+        if (currentProblemId is null)
+            return Result<Guid>.Invalid(new ValidationError(nameof(currentProblemId), "Round not started."));
 
-        if (participant.ProblemSession.CurrentProblemId != request.ProblemId)
+        if (currentProblemId != request.ProblemId)
             return Result<Guid>.Invalid(
                 new ValidationError(
                     nameof(request.ProblemId),
@@ -65,14 +70,32 @@ internal sealed class SubmitGameProblemHandler(
                 )
             );
 
-        // Create the grade submission through the existing submission pipeline.
-        var submissionResult = await mediator.Send(
-            new CreateSubmissionCommand(
+        Guid? setupProblemId = await problemReadRepository.GetProblemIdByProblemSetupIdAsync(
+            request.ProblemSetupId,
+            cancellationToken
+        );
+        if (setupProblemId != request.ProblemId)
+            return Result<Guid>.Invalid(
+                new ValidationError(
+                    nameof(request.ProblemSetupId),
+                    "The specified problem setup does not belong to the current problem."
+                )
+            );
+
+        Guid? roundId = await gameReadRepository.FindRoundIdByGameAndProblemAsync(
+            game.Id,
+            request.ProblemId,
+            cancellationToken
+        );
+        if (roundId is null)
+            return Result<Guid>.Error("Game round not found for the current problem.");
+
+        var submissionResult = await submissionCreator.CreateAsync(
+            new SubmissionCreationRequest(
                 request.ProblemSetupId,
                 SubmissionType.Submit,
                 request.Code,
                 request.RequestedByUserId,
-                null,
                 GameId: request.GameId
             ),
             cancellationToken
@@ -81,10 +104,53 @@ internal sealed class SubmitGameProblemHandler(
         if (!submissionResult.IsSuccess)
             return Result<Guid>.Error("Failed to create submission.");
 
-        // Stamp the submission ID on the session so completeProblem can verify it came from here.
-        participant.SetActiveSubmission(submissionResult.Value);
-        await gameWriteRepository.SaveChangesAsync(game, cancellationToken);
-
-        return Result<Guid>.Success(submissionResult.Value);
+        return await RecordRoundSubmissionAsync(
+            roundId.Value,
+            participant.Id,
+            request,
+            submissionResult.Value,
+            game.Id,
+            participant.UserId,
+            cancellationToken
+        );
     }
+
+    private async Task<Result<Guid>> RecordRoundSubmissionAsync(
+        Guid roundId,
+        Guid participantId,
+        SubmitGameProblemCommand request,
+        Guid submissionId,
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            GameRoundSubmission roundSubmission = new(
+                roundId,
+                participantId,
+                request.ProblemSetupId,
+                submissionId,
+                request.ProblemId,
+                gameId,
+                userId
+            );
+
+            await gameRoundSubmissionWriteRepository.AddAsync(roundSubmission, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            LogRoundSubmissionFailed(exception, submissionId, roundId);
+            return Result<Guid>.Error("Failed to record the submission against this round.");
+        }
+
+        return Result<Guid>.Success(submissionId);
+    }
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Failed to record submission {SubmissionId} against round {RoundId}; the submission was created but cannot be completed without this row."
+    )]
+    private partial void LogRoundSubmissionFailed(Exception exception, Guid submissionId, Guid roundId);
 }
