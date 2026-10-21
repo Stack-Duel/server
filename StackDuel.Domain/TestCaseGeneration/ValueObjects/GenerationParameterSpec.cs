@@ -1,10 +1,7 @@
+using StackDuel.Domain.ValueTypes.ValueObjects;
+
 namespace StackDuel.Domain.TestCaseGeneration.ValueObjects;
 
-/// <summary>
-/// Declarative constraint for one generated input parameter — data, not code, so it is
-/// safe to accept from an untrusted problem author. Interpreted by a generator service
-/// (e.g. one backed by Bogus) rather than executed.
-/// </summary>
 public sealed record GenerationParameterSpec(
     string Name,
     string ValueType,
@@ -12,7 +9,8 @@ public sealed record GenerationParameterSpec(
     double? Max,
     int? LengthMin,
     int? LengthMax,
-    string? Charset
+    string? Charset,
+    ValueTypeSpec? ResolvedType = null
 )
 {
     public string Name { get; } =

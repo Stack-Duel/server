@@ -3,6 +3,7 @@ using StackDuel.Application.ExecutionAssets;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Application.Languages;
 using StackDuel.Application.TestCaseGeneration;
+using StackDuel.Application.ValueTypes;
 using StackDuel.Domain.ExecutionPipelines.Entities;
 using StackDuel.Domain.ExecutionPipelines.Enums;
 using StackDuel.Domain.Languages.Entities;
@@ -13,6 +14,7 @@ using StackDuel.Domain.Submissions;
 using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
 using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using StackDuel.Infrastructure.Persistence;
 using System.Text.Json;
@@ -28,12 +30,10 @@ internal sealed partial class Judge0ExecutionStepHandler(
     IBatchCodeTemplateStrategyResolver batchTemplateResolver,
     IExecutionEngineStrategy executionEngine,
     ITestCaseGeneratorService testCaseGenerator,
+    IValueTypeSpecResolver valueTypeSpecResolver,
     StackDuelDbContext db
 ) : IStepHandler
 {
-    // Covers Vitest/Node startup overhead on top of the per-case budget — a batch submission
-    // runs every case in one process, so the outer Judge0 time limit has to fit the whole run,
-    // not just one case.
     private const int BatchStartupBufferMs = 5000;
 
     public bool CanHandle(ExecutionPipelineStepType stepType) => stepType == ExecutionPipelineStepType.Judge0Execute;
@@ -64,6 +64,12 @@ internal sealed partial class Judge0ExecutionStepHandler(
         if (generationSpecsError is not null)
             return Fail(generationSpecsError);
 
+        var rawInputsByCase = orderedTestCases!.ToDictionary(tc => tc.Id, tc => BuildRawInputs(tc, generationSpecs));
+        IReadOnlyDictionary<string, ValueTypeSpec> specsByKey = await valueTypeSpecResolver.ResolveAsync(
+            rawInputsByCase.Values.SelectMany(inputs => inputs.Select(i => i.ValueType)).Distinct(),
+            ct
+        );
+
         if (languageResult.VersionEntry!.ExecutionMode == TestExecutionMode.BatchedTestFramework)
         {
             var batchContext = new BatchExecutionContext(
@@ -76,7 +82,8 @@ internal sealed partial class Judge0ExecutionStepHandler(
             return await ExecuteBatchedAsync(
                 batchContext,
                 orderedTestCases!,
-                generationSpecs,
+                rawInputsByCase,
+                specsByKey,
                 submission.SourceCode.Value,
                 ct
             );
@@ -94,7 +101,8 @@ internal sealed partial class Judge0ExecutionStepHandler(
         var submissions = BuildSubmissions(
             setup,
             orderedTestCases!,
-            generationSpecs,
+            rawInputsByCase,
+            specsByKey,
             submission.SourceCode.Value,
             submission.AdditionalFiles,
             templateStrategy,
@@ -114,14 +122,15 @@ internal sealed partial class Judge0ExecutionStepHandler(
     private async Task<StepHandlerResult> ExecuteBatchedAsync(
         BatchExecutionContext context,
         IReadOnlyList<TestCase> testCases,
-        IReadOnlyDictionary<Guid, TestCaseGenerationSpec> generationSpecs,
+        IReadOnlyDictionary<Guid, List<(string Value, string ValueType)>> rawInputsByCase,
+        IReadOnlyDictionary<string, ValueTypeSpec> specsByKey,
         string userCode,
         CancellationToken ct
     )
     {
         AssertStepConfiguration? configuredAssert = await FindAssertConfigurationAsync(context.Setup.PipelineId, ct);
 
-        var (batchCases, batchCasesError) = BuildBatchCases(testCases, generationSpecs, configuredAssert);
+        var (batchCases, batchCasesError) = BuildBatchCases(testCases, rawInputsByCase, specsByKey, configuredAssert);
         if (batchCasesError is not null)
             return Fail(batchCasesError);
 
@@ -163,7 +172,8 @@ internal sealed partial class Judge0ExecutionStepHandler(
 
     private (IReadOnlyList<BatchTestCase>? Cases, string? Error) BuildBatchCases(
         IReadOnlyList<TestCase> testCases,
-        IReadOnlyDictionary<Guid, TestCaseGenerationSpec> generationSpecs,
+        IReadOnlyDictionary<Guid, List<(string Value, string ValueType)>> rawInputsByCase,
+        IReadOnlyDictionary<string, ValueTypeSpec> specsByKey,
         AssertStepConfiguration? configuredAssert
     )
     {
@@ -187,16 +197,7 @@ internal sealed partial class Judge0ExecutionStepHandler(
                 _ => BatchAssertStrategy.ExactMatch,
             };
 
-            IReadOnlyList<CodeTemplateInput> inputs =
-                testCase.Source == TestCaseSource.Generated
-                    ? testCaseGenerator
-                        .GenerateInputs(
-                            generationSpecs[testCase.GenerationSpecId!.Value],
-                            testCase.GenerationCaseIndex!.Value
-                        )
-                        .Select(v => new CodeTemplateInput(v.Value, v.ValueType))
-                        .ToList()
-                    : testCase.Inputs.Select(i => new CodeTemplateInput(i.Value, i.ValueType)).ToList();
+            IReadOnlyList<CodeTemplateInput> inputs = ToCodeTemplateInputs(rawInputsByCase[testCase.Id], specsByKey);
 
             cases.Add(
                 new BatchTestCase(
@@ -325,10 +326,27 @@ internal sealed partial class Judge0ExecutionStepHandler(
         return (generationSpecs, null);
     }
 
+    private List<(string Value, string ValueType)> BuildRawInputs(
+        TestCase testCase,
+        IReadOnlyDictionary<Guid, TestCaseGenerationSpec> generationSpecs
+    ) =>
+        testCase.Source == TestCaseSource.Generated
+            ? testCaseGenerator
+                .GenerateInputs(generationSpecs[testCase.GenerationSpecId!.Value], testCase.GenerationCaseIndex!.Value)
+                .Select(v => (v.Value, v.ValueType))
+                .ToList()
+            : testCase.Inputs.Select(i => (i.Value, i.ValueType)).ToList();
+
+    private static List<CodeTemplateInput> ToCodeTemplateInputs(
+        IReadOnlyList<(string Value, string ValueType)> rawInputs,
+        IReadOnlyDictionary<string, ValueTypeSpec> specsByKey
+    ) => [.. rawInputs.Select(i => new CodeTemplateInput(i.Value, i.ValueType, specsByKey.GetValueOrDefault(i.ValueType)))];
+
     private List<ExecutionEngineSubmission> BuildSubmissions(
         ProblemSetup setup,
         IReadOnlyCollection<TestCase> testCases,
-        IReadOnlyDictionary<Guid, TestCaseGenerationSpec> generationSpecs,
+        IReadOnlyDictionary<Guid, List<(string Value, string ValueType)>> rawInputsByCase,
+        IReadOnlyDictionary<string, ValueTypeSpec> specsByKey,
         string userCode,
         IReadOnlyList<StackDuel.Domain.Submissions.ValueObjects.SubmissionSourceFile> submittedFiles,
         ICodeTemplateStrategy templateStrategy,
@@ -342,16 +360,7 @@ internal sealed partial class Judge0ExecutionStepHandler(
         [
             .. testCases.Select(testCase =>
             {
-                var inputs =
-                    testCase.Source == TestCaseSource.Generated
-                        ? testCaseGenerator
-                            .GenerateInputs(
-                                generationSpecs[testCase.GenerationSpecId!.Value],
-                                testCase.GenerationCaseIndex!.Value
-                            )
-                            .Select(v => new CodeTemplateInput(v.Value, v.ValueType))
-                            .ToList()
-                        : testCase.Inputs.Select(i => new CodeTemplateInput(i.Value, i.ValueType)).ToList();
+                var inputs = ToCodeTemplateInputs(rawInputsByCase[testCase.Id], specsByKey);
 
                 var templateContext = new CodeTemplateContext(
                     UserCode: userCode,

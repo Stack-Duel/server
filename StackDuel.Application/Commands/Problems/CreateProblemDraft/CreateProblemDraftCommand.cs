@@ -10,7 +10,8 @@ internal sealed record CreateProblemDraftCommand(
     int TimeLimitMs,
     int MemoryLimitMb,
     IReadOnlyCollection<string> Tags,
-    Guid TrackId
+    Guid? TrackId,
+    string? TrackKey
 ) : ICommand<Guid>, IAuditableCommand
 {
     public string AuditAction => "problem.draft-created";
@@ -24,6 +25,6 @@ internal sealed record CreateProblemDraftCommand(
             TimeLimitMs,
             MemoryLimitMb,
             Tags,
-            TrackId,
+            Track = TrackKey ?? TrackId?.ToString(),
         };
 }

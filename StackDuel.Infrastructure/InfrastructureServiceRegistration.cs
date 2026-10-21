@@ -33,6 +33,7 @@ using StackDuel.Application.Submissions;
 using StackDuel.Application.TestCaseGeneration;
 using StackDuel.Application.Tracks;
 using StackDuel.Application.Users;
+using StackDuel.Application.ValueTypes;
 using StackDuel.Domain.Authorization;
 using StackDuel.Domain.Campaigns;
 using StackDuel.Domain.ExecutionPipelines;
@@ -47,6 +48,7 @@ using StackDuel.Domain.Submissions;
 using StackDuel.Domain.TestCaseGeneration;
 using StackDuel.Domain.TestSuites;
 using StackDuel.Domain.Users;
+using StackDuel.Domain.ValueTypes;
 using StackDuel.Infrastructure.ExecutionEngine;
 using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
@@ -86,9 +88,11 @@ using StackDuel.Infrastructure.Repositories.TestCaseGeneration;
 using StackDuel.Infrastructure.Repositories.TestSuites;
 using StackDuel.Infrastructure.Repositories.Tracks;
 using StackDuel.Infrastructure.Repositories.Users;
+using StackDuel.Infrastructure.Repositories.ValueTypes;
 using StackDuel.Infrastructure.Settings;
 using StackDuel.Infrastructure.Storage;
 using StackDuel.Infrastructure.TestCaseGeneration;
+using StackDuel.Infrastructure.ValueTypes;
 
 namespace StackDuel.Infrastructure;
 
@@ -113,13 +117,6 @@ public static class InfrastructureServiceRegistration
         return services;
     }
 
-    /// <summary>
-    /// Registration for the Seeder CLI — persistence and repositories only. Seeders don't run
-    /// test case generation directly anymore; they enqueue a TestCaseGenerationJob row (via
-    /// ITestCaseGenerationJobRepository, from AddRepositories) and the API's background
-    /// processor picks it up later. That means the Seeder needs no Judge0/execution-engine
-    /// dependency at all, and no message bus or Quartz jobs since it's a one-shot CLI, not a host.
-    /// </summary>
     public static IServiceCollection AddInfrastructureForSeeder(
         this IServiceCollection services,
         IConfiguration configuration
@@ -399,6 +396,9 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<ICampaignEnrollmentWriteRepository, CampaignEnrollmentWriteRepository>();
         services.AddScoped<IUnitCompletionWriteRepository, UnitCompletionWriteRepository>();
         services.AddScoped<ICampaignProgressReadRepository, CampaignProgressReadRepository>();
+        services.AddScoped<IValueTypeDefinitionRepository, ValueTypeDefinitionRepository>();
+        services.AddScoped<IValueTypeUsageRepository, ValueTypeUsageRepository>();
+        services.AddScoped<IValueTypeSpecResolver, ValueTypeSpecResolver>();
 
         return services;
     }
@@ -416,9 +416,6 @@ public static class InfrastructureServiceRegistration
         return services;
     }
 
-    // Registration order is seeding order (the built-in container resolves IEnumerable<T>/GetServices<T>
-    // in registration order) — a seeder must be registered after everything it depends on
-    // (e.g. LanguageSeeder reads Tracks, so TrackSeeder has to run first).
     private static IServiceCollection AddSeeder(this IServiceCollection services)
     {
         services.AddScoped<IStaticSeeder, AuthorizationSeeder>();
@@ -426,9 +423,8 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IStaticSeeder, GameModeSeeder>();
         services.AddScoped<IStaticSeeder, TrackSeeder>();
         services.AddScoped<IStaticSeeder, ProblemReactionTypeSeeder>();
+        services.AddScoped<IStaticSeeder, ValueTypeDefinitionSeeder>();
 
-        // Also consumed by concrete type (GetOrCreateAsync) by the problem seeders below,
-        // so it needs its own registration in addition to the IStaticSeeder one.
         services.AddScoped<Judge0PipelineSeeder>();
         services.AddScoped<IStaticSeeder>(sp => sp.GetRequiredService<Judge0PipelineSeeder>());
 

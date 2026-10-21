@@ -23,6 +23,21 @@ internal sealed class ProblemValidationJobRepository(StackDuelDbContext context)
     public async Task<ProblemValidationJob?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.ProblemValidationJobs.FirstOrDefaultAsync(j => j.Id == id, cancellationToken);
 
+    public async Task<ProblemValidationJob?> FindUnfinishedByProblemIdAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await context
+            .ProblemValidationJobs.Where(j =>
+                j.ProblemId == problemId
+                && (
+                    j.Status == ProblemValidationJobStatus.Pending
+                    || j.Status == ProblemValidationJobStatus.AwaitingGeneration
+                )
+            )
+            .OrderByDescending(j => j.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<ProblemValidationJob>> FindPendingAsync(
         int batchSize,
         CancellationToken cancellationToken = default

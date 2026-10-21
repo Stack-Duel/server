@@ -32,6 +32,8 @@ internal sealed class TestCaseConfiguration : IEntityTypeConfiguration<TestCase>
 
         builder.Property(t => t.GenerationCaseIndex).HasColumnName("generation_case_index").IsRequired(false);
 
+        builder.Property(t => t.Position).HasColumnName("position").IsRequired().HasDefaultValue(0);
+
         builder.Property(t => t.RetiredAt).HasColumnName("retired_at").IsRequired(false);
 
         builder

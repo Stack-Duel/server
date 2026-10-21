@@ -27,4 +27,5 @@ public static class WellKnownPermissions
     public const string SubmitAdminProblems = WellKnownAuthorization.SubmitAdminProblemsPermission;
     public const string ManageRequiredProblemLanguages =
         WellKnownAuthorization.ManageRequiredProblemLanguagesPermission;
+    public const string ManageValueTypes = WellKnownAuthorization.ManageValueTypesPermission;
 }

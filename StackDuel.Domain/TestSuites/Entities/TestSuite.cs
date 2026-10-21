@@ -15,9 +15,10 @@ public sealed class TestSuite : AggregateRoot
         CreatedAt = DateTime.UtcNow;
     }
 
-    public TestCase AddTestCase(string name, string? description = null)
+    public TestCase AddTestCase(string name, string? description = null, int position = 0)
     {
         var testCase = new TestCase(name, description);
+        testCase.SetPosition(position);
         _testCases.Add(testCase);
         return testCase;
     }

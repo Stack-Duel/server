@@ -2,11 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Application.Languages;
 using StackDuel.Application.TestCaseGeneration;
+using StackDuel.Application.ValueTypes;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.TestCaseGeneration.Entities;
+using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 using StackDuel.Domain.TestSuites;
 using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.TestSuites.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
 using StackDuel.Infrastructure.ExecutionEngine;
 using StackDuel.Infrastructure.Persistence;
 
@@ -19,6 +22,7 @@ internal sealed class TestCaseGenerationService(
     ICodeTemplateStrategyResolver templateResolver,
     ITestCaseGeneratorService generator,
     Judge0ReferenceSolutionRunner runner,
+    IValueTypeSpecResolver valueTypeSpecResolver,
     StackDuelDbContext db
 ) : ITestCaseGenerationService
 {
@@ -50,8 +54,6 @@ internal sealed class TestCaseGenerationService(
         var templateStrategy = templateResolver.Resolve(language.Name.Value);
         int judge0LanguageId = versionEntry.Judge0Id.Value;
 
-        // 1. A reference solution that can't pass the curated cases must not be trusted to
-        //    generate ground truth for random ones.
         IReadOnlyList<Guid> curatedTestCaseIds = await testSuiteRepository.FindTestCaseIdsByProblemSetupIdAsync(
             request.ProblemSetupId,
             cancellationToken
@@ -80,11 +82,6 @@ internal sealed class TestCaseGenerationService(
                 return new GenerateTestCasesResult(request.TargetCaseCount, 0, 0, sanityWarnings);
         }
 
-        // 2. Reference solution is trusted — persist the spec and attach it to the setup.
-        // Everything from here on runs in one transaction: a failure partway through (a
-        // transient Judge0 error, say) must not leave the setup pointing at a spec with no
-        // generated cases behind it — that would poison it, since the idempotency check above
-        // only looks at whether a spec is attached, not whether generation actually finished.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         int previousVersion = await db
@@ -94,34 +91,33 @@ internal sealed class TestCaseGenerationService(
             .DefaultIfEmpty(0)
             .MaxAsync(cancellationToken);
 
+        IReadOnlyList<GenerationParameterSpec> snapshotParameters = await SnapshotValueTypes(
+            request.Parameters,
+            cancellationToken
+        );
+
         var spec = new TestCaseGenerationSpec(
             request.ProblemSetupId,
-            request.Parameters,
+            snapshotParameters,
             request.OutputValueType,
             request.TargetCaseCount,
             request.Seed,
             version: previousVersion + 1
         );
 
-        // Stage the spec and the problem's scalar changes without saving yet — problem is
-        // already tracked (loaded via FindBySetupIdAsync, not AsNoTracking), so calling
-        // IProblemRepository.UpdateAsync here would re-run context.Problems.Update(), forcing
-        // the whole graph (including the m2m TestSuites join) to Modified and misfiring
-        // against rows that either don't exist yet or don't need touching. Everything gets
-        // saved together in one SaveChangesAsync call once the generated cases are built below.
         db.Set<TestCaseGenerationSpec>().Add(spec);
 
         problem.SetReferenceSolution(request.ProblemSetupId, request.ReferenceSolutionCode);
         problem.SetGenerationSpecId(request.ProblemSetupId, spec.Id);
 
-        // 3. Generate inputs and run the reference solution against them in rounds, until
-        // TargetCaseCount inputs have actually succeeded (not just been attempted) — some
-        // specs (Two Sum's, notably) can produce unsolvable random instances, so "attempt N"
-        // and "succeed N times" are different things, and callers want the latter.
-        // MaxAttemptMultiplier bounds runaway looping if a spec can basically never succeed.
         const int MaxAttemptMultiplier = 15;
         int maxAttempts = request.TargetCaseCount * MaxAttemptMultiplier;
         int batchSize = Math.Max(request.TargetCaseCount, 1);
+
+        IReadOnlyDictionary<string, ValueTypeSpec> specsByKey = await valueTypeSpecResolver.ResolveAsync(
+            spec.Parameters.Select(p => p.ValueType).Distinct(),
+            cancellationToken
+        );
 
         List<(int Index, string Output)> successfulCases = [];
         List<string> warnings = [];
@@ -141,7 +137,7 @@ internal sealed class TestCaseGenerationService(
                         Index: index,
                         Inputs: generator
                             .GenerateInputs(spec, index)
-                            .Select(v => new CodeTemplateInput(v.Value, v.ValueType))
+                            .Select(v => new CodeTemplateInput(v.Value, v.ValueType, specsByKey.GetValueOrDefault(v.ValueType)))
                             .ToList()
                     )
                 )
@@ -181,17 +177,12 @@ internal sealed class TestCaseGenerationService(
                     continue;
                 }
 
-                // Normalize through JSON so the persisted value matches the compact convention
-                // curated cases use (e.g. Python's "[0, 1]" -> "[0,1]") regardless of which
-                // language the reference solution happens to be written in.
                 actualOutput = Judge0ReferenceSolutionRunner.TryNormalizeJson(actualOutput) ?? actualOutput;
 
                 successfulCases.Add((roundCases[i].Index, actualOutput));
             }
         }
 
-        // 4. Retire the problem's previous generated pool and add the newly verified cases —
-        // retired rather than deleted, since a past submission may already reference one of them.
         string suiteName = $"{problem.Slug.Value} - Generated Cases";
         Guid suiteId = await testSuiteRepository.FindOrCreateGeneratedSuiteAsync(
             suiteName,
@@ -207,11 +198,6 @@ internal sealed class TestCaseGenerationService(
 
         foreach (var (index, output) in successfulCases)
         {
-            // TestSuite.TestCases is a PropertyAccessMode.Field-backed collection — EF's
-            // standard change detection doesn't reliably pick up additions to it via graph
-            // traversal alone (the same limitation the seeders work around with raw SQL), so
-            // each newly created child is marked Added explicitly, mirroring the approach
-            // EvaluateStepHandler already uses for this codebase's field-backed collections.
             TestCase testCase = suite.AddGeneratedTestCase($"Generated {index}", spec.Id, index);
             db.Entry(testCase).State = EntityState.Added;
 
@@ -229,6 +215,26 @@ internal sealed class TestCaseGenerationService(
             attempted - successfulCases.Count,
             warnings
         );
+    }
+
+    private async Task<IReadOnlyList<GenerationParameterSpec>> SnapshotValueTypes(
+        IReadOnlyList<GenerationParameterSpec> parameters,
+        CancellationToken cancellationToken
+    )
+    {
+        IReadOnlyDictionary<string, ValueTypeSpec> resolved = await valueTypeSpecResolver.ResolveAsync(
+            parameters.Select(parameter => parameter.ValueType).Distinct(),
+            cancellationToken
+        );
+
+        return
+        [
+            .. parameters.Select(parameter =>
+                parameter.ResolvedType is null && resolved.TryGetValue(parameter.ValueType, out ValueTypeSpec? structure)
+                    ? parameter with { ResolvedType = structure }
+                    : parameter
+            ),
+        ];
     }
 
     private static GenerateTestCasesResult Failed(GenerateTestCasesRequest request, string error) =>

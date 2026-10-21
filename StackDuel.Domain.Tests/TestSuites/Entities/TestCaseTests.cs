@@ -82,3 +82,48 @@ public class TestCaseTests
         Assert.Equal(firstRetiredAt, testCase.RetiredAt);
     }
 }
+public class TestCasePositionTests
+{
+    [Fact]
+    public void AddTestCase_DefaultsToPositionZero()
+    {
+        var suite = new TestSuite("Suite", TestSuiteType.Sample);
+
+        var testCase = suite.AddTestCase("Case 1");
+
+        Assert.Equal(0, testCase.Position);
+    }
+
+    [Fact]
+    public void AddTestCase_KeepsTheGivenPosition()
+    {
+        var suite = new TestSuite("Suite", TestSuiteType.Sample);
+
+        var second = suite.AddTestCase("Case 2", position: 1);
+        var third = suite.AddTestCase("Case 3", position: 2);
+
+        Assert.Equal(1, second.Position);
+        Assert.Equal(2, third.Position);
+    }
+
+    [Fact]
+    public void AddTestCase_NegativePosition_Throws()
+    {
+        var suite = new TestSuite("Suite", TestSuiteType.Sample);
+
+        Assert.Throws<ArgumentException>(() => suite.AddTestCase("Case 1", position: -1));
+    }
+
+    [Fact]
+    public void OrderingByPosition_RecoversTheAuthoredOrderRegardlessOfInsertionOrder()
+    {
+        var suite = new TestSuite("Suite", TestSuiteType.Sample);
+        suite.AddTestCase("third", position: 2);
+        suite.AddTestCase("first", position: 0);
+        suite.AddTestCase("second", position: 1);
+
+        var ordered = suite.TestCases.OrderBy(tc => tc.Position).Select(tc => tc.Name).ToList();
+
+        Assert.Equal(["first", "second", "third"], ordered);
+    }
+}

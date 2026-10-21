@@ -107,36 +107,50 @@ internal sealed partial class RabbitMqConsumerService(
             AsyncEventingBasicConsumer consumer = new(channel);
             consumer.Received += async (_, ea) =>
             {
+                string messageType = typeof(TMessage).Name;
+                TMessage? message;
+
                 try
                 {
                     string body = Encoding.UTF8.GetString(ea.Body.Span);
-                    TMessage? message = JsonSerializer.Deserialize<TMessage>(body);
-                    if (message is not null)
+                    message = JsonSerializer.Deserialize<TMessage>(body);
+                }
+                catch (JsonException ex)
+                {
+                    LogDeserializationFailed(ex, messageType);
+                    channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: false);
+                    return;
+                }
+
+                if (message is null)
+                {
+                    LogNullMessage(messageType);
+                    channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: false);
+                    return;
+                }
+
+                LogMessageReceived(messageType, message.ToString() ?? string.Empty);
+
+                bool handled = await TryHandleWithBackoffAsync(
+                    async () =>
                     {
-                        LogMessageReceived(typeof(TMessage).Name, message.ToString() ?? string.Empty);
                         using var scope = scopeFactory.CreateScope();
                         await handle(scope.ServiceProvider, message, stoppingToken);
-                    }
+                    },
+                    messageType,
+                    stoppingToken
+                );
 
+                if (handled)
                     channel.BasicAck(ea.DeliveryTag, multiple: false);
-                }
-                catch (Exception ex)
-                {
-                    LogProcessingError(ex);
-                    channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: true);
-                }
+                else
+                    channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: false);
             };
 
             channel.BasicConsume(queueName, autoAck: false, consumer);
         }
     }
 
-    /// <summary>
-    /// Consumes from the queue bound to the x-delayed-message exchange. Declares the same
-    /// exchange/queue/binding defensively in case this consumer starts before anything has
-    /// published yet. A "not yet expired" result triggers a fresh scheduled publish
-    /// (RescheduleCount + 1) rather than a simple ack/nack.
-    /// </summary>
     private void SubscribeGameExpiryMessages(
         ICollection<IModel> channels,
         int consumerConcurrency,
@@ -228,4 +242,83 @@ internal sealed partial class RabbitMqConsumerService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error processing message from RabbitMQ")]
     private partial void LogProcessingError(Exception ex);
+
+    private async Task<bool> TryHandleWithBackoffAsync(
+        Func<Task> handle,
+        string messageType,
+        CancellationToken cancellationToken
+    )
+    {
+        for (int attempt = 1; attempt <= MaxDeliveryAttempts; attempt++)
+        {
+            try
+            {
+                await handle();
+                return true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (attempt == MaxDeliveryAttempts)
+                {
+                    LogProcessingAttemptsExhausted(ex, messageType, attempt);
+                    return false;
+                }
+
+                TimeSpan delay = BackoffFor(attempt);
+                LogProcessingRetry(ex, messageType, attempt, delay.TotalSeconds);
+
+                try
+                {
+                    await Task.Delay(delay, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static TimeSpan BackoffFor(int attempt)
+    {
+        double seconds = Math.Min(
+            BaseRetryDelay.TotalSeconds * Math.Pow(2, attempt - 1),
+            MaxRetryDelay.TotalSeconds
+        );
+
+        return TimeSpan.FromSeconds(seconds);
+    }
+
+    private const int MaxDeliveryAttempts = 4;
+    private static readonly TimeSpan BaseRetryDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(30);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Attempt {Attempt} to process {MessageType} failed, retrying in {DelaySeconds}s"
+    )]
+    private partial void LogProcessingRetry(
+        Exception ex,
+        string messageType,
+        int attempt,
+        double delaySeconds
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Giving up on {MessageType} after {Attempt} attempts; it will not be requeued"
+    )]
+    private partial void LogProcessingAttemptsExhausted(Exception ex, string messageType, int attempt);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Could not deserialize {MessageType}; dropping it")]
+    private partial void LogDeserializationFailed(Exception ex, string messageType);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Received an empty {MessageType}; dropping it")]
+    private partial void LogNullMessage(string messageType);
 }

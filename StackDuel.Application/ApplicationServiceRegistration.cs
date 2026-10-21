@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using StackDuel.Application.Behaviors;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
+using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Services.Audit;
 using StackDuel.Application.Services.Campaigns;
@@ -17,6 +18,7 @@ using StackDuel.Application.Services.Leaderboards;
 using StackDuel.Application.Services.Problems;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Services.Users;
+using StackDuel.Application.Services.ValueTypes;
 using StackDuel.Application.Submissions;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.Factories;
@@ -81,6 +83,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IFeatureFlagResolutionService, FeatureFlagResolutionService>();
         services.AddScoped<IFeatureFlagAdminService, FeatureFlagAdminService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<IValueTypeService, ValueTypeService>();
 
         foreach (string gameModeKey in new[] { "solo_rush", "duel", "ffa" })
         {
@@ -91,6 +94,7 @@ public static class ApplicationServiceRegistration
             ));
         }
         services.AddScoped<IProblemSelectionStrategyResolver, ProblemSelectionStrategyResolver>();
+        services.AddScoped<ILanguageVersionResolver, LanguageVersionResolver>();
         services.AddScoped<IGameProblemSequencer, GameProblemSequencer>();
         services.AddScoped<IGameExpiryCanceller, GameExpiryCanceller>();
         services.AddScoped<IGameProblemAdvancer, GameProblemAdvancer>();

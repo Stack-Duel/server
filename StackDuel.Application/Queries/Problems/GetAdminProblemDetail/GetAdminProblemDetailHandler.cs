@@ -57,6 +57,8 @@ internal sealed class GetAdminProblemDetailHandler(
                         .TestSuites.Where(ts => ts.Type == TestSuiteType.Sample)
                         .SelectMany(ts => ts.TestCases)
                         .Where(tc => tc.Source == TestCaseSource.Authored && tc.RetiredAt is null)
+                        .OrderBy(tc => tc.Position)
+                        .ThenBy(tc => tc.Id)
                         .Select(tc => new AdminSampleTestCaseDto(
                             tc.Id,
                             tc.Name,

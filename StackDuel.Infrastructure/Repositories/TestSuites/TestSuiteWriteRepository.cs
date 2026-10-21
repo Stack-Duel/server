@@ -87,9 +87,6 @@ internal sealed class TestSuiteWriteRepository(StackDuelDbContext context, ITest
             .Where(r => r.RetiredAt == null)
             .ToListAsync(cancellationToken);
 
-        // Guaranteed: every public example and every hand-authored hidden case — these always
-        // run, they're not part of the random draw. Only the generated pool is sampled, and
-        // only to fill whatever's left after the guaranteed set.
         List<Guid> guaranteedIds =
         [
             .. rows.Where(r =>
@@ -294,9 +291,6 @@ internal sealed class TestSuiteWriteRepository(StackDuelDbContext context, ITest
 
     public async Task RetireGeneratedTestCasesAsync(Guid testSuiteId, CancellationToken cancellationToken = default)
     {
-        // Retire (not delete) — a submission_result FK is ON DELETE RESTRICT, so a generated
-        // case that's ever been graded against can never actually be removed. Retired cases
-        // are simply excluded from FindGradingTestCaseIdsByProblemSetupIdAsync's selection.
         await context.Database.ExecuteSqlAsync(
             $"""
             UPDATE test_cases
@@ -344,8 +338,6 @@ internal sealed class TestSuiteWriteRepository(StackDuelDbContext context, ITest
             );
         }
 
-        // Retire (not delete) the suite's previous authored cases — same reasoning as
-        // RetireGeneratedTestCasesAsync: a submission may already have graded against one.
         await context.Database.ExecuteSqlAsync(
             $"""
             UPDATE test_cases
@@ -362,7 +354,7 @@ internal sealed class TestSuiteWriteRepository(StackDuelDbContext context, ITest
         int index = 1;
         foreach (AuthoredTestCaseSpec spec in testCases)
         {
-            TestCase testCase = reloadedSuite.AddTestCase(spec.Name ?? $"Sample {index}");
+            TestCase testCase = reloadedSuite.AddTestCase(spec.Name ?? $"Sample {index}", position: index - 1);
             context.Entry(testCase).State = EntityState.Added;
 
             foreach ((string value, string valueType) in spec.Inputs)

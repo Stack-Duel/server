@@ -4,6 +4,7 @@ using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
+using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.ProblemValidation;
 using StackDuel.Domain.ProblemValidation.Entities;
@@ -16,14 +17,6 @@ using StackDuel.Infrastructure.ProblemValidation;
 
 namespace StackDuel.Infrastructure.Jobs.ProblemValidation;
 
-/// <summary>
-/// Drives a <see cref="ProblemValidationJob"/> through its two passes: validate every required
-/// language's reference solution (<see cref="IReferenceSolutionValidationService"/>), then, once
-/// all pass, enqueue a <see cref="TestCaseGenerationJob"/> per setup and wait for those to finish
-/// before publishing the problem. Same per-job-scope/claim/release structure as
-/// <see cref="TestCaseGeneration.TestCaseGenerationJobProcessorService"/>, chaining into that
-/// existing, unmodified pipeline for the actual generation work rather than reimplementing it.
-/// </summary>
 internal sealed partial class ProblemValidationJobProcessorService(
     IServiceScopeFactory scopeFactory,
     ILogger<ProblemValidationJobProcessorService> logger
@@ -31,6 +24,7 @@ internal sealed partial class ProblemValidationJobProcessorService(
 {
     private const int BatchSize = 5;
     private const string ProblemNoLongerExistsMessage = "Problem no longer exists.";
+    private const string ValidationNoLongerWantedMessage = "Cancelled while this run was in flight.";
     private static readonly TimeSpan LeaseDuration = TimeSpan.FromMinutes(5);
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -83,12 +77,6 @@ internal sealed partial class ProblemValidationJobProcessorService(
             ct
         );
 
-    /// <summary>
-    /// Shared claim/load/status-check/release scaffolding for both passes. Creates a fresh DI
-    /// scope and DbContext per job, atomically claims the job's processing lock, loads it, verifies
-    /// it's still in the expected status (another worker may have already advanced it), then hands
-    /// off to the pass-specific handler.
-    /// </summary>
     private async Task ProcessInClaimedScopeAsync(
         Guid jobId,
         ProblemValidationJobStatus expectedStatus,
@@ -145,6 +133,14 @@ internal sealed partial class ProblemValidationJobProcessorService(
             job.Fail(ProblemNoLongerExistsMessage);
             await jobRepository.UpdateAsync(job, ct);
             LogFailed(jobId, ProblemNoLongerExistsMessage);
+            return;
+        }
+
+        if (HasBeenAbandoned(problem))
+        {
+            job.Cancel(ValidationNoLongerWantedMessage);
+            await jobRepository.UpdateAsync(job, ct);
+            LogCancelled(jobId);
             return;
         }
 
@@ -242,6 +238,14 @@ internal sealed partial class ProblemValidationJobProcessorService(
             return;
         }
 
+        if (HasBeenAbandoned(problem))
+        {
+            job.Cancel(ValidationNoLongerWantedMessage);
+            await jobRepository.UpdateAsync(job, ct);
+            LogCancelled(jobId);
+            return;
+        }
+
         var db = sp.GetRequiredService<StackDuelDbContext>();
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
@@ -320,4 +324,12 @@ internal sealed partial class ProblemValidationJobProcessorService(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Problem validation job {JobId} failed: {Reason}")]
     private partial void LogFailed(Guid jobId, string reason);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Problem validation job {JobId} stopped because the problem is no longer waiting on it"
+    )]
+    private partial void LogCancelled(Guid jobId);
+
+    private static bool HasBeenAbandoned(Problem problem) => problem.Status != ProblemStatus.Pending;
 }

@@ -1,5 +1,7 @@
 using Moq;
 using StackDuel.Application.ExecutionEngine;
+using StackDuel.Domain.ValueTypes.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
 using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 using System.IO.Compression;
 using System.Text;
@@ -79,6 +81,27 @@ public class CppCodeTemplateStrategyTests
     public void Render_NoInputs_CallsTheEntryPointWithNoArguments()
     {
         Assert.Contains("solution.solve()", Strategy.Render(Context()));
+    }
+
+    [Fact]
+    public void Render_NestedArraySpec_DeclaresBothParserLevels()
+    {
+        ValueTypeSpec nestedIntArray = new(
+            ValueTypeKind.Array,
+            element: new ValueTypeSpec(ValueTypeKind.Array, element: new ValueTypeSpec(ValueTypeKind.Integer))
+        );
+
+        CodeTemplateContext context = new(
+            "struct Solution { vector<vector<int>> solve(vector<vector<int>> a) { return a; } };",
+            "solve",
+            [new CodeTemplateInput("[[1,2],[3]]", "matrix", nestedIntArray)]
+        );
+
+        string rendered = Strategy.Render(context);
+
+        Assert.Contains("vector<vector<int>> arg0 = parseIntArrayArray(__readLine());", rendered);
+        Assert.Contains("static vector<int> parseIntArray(const string& raw)", rendered);
+        Assert.Contains("static vector<vector<int>> parseIntArrayArray(const string& raw)", rendered);
     }
 
     [Fact]

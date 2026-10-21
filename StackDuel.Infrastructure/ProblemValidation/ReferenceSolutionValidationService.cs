@@ -115,6 +115,14 @@ internal sealed class ReferenceSolutionValidationService(
             ICodeTemplateStrategy templateStrategy = templateResolver.Resolve(resolved.Language.Name.Value);
             int judge0LanguageId = resolved.Version.Judge0Id.Value;
 
+            string? codeProblem = templateStrategy.DescribeUserCodeProblem(setup.ReferenceSolutionCode!);
+
+            if (codeProblem is not null)
+            {
+                outcomes.Add(new SetupValidationOutcome(setup.Id, languageLabel, false, [codeProblem]));
+                continue;
+            }
+
             List<string> warnings = await runner.RunAgainstCasesAsync(
                 setup.ReferenceSolutionCode,
                 setup.FunctionName,

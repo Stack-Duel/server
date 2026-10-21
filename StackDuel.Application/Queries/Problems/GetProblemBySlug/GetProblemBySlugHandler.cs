@@ -32,6 +32,9 @@ internal sealed class GetProblemBySlugHandler(
                 .Setups.FirstOrDefault()
                 ?.PublicTestSuites()
                 .SelectMany(suite => suite.TestCases)
+                .Where(tc => tc.RetiredAt is null)
+                .OrderBy(tc => tc.Position)
+                .ThenBy(tc => tc.Id)
                 .Select(tc => new PublicTestCaseDto(
                     tc.Name,
                     tc.Description,

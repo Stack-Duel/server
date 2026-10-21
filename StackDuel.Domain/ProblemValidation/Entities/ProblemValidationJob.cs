@@ -3,13 +3,6 @@ using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.ProblemValidation.Entities;
 
-/// <summary>
-/// A queued request to validate a newly-authored problem's reference solutions and, on success,
-/// generate its hidden test cases before publishing it. Runs in two passes, tracked by
-/// <see cref="Status"/>: reference-solution validation, then waiting on the
-/// TestCaseGenerationJobs it enqueues. See <see cref="StackDuel.Domain.TestCaseGeneration.Entities.TestCaseGenerationJob"/>
-/// for the equivalent single-pass job this one chains into.
-/// </summary>
 public sealed class ProblemValidationJob : AggregateRoot
 {
     public ProblemValidationJob(Guid problemId)
@@ -45,6 +38,13 @@ public sealed class ProblemValidationJob : AggregateRoot
         CompletedAt = DateTime.UtcNow;
     }
 
+    public void Cancel(string reason)
+    {
+        Status = ProblemValidationJobStatus.Cancelled;
+        FailureReason = reason;
+        CompletedAt = DateTime.UtcNow;
+    }
+
     public Guid ProblemId { get; private set; }
     public ProblemValidationJobStatus Status { get; private set; }
     public IReadOnlyList<Guid> TestCaseGenerationJobIds { get; private set; } = [];
@@ -53,10 +53,5 @@ public sealed class ProblemValidationJob : AggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
 
-    /// <summary>
-    /// Lease expiry for the worker currently processing this job — same purpose as
-    /// <see cref="StackDuel.Domain.TestCaseGeneration.Entities.TestCaseGenerationJob.LockedUntil"/>.
-    /// Set/cleared atomically via ExecuteUpdateAsync, not on the tracked entity.
-    /// </summary>
     public DateTime? LockedUntil { get; private set; }
 }

@@ -7,5 +7,6 @@ public sealed record CreateProblemDraftInput(
     int TimeLimitMs,
     int MemoryLimitMb,
     IReadOnlyCollection<string> Tags,
-    Guid TrackId
+    Guid? TrackId,
+    string? TrackKey
 );

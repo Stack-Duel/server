@@ -30,14 +30,14 @@ internal sealed class GetProblemSetupHandler(IProblemReadRepository problemReadR
                 foundSetup.FunctionName,
                 foundSetup
                     .PublicTestSuites()
-                    .SelectMany(
-                        testSuite => testSuite.TestCases,
-                        (testSuite, testCase) =>
-                            new ProblemSetupTestCaseDto(
-                                string.Join(", ", testCase.Inputs.Select(i => i.Value)),
-                                string.Join(", ", testCase.ExpectedOutputs.Select(o => o.Value))
-                            )
-                    ),
+                    .SelectMany(testSuite => testSuite.TestCases)
+                    .Where(testCase => testCase.RetiredAt is null)
+                    .OrderBy(testCase => testCase.Position)
+                    .ThenBy(testCase => testCase.Id)
+                    .Select(testCase => new ProblemSetupTestCaseDto(
+                        string.Join(", ", testCase.Inputs.Select(i => i.Value)),
+                        string.Join(", ", testCase.ExpectedOutputs.Select(o => o.Value))
+                    )),
                 foundSetup.AdditionalFiles.Select(f => new ProblemSetupFileDto(f.Path, f.Content))
             )
         );

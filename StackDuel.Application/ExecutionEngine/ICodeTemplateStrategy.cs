@@ -1,3 +1,5 @@
+using StackDuel.Domain.ValueTypes.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
 using System.Text.Json;
 
 namespace StackDuel.Application.ExecutionEngine;
@@ -11,7 +13,7 @@ public sealed record CodeTemplateContext(
     IReadOnlyList<CodeTemplateSourceFile>? AdditionalFiles = null
 );
 
-public sealed record CodeTemplateInput(string Value, string ValueType);
+public sealed record CodeTemplateInput(string Value, string ValueType, ValueTypeSpec? Spec = null);
 
 public sealed record ParsedExecutionOutput(string? UserLogs, string? ActualResult);
 
@@ -19,7 +21,15 @@ public interface ICodeTemplateStrategy
 {
     string LanguageName { get; }
 
+    IReadOnlySet<ValueTypeKind> SupportedKinds => AllValueTypeKinds;
+
+    static readonly IReadOnlySet<ValueTypeKind> AllValueTypeKinds = new HashSet<ValueTypeKind>(
+        Enum.GetValues<ValueTypeKind>()
+    );
+
     string Render(CodeTemplateContext context);
+
+    string? DescribeUserCodeProblem(string userCode) => null;
 
     byte[]? BuildAdditionalFiles(CodeTemplateContext context) => null;
 

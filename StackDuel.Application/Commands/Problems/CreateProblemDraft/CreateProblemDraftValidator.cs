@@ -14,6 +14,13 @@ internal sealed class CreateProblemDraftValidator : AbstractValidator<CreateProb
         RuleFor(x => x.MemoryLimitMb).InclusiveBetween(MemoryLimit.MinMegabytes, MemoryLimit.MaxMegabytes);
         RuleFor(x => x.Tags).NotNull();
         RuleForEach(x => x.Tags).NotEmpty().Length(Tag.MinLength, Tag.MaxLength);
-        RuleFor(x => x.TrackId).NotEmpty();
+        RuleFor(x => x)
+            .Must(NamesATrack)
+            .WithMessage("Provide either a trackId or a track key.")
+            .WithName(nameof(CreateProblemDraftCommand.TrackId));
+        RuleFor(x => x.TrackKey).MaximumLength(100).When(x => x.TrackKey is not null);
     }
+
+    private static bool NamesATrack(CreateProblemDraftCommand command) =>
+        (command.TrackId is { } trackId && trackId != Guid.Empty) || !string.IsNullOrWhiteSpace(command.TrackKey);
 }

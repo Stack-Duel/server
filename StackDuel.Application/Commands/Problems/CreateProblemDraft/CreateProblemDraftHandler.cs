@@ -69,10 +69,12 @@ internal sealed class CreateProblemDraftHandler(
         if (pipelineId is null)
             return Result.Error("No execution pipeline is configured.");
 
-        Track? track = await trackReadRepository.FindByIdAsync(request.TrackId, cancellationToken);
+        Result<Track> trackResolution = await ResolveTrack(request, cancellationToken);
 
-        if (track is null || !track.IsActive)
-            return Result.Invalid(new ValidationError("Track is invalid or inactive."));
+        if (!trackResolution.IsSuccess)
+            return Result.Invalid([.. trackResolution.ValidationErrors]);
+
+        Track track = trackResolution.Value;
 
         Slug baseSlug = Slug.FromTitle(title);
         Slug slug = baseSlug;
@@ -109,6 +111,27 @@ internal sealed class CreateProblemDraftHandler(
         await problemRepository.AddAsync(problem, cancellationToken);
 
         return Result.Success(problem.Id);
+    }
+
+    private async Task<Result<Track>> ResolveTrack(
+        CreateProblemDraftCommand request,
+        CancellationToken cancellationToken
+    )
+    {
+        Track? track =
+            request.TrackId is { } trackId && trackId != Guid.Empty
+                ? await trackReadRepository.FindByIdAsync(trackId, cancellationToken)
+                : await trackReadRepository.FindByKeyAsync(request.TrackKey!.Trim(), cancellationToken);
+
+        if (track is not null && track.IsActive)
+            return Result<Track>.Success(track);
+
+        IReadOnlyList<Track> activeTracks = await trackReadRepository.GetActiveTracksAsync(cancellationToken);
+        string available = string.Join(", ", activeTracks.Select(active => active.Key).Order());
+
+        return Result<Track>.Invalid(
+            new ValidationError($"Track is invalid or inactive. Available tracks: {available}.")
+        );
     }
 
     private const string PlaceholderInitialCode = "// TODO: starter code";

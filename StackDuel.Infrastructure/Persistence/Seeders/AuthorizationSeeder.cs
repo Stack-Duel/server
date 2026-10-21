@@ -218,6 +218,15 @@ internal sealed class AuthorizationSeeder(StackDuelDbContext context) : IStaticS
         if (context.Entry(manageRequiredProblemLanguagesPermission).State == EntityState.Detached)
             await context.Permissions.AddAsync(manageRequiredProblemLanguagesPermission, cancellationToken);
 
+        PermissionCode manageValueTypesCode = new(WellKnownAuthorization.ManageValueTypesPermission);
+
+        Permission manageValueTypesPermission =
+            await context.Permissions.FirstOrDefaultAsync(p => p.Code == manageValueTypesCode, cancellationToken)
+            ?? Permission.Create(manageValueTypesCode, "Allows managing value type definitions in the admin panel");
+
+        if (context.Entry(manageValueTypesPermission).State == EntityState.Detached)
+            await context.Permissions.AddAsync(manageValueTypesPermission, cancellationToken);
+
         Role role =
             await context
                 .Roles.Include(r => r.Permissions)
@@ -280,6 +289,7 @@ internal sealed class AuthorizationSeeder(StackDuelDbContext context) : IStaticS
         adminRole.GrantPermission(createAdminProblemsPermission.Id);
         adminRole.GrantPermission(submitAdminProblemsPermission.Id);
         adminRole.GrantPermission(manageRequiredProblemLanguagesPermission.Id);
+        adminRole.GrantPermission(manageValueTypesPermission.Id);
 
         group.GrantRole(role);
         adminGroup.GrantRole(adminRole);

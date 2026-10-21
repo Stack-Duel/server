@@ -1,4 +1,6 @@
 using StackDuel.Application.ExecutionEngine;
+using StackDuel.Domain.ValueTypes.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
 using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 using System.IO.Compression;
 using System.Text;
@@ -135,6 +137,28 @@ public class JavaCodeTemplateStrategyTests
         Dictionary<string, string> bundle = ReadBundle(Strategy.BuildAdditionalFiles(Context())!);
 
         Assert.Contains("solution.solve()", bundle["Main.java"]);
+    }
+
+    [Fact]
+    public void BuildAdditionalFiles_NestedArraySpec_DeclaresBothParserLevels()
+    {
+        ValueTypeSpec nestedIntArray = new(
+            ValueTypeKind.Array,
+            element: new ValueTypeSpec(ValueTypeKind.Array, element: new ValueTypeSpec(ValueTypeKind.Integer))
+        );
+
+        CodeTemplateContext context = new(
+            "class Solution { int[][] solve(int[][] a) { return a; } }",
+            "solve",
+            [new CodeTemplateInput("[[1,2],[3]]", "matrix", nestedIntArray)]
+        );
+
+        Dictionary<string, string> bundle = ReadBundle(Strategy.BuildAdditionalFiles(context)!);
+        string mainJava = bundle["Main.java"];
+
+        Assert.Contains("int[][] arg0 = parseIntArrayArray(__in.readLine());", mainJava);
+        Assert.Contains("static int[] parseIntArray(String raw)", mainJava);
+        Assert.Contains("static int[][] parseIntArrayArray(String raw)", mainJava);
     }
 
     [Fact]

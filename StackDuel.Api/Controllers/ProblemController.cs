@@ -8,6 +8,7 @@ using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Application;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
+using StackDuel.Application.Commands.Problems.SetProblemSetups;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.Services.Problems;
@@ -170,7 +171,8 @@ public sealed class ProblemController(
                     request.TimeLimitMs,
                     request.MemoryLimitMb,
                     request.Tags,
-                    request.TrackId
+                    request.TrackId,
+                    request.Track
                 ),
                 cancellationToken
             )
@@ -194,6 +196,35 @@ public sealed class ProblemController(
         return this.ToActionResult(
             await problemService.AddProblemSetupAsync(problemId, request.LanguageVersionId, cancellationToken)
         );
+    }
+
+    [HttpPut("admin/{problemId:guid}/setups")]
+    [RequireUser]
+    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> SetSetups(
+        Guid problemId,
+        [FromBody] SetProblemSetupsRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        IReadOnlyList<ProblemSetupInputDto> setups =
+        [
+            .. request.Setups.Select(setup => new ProblemSetupInputDto(
+                setup.LanguageVersionId,
+                setup.Language,
+                setup.Version,
+                setup.InitialCode,
+                setup.FunctionName,
+                setup.ReferenceSolutionCode
+            )),
+        ];
+
+        return this.ToActionResult(await problemService.SetProblemSetupsAsync(problemId, setups, cancellationToken));
     }
 
     [HttpPut("admin/{problemId:guid}/setups/reference-solution")]
@@ -301,6 +332,19 @@ public sealed class ProblemController(
     public async Task<ActionResult> SubmitForValidation(Guid problemId, CancellationToken cancellationToken)
     {
         return this.ToActionResult(await problemService.SubmitProblemForValidationAsync(problemId, cancellationToken));
+    }
+
+    [HttpPost("admin/{problemId:guid}/cancel-validation")]
+    [RequireUser]
+    [RequirePermission(WellKnownPermissions.SubmitAdminProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> CancelValidation(Guid problemId, CancellationToken cancellationToken)
+    {
+        return this.ToActionResult(await problemService.CancelProblemValidationAsync(problemId, cancellationToken));
     }
 
     [HttpGet("{problemId:guid}/reaction")]

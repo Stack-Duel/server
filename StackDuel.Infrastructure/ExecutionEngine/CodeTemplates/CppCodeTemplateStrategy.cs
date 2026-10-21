@@ -1,8 +1,13 @@
 using StackDuel.Application.ExecutionEngine;
+using StackDuel.Domain.ValueTypes;
+using StackDuel.Domain.ValueTypes.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
+using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates.ValueTypes;
+using System.Text.RegularExpressions;
 
 namespace StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 
-internal sealed class CppCodeTemplateStrategy : ICodeTemplateStrategy
+internal sealed partial class CppCodeTemplateStrategy : ICodeTemplateStrategy
 {
     private static readonly Dictionary<string, (string CppType, string ParseFn)> TypesByValueType = new()
     {
@@ -15,27 +20,55 @@ internal sealed class CppCodeTemplateStrategy : ICodeTemplateStrategy
 
     public string LanguageName => "C++";
 
+    public IReadOnlySet<ValueTypeKind> SupportedKinds => CppValueTypeRenderer.SupportedKinds;
+
     public string BuildStdin(IReadOnlyList<CodeTemplateInput> inputs) => string.Join("\n", inputs.Select(i => i.Value));
+
+    private static (string CppType, string ParseFn, ValueTypeSpec? Spec) ResolveCppType(CodeTemplateInput input)
+    {
+        if (input.Spec is not null)
+            return (
+                CppValueTypeRenderer.RenderType(input.Spec),
+                CppValueTypeRenderer.ParserName(input.Spec),
+                input.Spec
+            );
+
+        if (!TypesByValueType.TryGetValue(input.ValueType, out (string CppType, string ParseFn) mapped))
+            throw new NotSupportedException($"Unsupported C++ value type '{input.ValueType}'.");
+
+        ValueTypeSpec? legacySpec = WellKnownValueTypes.All.FirstOrDefault(t => t.Key == input.ValueType)?.Spec;
+        return (mapped.CppType, mapped.ParseFn, legacySpec);
+    }
+
+    public string? DescribeUserCodeProblem(string userCode) =>
+        CppSolutionTypeRegex().IsMatch(userCode)
+            ? null
+            : "C++ code must declare the solution type the harness calls, for example "
+                + "\"class Solution { public: bool isValid(string s) { ... } };\". "
+                + "A bare function on its own will not compile.";
+
 
     public string Render(CodeTemplateContext context)
     {
         List<string> argDeclarations = [];
         List<string> argNames = [];
+        List<ValueTypeSpec> specsForArrayParsers = [];
 
         for (int i = 0; i < context.Inputs.Count; i++)
         {
-            string valueType = context.Inputs[i].ValueType;
+            (string cppType, string parseFn, ValueTypeSpec? spec) = ResolveCppType(context.Inputs[i]);
 
-            if (!TypesByValueType.TryGetValue(valueType, out (string CppType, string ParseFn) mapped))
-                throw new NotSupportedException($"Unsupported C++ value type '{valueType}'.");
+            if (spec is not null)
+                specsForArrayParsers.Add(spec);
 
             string argName = $"arg{i}";
-            argDeclarations.Add($"    {mapped.CppType} {argName} = {mapped.ParseFn}(__readLine());");
+            argDeclarations.Add($"    {cppType} {argName} = {parseFn}(__readLine());");
             argNames.Add(argName);
         }
 
         string argsSection = string.Join("\n", argDeclarations);
         string callArgs = string.Join(", ", argNames);
+        string arrayParsers = CppValueTypeRenderer.RenderArrayParsers(specsForArrayParsers);
 
         return $$"""
             #include <bits/stdc++.h>
@@ -82,21 +115,7 @@ internal sealed class CppCodeTemplateStrategy : ICodeTemplateStrategy
                 return s;
             }
 
-            static vector<int> parseIntArray(const string& raw) {
-                string s = __trim(raw);
-                vector<int> result;
-                if (s.size() < 2) return result;
-                s = s.substr(1, s.size() - 2);
-                stringstream ss(s);
-                string item;
-                while (getline(ss, item, ',')) {
-                    string trimmed = __trim(item);
-                    if (trimmed.empty()) continue;
-                    result.push_back(stoi(trimmed));
-                }
-                return result;
-            }
-
+            {{arrayParsers}}
             static string toJson(int v) { return to_string(v); }
             static string toJson(long long v) { return to_string(v); }
             static string toJson(bool v) { return v ? "true" : "false"; }

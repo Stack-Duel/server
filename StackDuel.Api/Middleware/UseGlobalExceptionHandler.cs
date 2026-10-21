@@ -17,37 +17,49 @@ public static class ExceptionMiddlewareExtensions
                     .CreateLogger("GlobalExceptionHandler");
 
                 var telemetryClient = context.RequestServices.GetService<TelemetryClient>();
+                var environment = context.RequestServices.GetRequiredService<IHostEnvironment>();
 
                 var feature = context.Features.Get<IExceptionHandlerPathFeature>();
                 var ex = feature?.Error;
 
                 context.Response.ContentType = "application/json";
 
-                if (ex is FluentValidation.ValidationException)
+                var exceptionToLog = ex ?? new Exception("Unknown error");
+                AppLog.UnhandledExceptionWithPath(logger, context.Request.Method, context.Request.Path, exceptionToLog);
+                telemetryClient?.TrackException(exceptionToLog);
+
+                if (ex is FluentValidation.ValidationException validationException)
                 {
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-                    AppLog.UnhandledExceptionWithPath(logger, context.Request.Method, context.Request.Path, ex);
-                    telemetryClient?.TrackException(ex);
-
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(new { message = "Validation failed" }));
+                    await context.Response.WriteAsync(
+                        JsonSerializer.Serialize(
+                            new { message = "Validation failed", errors = ToErrorDictionary(validationException) }
+                        )
+                    );
                     return;
                 }
 
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-                var exceptionToLog = ex ?? new Exception("Unknown error");
-                AppLog.UnhandledExceptionWithPath(logger, context.Request.Method, context.Request.Path, exceptionToLog);
-                telemetryClient?.TrackException(exceptionToLog);
-
                 await context.Response.WriteAsync(
-                    JsonSerializer.Serialize(new { message = "An unexpected error occurred." })
+                    JsonSerializer.Serialize(new { message = DescribeFailure(exceptionToLog, environment) })
                 );
             });
         });
 
         return app;
     }
+
+    private static Dictionary<string, string[]> ToErrorDictionary(FluentValidation.ValidationException exception) =>
+        exception
+            .Errors.GroupBy(error => error.PropertyName)
+            .ToDictionary(group => group.Key, group => group.Select(error => error.ErrorMessage).ToArray());
+
+    private static string DescribeFailure(Exception exception, IHostEnvironment environment) =>
+        environment.IsProduction()
+            ? "An unexpected error occurred."
+            : $"{exception.GetType().Name}: {exception.Message}";
 }
 
 public static partial class AppLog

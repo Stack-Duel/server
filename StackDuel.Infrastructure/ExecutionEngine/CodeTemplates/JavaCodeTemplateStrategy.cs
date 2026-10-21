@@ -1,4 +1,8 @@
 using StackDuel.Application.ExecutionEngine;
+using StackDuel.Domain.ValueTypes;
+using StackDuel.Domain.ValueTypes.Enums;
+using StackDuel.Domain.ValueTypes.ValueObjects;
+using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates.ValueTypes;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -44,7 +48,19 @@ internal sealed partial class JavaCodeTemplateStrategy : ICodeTemplateStrategy
 
     public string LanguageName => "Java";
 
+    public IReadOnlySet<ValueTypeKind> SupportedKinds => JavaValueTypeRenderer.SupportedKinds;
+
     public string Render(CodeTemplateContext context) => string.Empty;
+
+    public string? DescribeUserCodeProblem(string userCode) =>
+        SolutionTypeRegex().IsMatch(userCode)
+            ? null
+            : "Java code must declare the solution type the harness calls, for example "
+                + "\"class Solution { public boolean isValid(String s) { ... } }\". "
+                + "A bare method on its own will not compile.";
+
+    [GeneratedRegex(@"\b(class|record)\s+Solution\b")]
+    private static partial Regex SolutionTypeRegex();
 
     public string BuildStdin(IReadOnlyList<CodeTemplateInput> inputs) => string.Join("\n", inputs.Select(i => i.Value));
 
@@ -92,25 +108,43 @@ internal sealed partial class JavaCodeTemplateStrategy : ICodeTemplateStrategy
     [GeneratedRegex(@"^\s*import\s+([\w.*]+)\s*;", RegexOptions.Multiline)]
     private static partial Regex ImportLineRegex();
 
+    private static (string JavaType, string ParseMethod, ValueTypeSpec? Spec) ResolveJavaType(CodeTemplateInput input)
+    {
+        if (input.Spec is not null)
+            return (
+                JavaValueTypeRenderer.RenderType(input.Spec),
+                JavaValueTypeRenderer.ParserName(input.Spec),
+                input.Spec
+            );
+
+        if (!TypesByValueType.TryGetValue(input.ValueType, out (string JavaType, string ParseMethod) mapped))
+            throw new NotSupportedException($"Unsupported Java value type '{input.ValueType}'.");
+
+        ValueTypeSpec? legacySpec = WellKnownValueTypes.All.FirstOrDefault(t => t.Key == input.ValueType)?.Spec;
+        return (mapped.JavaType, mapped.ParseMethod, legacySpec);
+    }
+
     private static string RenderMain(CodeTemplateContext context)
     {
         List<string> argDeclarations = [];
         List<string> argNames = [];
+        List<ValueTypeSpec> specsForArrayParsers = [];
 
         for (int i = 0; i < context.Inputs.Count; i++)
         {
-            string valueType = context.Inputs[i].ValueType;
+            (string javaType, string parseMethod, ValueTypeSpec? spec) = ResolveJavaType(context.Inputs[i]);
 
-            if (!TypesByValueType.TryGetValue(valueType, out (string JavaType, string ParseMethod) mapped))
-                throw new NotSupportedException($"Unsupported Java value type '{valueType}'.");
+            if (spec is not null)
+                specsForArrayParsers.Add(spec);
 
             string argName = $"arg{i}";
-            argDeclarations.Add($"        {mapped.JavaType} {argName} = {mapped.ParseMethod}(__in.readLine());");
+            argDeclarations.Add($"        {javaType} {argName} = {parseMethod}(__in.readLine());");
             argNames.Add(argName);
         }
 
         string argsSection = string.Join("\n", argDeclarations);
         string callArgs = string.Join(", ", argNames);
+        string arrayParsers = JavaValueTypeRenderer.RenderArrayParsers(specsForArrayParsers);
 
         return $$"""
             import java.io.BufferedReader;
@@ -147,20 +181,7 @@ internal sealed partial class JavaCodeTemplateStrategy : ICodeTemplateStrategy
                     return s;
                 }
 
-                static int[] parseIntArray(String raw) {
-                    String s = raw.trim();
-                    s = s.substring(1, s.length() - 1).trim();
-                    if (s.isEmpty()) {
-                        return new int[0];
-                    }
-                    String[] parts = s.split(",");
-                    int[] result = new int[parts.length];
-                    for (int i = 0; i < parts.length; i++) {
-                        result[i] = Integer.parseInt(parts[i].trim());
-                    }
-                    return result;
-                }
-
+            {{arrayParsers}}
                 static String toOutputString(Object value) {
                     if (value instanceof String s) {
                         return s;

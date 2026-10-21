@@ -9,5 +9,6 @@ public sealed record CreateProblemDraftRequest(
     [property: JsonRequired] int TimeLimitMs,
     [property: JsonRequired] int MemoryLimitMb,
     IReadOnlyCollection<string> Tags,
-    [property: JsonRequired] Guid TrackId
+    Guid? TrackId,
+    string? Track
 );

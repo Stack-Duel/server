@@ -170,3 +170,71 @@ public class ProblemTests
         Assert.Equal("twoSum", setup.FunctionName);
     }
 }
+public class ProblemValidationFailureReasonTests
+{
+    private static ProblemEntity CreateProblem() =>
+        new(
+            new Slug("two-sum"),
+            new Title("Two Sum"),
+            new Question(new string('a', Question.MinLength)),
+            new Difficulty(500),
+            new TimeLimit(1000),
+            new MemoryLimit(64)
+        );
+
+    [Fact]
+    public void FailValidation_ShortReason_IsKeptAsIs()
+    {
+        ProblemEntity problem = CreateProblem();
+
+        problem.FailValidation("Reference solution failed on case 1.");
+
+        Assert.Equal("Reference solution failed on case 1.", problem.ValidationFailureReason);
+        Assert.Equal(ProblemStatus.Failed, problem.Status);
+    }
+
+    [Fact]
+    public void FailValidation_OverlongReason_IsTruncatedToFitTheColumn()
+    {
+        ProblemEntity problem = CreateProblem();
+
+        problem.FailValidation(new string('x', ProblemEntity.MaxValidationFailureReasonLength + 500));
+
+        Assert.Equal(
+            ProblemEntity.MaxValidationFailureReasonLength,
+            problem.ValidationFailureReason!.Length
+        );
+        Assert.EndsWith("...", problem.ValidationFailureReason);
+        Assert.Equal(ProblemStatus.Failed, problem.Status);
+    }
+
+    [Fact]
+    public void FailValidation_OverlongReason_KeepsTheStartWhereTheDiagnosticIs()
+    {
+        ProblemEntity problem = CreateProblem();
+        string reason = "java 17: compile error" + new string('x', ProblemEntity.MaxValidationFailureReasonLength);
+
+        problem.FailValidation(reason);
+
+        Assert.StartsWith("java 17: compile error", problem.ValidationFailureReason);
+    }
+
+    [Fact]
+    public void FailValidation_ReasonExactlyAtTheLimit_IsNotTruncated()
+    {
+        ProblemEntity problem = CreateProblem();
+        string reason = new('x', ProblemEntity.MaxValidationFailureReasonLength);
+
+        problem.FailValidation(reason);
+
+        Assert.Equal(reason, problem.ValidationFailureReason);
+    }
+
+    [Fact]
+    public void FailValidation_BlankReason_StillThrows()
+    {
+        ProblemEntity problem = CreateProblem();
+
+        Assert.Throws<ArgumentException>(() => problem.FailValidation("   "));
+    }
+}

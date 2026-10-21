@@ -24,6 +24,7 @@ using StackDuel.Domain.TestCaseGeneration.Entities;
 using StackDuel.Domain.TestSuites.Entities;
 using StackDuel.Domain.Tracks.Entities;
 using StackDuel.Domain.Users.Entities;
+using StackDuel.Domain.ValueTypes.Entities;
 using StackDuel.Infrastructure.ExecutionEngine.Assert;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
 
@@ -135,6 +136,8 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
 
     public DbSet<Judge0StepConfiguration> Judge0StepConfigurations { get; init; }
     public DbSet<AssertStepConfiguration> AssertStepConfigurations { get; init; }
+
+    public DbSet<ValueTypeDefinition> ValueTypeDefinitions { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

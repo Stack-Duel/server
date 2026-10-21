@@ -68,7 +68,7 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
         builder
             .Property(p => p.ValidationFailureReason)
             .HasColumnName("validation_failure_reason")
-            .HasMaxLength(4000)
+            .HasMaxLength(Problem.MaxValidationFailureReasonLength)
             .IsRequired(false);
 
         builder.Property(p => p.TrackId).HasColumnName("track_id").IsRequired(false);

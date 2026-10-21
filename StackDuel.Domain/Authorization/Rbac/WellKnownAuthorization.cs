@@ -24,6 +24,7 @@ public static class WellKnownAuthorization
     public const string CreateAdminProblemsPermission = "problem:create:admin";
     public const string SubmitAdminProblemsPermission = "problem:submit:admin";
     public const string ManageRequiredProblemLanguagesPermission = "problem-required-language:manage:admin";
+    public const string ManageValueTypesPermission = "value-type:manage:admin";
 
     public const string DefaultUserRole = "default-user";
     public const string DefaultUserGroup = "default-user";

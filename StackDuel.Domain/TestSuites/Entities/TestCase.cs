@@ -47,12 +47,11 @@ public sealed class TestCase : Entity
         return output;
     }
 
-    /// <summary>
-    /// Marks this case retired instead of deleting it — a submission's result can reference
-    /// a test case indefinitely (FK is ON DELETE RESTRICT), so a generated case that's ever
-    /// been graded against can never actually be removed. Retired cases are excluded from
-    /// future grading selection but keep existing for historical submissions to reference.
-    /// </summary>
+    internal void SetPosition(int position)
+    {
+        Position = position >= 0 ? position : throw new ArgumentException("Position must not be negative.", nameof(position));
+    }
+
     public void Retire()
     {
         RetiredAt ??= DateTime.UtcNow;
@@ -63,6 +62,7 @@ public sealed class TestCase : Entity
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
 
+    public int Position { get; private set; }
     public TestCaseSource Source { get; private set; } = TestCaseSource.Authored;
     public Guid? GenerationSpecId { get; private set; }
     public int? GenerationCaseIndex { get; private set; }

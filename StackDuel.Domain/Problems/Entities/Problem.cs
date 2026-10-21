@@ -45,10 +45,23 @@ public sealed class Problem : AggregateRoot
 
     public void FailValidation(string reason)
     {
-        ValidationFailureReason = !string.IsNullOrWhiteSpace(reason)
-            ? reason
-            : throw new ArgumentException("Reason must not be empty.", nameof(reason));
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Reason must not be empty.", nameof(reason));
+
+        ValidationFailureReason = Truncate(reason, MaxValidationFailureReasonLength);
         Status = ProblemStatus.Failed;
+    }
+
+    private static string Truncate(string value, int maxLength) =>
+        value.Length <= maxLength ? value : string.Concat(value.AsSpan(0, maxLength - Ellipsis.Length), Ellipsis);
+
+    public const int MaxValidationFailureReasonLength = 4000;
+    private const string Ellipsis = "...";
+
+    public void CancelValidation()
+    {
+        Status = ProblemStatus.Draft;
+        ValidationFailureReason = null;
     }
 
     public void CompleteValidation()

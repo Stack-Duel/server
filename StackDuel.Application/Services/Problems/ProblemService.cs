@@ -1,10 +1,12 @@
 ﻿using Ardalis.Result;
 using MediatR;
 using StackDuel.Application.Commands.Problems.AddProblemSetup;
+using StackDuel.Application.Commands.Problems.CancelProblemValidation;
 using StackDuel.Application.Commands.Problems.CreateProblemDraft;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemReaction;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
+using StackDuel.Application.Commands.Problems.SetProblemSetups;
 using StackDuel.Application.Commands.Problems.SubmitProblemForValidation;
 using StackDuel.Application.Commands.Problems.UpdateProblem;
 using StackDuel.Application.Commands.Problems.UpsertProblemSetupReferenceSolution;
@@ -105,7 +107,15 @@ public interface IProblemService
         CancellationToken cancellationToken
     );
 
+    Task<Result> SetProblemSetupsAsync(
+        Guid problemId,
+        IReadOnlyList<ProblemSetupInputDto> setups,
+        CancellationToken cancellationToken
+    );
+
     Task<Result> SubmitProblemForValidationAsync(Guid problemId, CancellationToken cancellationToken);
+
+    Task<Result> CancelProblemValidationAsync(Guid problemId, CancellationToken cancellationToken);
 }
 
 internal sealed class ProblemService(IMediator mediator) : IProblemService
@@ -235,7 +245,8 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
                 input.TimeLimitMs,
                 input.MemoryLimitMb,
                 input.Tags,
-                input.TrackId
+                input.TrackId,
+                input.TrackKey
             ),
             cancellationToken
         );
@@ -305,9 +316,27 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
         return result;
     }
 
+    public async Task<Result> SetProblemSetupsAsync(
+        Guid problemId,
+        IReadOnlyList<ProblemSetupInputDto> setups,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await mediator.Send(new SetProblemSetupsCommand(problemId, setups), cancellationToken);
+
+        return result;
+    }
+
     public async Task<Result> SubmitProblemForValidationAsync(Guid problemId, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new SubmitProblemForValidationCommand(problemId), cancellationToken);
+
+        return result;
+    }
+
+    public async Task<Result> CancelProblemValidationAsync(Guid problemId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new CancelProblemValidationCommand(problemId), cancellationToken);
 
         return result;
     }
