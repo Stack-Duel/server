@@ -149,6 +149,19 @@ public sealed class ProblemController(
         );
     }
 
+    [HttpPost]
+    [RequireUser]
+    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<Guid>> CreateProblemAsync(
+        [FromBody] CreateProblemDraftRequest request, CancellationToken cancellationToken)
+    => this.ToActionResult(
+        await problemService.CreateDraftProblemAsync())
+        );
+
     [HttpPost("admin")]
     [RequireUser]
     [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
