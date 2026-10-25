@@ -3,8 +3,9 @@
 public sealed record CreateDraftProblemRequest(
     string Title,
     string Question,
-    int Difficulty,
-    int MemoryLimitMb,
     IEnumerable<string> Tags,
+    int Difficulty,
+    int TimeLimitMs,
+    int MemoryLimitMb,
     Guid TrackId
 );

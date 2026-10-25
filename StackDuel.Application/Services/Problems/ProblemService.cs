@@ -1,7 +1,7 @@
 ﻿using Ardalis.Result;
 using MediatR;
 using StackDuel.Application.Commands.Problems.AddProblemSetup;
-using StackDuel.Application.Commands.Problems.CreateProblemDraft;
+using StackDuel.Application.Commands.Problems.CreateDraftProblem;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemReaction;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
@@ -24,6 +24,8 @@ namespace StackDuel.Application.Services.Problems;
 
 public interface IProblemService
 {
+    Task<Result<Guid>> CreateDraftProblemAsync(CreateDraftProblemInput input, CancellationToken cancellationToken);
+
     Task<Result<ProblemSetupDto>> GetProblemSetupAsync(
         string slug,
         Guid languageVersionId,
@@ -73,8 +75,6 @@ public interface IProblemService
         CancellationToken cancellationToken
     );
 
-    Task<Result<Guid>> CreateProblemDraftAsync(CreateProblemDraftInput input, CancellationToken cancellationToken);
-
     Task<Result<Guid>> AddProblemSetupAsync(
         Guid problemId,
         Guid languageVersionId,
@@ -110,6 +110,16 @@ public interface IProblemService
 
 internal sealed class ProblemService(IMediator mediator) : IProblemService
 {
+    public async Task<Result<Guid>> CreateDraftProblemAsync(
+        CreateDraftProblemInput input,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await mediator.Send(new CreateDraftProblemCommand(input), cancellationToken);
+
+        return result;
+    }
+
     public async Task<Result<ProblemSetupDto>> GetProblemSetupAsync(
         string slug,
         Guid languageVersionId,
@@ -216,27 +226,6 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
     {
         var result = await mediator.Send(
             new UpdateProblemCommand(problemId, title, question, difficulty, timeLimitMs, memoryLimitMb, tags, status),
-            cancellationToken
-        );
-
-        return result;
-    }
-
-    public async Task<Result<Guid>> CreateProblemDraftAsync(
-        CreateProblemDraftInput input,
-        CancellationToken cancellationToken
-    )
-    {
-        var result = await mediator.Send(
-            new CreateProblemDraftCommand(
-                input.Title,
-                input.Question,
-                input.Difficulty,
-                input.TimeLimitMs,
-                input.MemoryLimitMb,
-                input.Tags,
-                input.TrackId
-            ),
             cancellationToken
         );
 

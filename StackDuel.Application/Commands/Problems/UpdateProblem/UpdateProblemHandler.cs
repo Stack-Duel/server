@@ -121,7 +121,7 @@ internal sealed class UpdateProblemHandler(
         if (tagNamesToAdd.Count > 0)
         {
             IReadOnlyCollection<ProblemTag> tags = await problemRepository.FindOrCreateTagsAsync(
-                tagNamesToAdd,
+                tagNamesToAdd.Select(name => new Tag(name)),
                 cancellationToken
             );
             foreach (ProblemTag tag in tags)

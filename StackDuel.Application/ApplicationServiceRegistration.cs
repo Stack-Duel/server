@@ -70,6 +70,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUsernameGeneratorService, UsernameGeneratorService>();
         services.AddScoped<IProblemService, ProblemService>();
+        services.AddScoped<ISlugService, SlugService>();
         services.AddScoped<IProblemPoolService, ProblemPoolService>();
         services.AddScoped<IRequiredProblemLanguageAdminService, RequiredProblemLanguageAdminService>();
         services.AddScoped<ICampaignService, CampaignService>();

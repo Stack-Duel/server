@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.RateLimiting;
-using StackDuel.Api.Core;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using StackDuel.Api.Core;
 
 namespace StackDuel.Api.RateLimiting;
 
@@ -85,6 +85,27 @@ public static class RateLimiterExtensions
                             PermitLimit = 5,
                             Window = TimeSpan.FromMinutes(10),
                             SegmentsPerWindow = 5,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 1,
+                        }
+                    );
+                }
+            );
+
+            options.AddPolicy(
+                WellKnownPolicies.ProblemCreation,
+                ctx =>
+                {
+                    string key =
+                        ctx.User?.FindFirst("sub")?.Value ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                    return RateLimitPartition.GetSlidingWindowLimiter(
+                        key,
+                        _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 15,
+                            Window = TimeSpan.FromHours(1),
+                            SegmentsPerWindow = 6,
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                             QueueLimit = 1,
                         }

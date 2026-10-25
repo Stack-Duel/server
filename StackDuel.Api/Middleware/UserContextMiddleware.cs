@@ -17,7 +17,13 @@ public partial class AccountContextMiddleware(
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         var endpoint = context.GetEndpoint();
-        bool requiresUser = endpoint?.Metadata.GetMetadata<RequireUserAttribute>() != null;
+        if (endpoint is null)
+        {
+            await next(context);
+            return;
+        }
+
+        bool requiresUser = endpoint.Metadata.GetMetadata<RequireUserAttribute>() != null;
 
         bool isAuthenticated = context.User.Identity?.IsAuthenticated == true;
         string? sub = isAuthenticated ? context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value : null;

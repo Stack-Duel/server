@@ -152,37 +152,25 @@ public sealed class ProblemController(
     [HttpPost]
     [RequireUser]
     [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [EnableRateLimiting(WellKnownPolicies.ProblemCreation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<Guid>> CreateProblemAsync(
-        [FromBody] CreateProblemDraftRequest request, CancellationToken cancellationToken)
-    => this.ToActionResult(
-        await problemService.CreateDraftProblemAsync())
-        );
-
-    [HttpPost("admin")]
-    [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<Guid>> CreateProblemDraft(
-        [FromBody] CreateProblemDraftRequest request,
+        [FromBody] CreateDraftProblemRequest request,
         CancellationToken cancellationToken
     )
     {
         return this.ToActionResult(
-            await problemService.CreateProblemDraftAsync(
-                new CreateProblemDraftInput(
+            await problemService.CreateDraftProblemAsync(
+                new CreateDraftProblemInput(
                     request.Title,
                     request.Question,
+                    request.Tags,
                     request.Difficulty,
                     request.TimeLimitMs,
                     request.MemoryLimitMb,
-                    request.Tags,
                     request.TrackId
                 ),
                 cancellationToken

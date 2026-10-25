@@ -117,7 +117,7 @@ public class UpdateProblemHandlerTests
         _problemRepository
             .Setup(x =>
                 x.FindOrCreateTagsAsync(
-                    It.Is<IReadOnlyCollection<string>>(names => names.Count == 1 && names.Contains("arrays")),
+                    It.Is<IEnumerable<Tag>>(tags => tags.Count() == 1 && tags.Contains(new Tag("arrays"))),
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -148,7 +148,7 @@ public class UpdateProblemHandlerTests
         _problemRepository.Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>())).ReturnsAsync(problem);
 
         _problemRepository
-            .Setup(x => x.FindOrCreateTagsAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.FindOrCreateTagsAsync(It.IsAny<IEnumerable<Tag>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await _handler.Handle(ValidCommand(problem.Id, tags: ["arrays", "arrays", "Arrays"]), CancellationToken.None);
@@ -156,7 +156,7 @@ public class UpdateProblemHandlerTests
         _problemRepository.Verify(
             x =>
                 x.FindOrCreateTagsAsync(
-                    It.Is<IReadOnlyCollection<string>>(names => names.Count == 1 && names.Contains("arrays")),
+                    It.Is<IEnumerable<Tag>>(tags => tags.Count() == 1 && tags.Contains(new Tag("arrays"))),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once
