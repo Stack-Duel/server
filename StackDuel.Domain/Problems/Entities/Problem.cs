@@ -195,6 +195,13 @@ public sealed class Problem : AggregateRoot
     public ProblemGenerationSpec? GenerationSpec { get; private set; }
 
     public IReadOnlyCollection<ProblemHistory> History => _history.AsReadOnly();
+
+    public static readonly IReadOnlySet<ProblemStatus> ResolveSubmittedStatuses = new HashSet<ProblemStatus>
+    {
+        ProblemStatus.Published,
+        ProblemStatus.Archived,
+    };
+
     public IReadOnlyCollection<ProblemSetup> Setups => _setups.AsReadOnly();
     public IReadOnlyCollection<ProblemTag> Tags => _tags.AsReadOnly();
 
