@@ -1,8 +1,8 @@
-﻿using System.Reflection;
+﻿using Microsoft.AspNetCore.RateLimiting;
+using StackDuel.Api.Core;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
-using StackDuel.Api.Core;
 
 namespace StackDuel.Api.RateLimiting;
 
