@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
 using StackDuel.Infrastructure.Persistence;

@@ -10,32 +10,26 @@ internal sealed class GameProblemAdvancer(
 {
     public async Task<Guid?> AdvanceAsync(
         Game game,
-        GameParticipant participant,
+        Guid userId,
         string gameModeKey,
-        Action<Guid> onAdvance,
-        Action? onFinish,
         CancellationToken cancellationToken = default
     )
     {
+        int position = game.RoundsReachedFor(userId);
         IProblemSelectionStrategy strategy = strategyResolver.Resolve(gameModeKey);
-        int nextPosition = game.RoundsReachedFor(participant.UserId);
-
         Guid? nextProblemId = await gameProblemSequencer.GetOrGenerateProblemAsync(
             game,
-            nextPosition,
+            position,
             gameModeKey,
             strategy,
             cancellationToken
         );
 
         if (nextProblemId is { } problemId)
-        {
-            onAdvance(problemId);
-        }
+            game.StartRoundFor(userId, problemId);
         else
         {
-            onFinish?.Invoke();
-            game.FinishProblemsFor(participant.UserId);
+            game.FinishProblemsFor(userId);
             await gameExpiryCanceller.CancelIfScheduledAsync(game, cancellationToken);
         }
 

@@ -1,4 +1,5 @@
 using FluentValidation;
+using MediatR.NotificationPublishers;
 using Microsoft.Extensions.DependencyInjection;
 using StackDuel.Application.Behaviors;
 using StackDuel.Application.Events;
@@ -37,6 +38,7 @@ public static class ApplicationServiceRegistration
             cfg.RegisterServicesFromAssembly(typeof(ApplicationServiceRegistration).Assembly);
             cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
             cfg.AddOpenBehavior(typeof(AuditBehavior<,>));
+            cfg.NotificationPublisher = new TaskWhenAllPublisher();
         });
         services.AddValidatorsFromAssembly(typeof(ApplicationServiceRegistration).Assembly, includeInternalTypes: true);
         services.AddMemoryCache();
@@ -96,6 +98,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IGameProblemSequencer, GameProblemSequencer>();
         services.AddScoped<IGameExpiryCanceller, GameExpiryCanceller>();
         services.AddScoped<IGameProblemAdvancer, GameProblemAdvancer>();
+        services.AddScoped<IGameConcurrencyGuard, GameConcurrencyGuard>();
         services.AddScoped<IGameJoiner, GameJoiner>();
         services.AddScoped<IGameProblemCompleter, GameProblemCompleter>();
         services.AddScoped<ISubmissionCreator, SubmissionCreator>();

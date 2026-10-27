@@ -44,73 +44,104 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_DecrementsSkipsRemaining()
+    public void SkipCurrentRound_DecrementsSkipsRemaining()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
+        game.SkipCurrentRound(userId);
 
         Assert.Equal(GameParticipant.TotalSkips - 1, participant.SkipsRemaining);
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_MarksTheRoundSkipped_NotSolved()
+    public void SkipCurrentRound_MarksTheRoundSkipped_NotSolved()
     {
         var (game, userId, problemId) = CreateRunningGameWithActiveRound();
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
+        game.SkipCurrentRound(userId);
 
         GameRoundResult progress = RoundResultFor(game, participant, problemId);
         Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_SetsCurrentProblemToTheNewProblem()
+    public void StartRoundFor_AfterSkip_SetsCurrentProblemToTheNewProblem()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         Guid nextProblemId = AppendNextRound(game);
 
-        game.SkipCurrentRoundAndAdvance(userId, nextProblemId);
+        game.SkipCurrentRound(userId);
+        game.StartRoundFor(userId, nextProblemId);
 
         Assert.Equal(nextProblemId, game.CurrentProblemIdFor(userId));
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_DoesNotAffectScore()
+    public void SkipCurrentRound_DoesNotAffectScore()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
+        game.SkipCurrentRound(userId);
 
         Assert.Equal(0, participant.Score);
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_NoSkipsRemaining_Throws()
+    public void SkipCurrentRound_NoSkipsRemaining_Throws()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         for (int i = 0; i < GameParticipant.TotalSkips; i++)
-            game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
+        {
+            game.SkipCurrentRound(userId);
+            game.StartRoundFor(userId, AppendNextRound(game));
+        }
 
-        Guid unreachableProblemId = AppendNextRound(game);
-        Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRoundAndAdvance(userId, unreachableProblemId));
+        Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRound(userId));
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_NotOnARound_ThrowsWithoutConsumingASkip()
+    public void SkipCurrentRound_NotOnARound_ThrowsWithoutConsumingASkip()
     {
         Guid userId = Guid.NewGuid();
         Game game = new(GameModeId, PoolId, [TrackId], [userId, Guid.NewGuid()], timeLimitInSeconds: 300);
         game.Start();
-        Guid nextProblemId = AppendNextRound(game);
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRoundAndAdvance(userId, nextProblemId));
+        Assert.Throws<InvalidOperationException>(() => game.SkipCurrentRound(userId));
 
         Assert.Equal(GameParticipant.TotalSkips, participant.SkipsRemaining);
+    }
+
+    [Fact]
+    public void StartRoundFor_AlreadyOnARound_Throws()
+    {
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+        Guid nextProblemId = AppendNextRound(game);
+
+        Assert.Throws<InvalidOperationException>(() => game.StartRoundFor(userId, nextProblemId));
+    }
+
+    [Fact]
+    public void StartRoundFor_NoRoundExistsForProblem_Throws()
+    {
+        var (game, userId, _) = CreateRunningGameWithActiveRound();
+
+        Assert.Throws<InvalidOperationException>(() => game.StartRoundFor(userId, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void StartRoundFor_RoundAlreadyPlayed_Throws()
+    {
+        var (game, userId, problemId) = CreateRunningGameWithActiveRound();
+        game.SkipCurrentRound(userId);
+        Guid nextProblemId = AppendNextRound(game);
+        game.StartRoundFor(userId, nextProblemId);
+        game.SkipCurrentRound(userId);
+
+        Assert.Throws<InvalidOperationException>(() => game.StartRoundFor(userId, problemId));
     }
 
     [Fact]
@@ -118,7 +149,8 @@ public class GameParticipantTests
     {
         var (game, userId, firstProblemId) = CreateRunningGameWithActiveRound();
         Guid secondProblemId = AppendNextRound(game);
-        game.SkipCurrentRoundAndAdvance(userId, secondProblemId);
+        game.SkipCurrentRound(userId);
+        game.StartRoundFor(userId, secondProblemId);
 
         Assert.Contains(firstProblemId, game.ExcludedProblemIdsFor(userId));
     }
@@ -132,15 +164,17 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void SolveCurrentRoundAndAdvance_PreservesPreviouslySkippedProblems()
+    public void SolveCurrentRound_PreservesPreviouslySkippedProblems()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
         Guid skippedProblemId = AppendNextRound(game);
-        game.SkipCurrentRoundAndAdvance(userId, skippedProblemId);
+        game.SkipCurrentRound(userId);
+        game.StartRoundFor(userId, skippedProblemId);
         Guid solvedProblemId = AppendNextRound(game);
-        game.SkipCurrentRoundAndAdvance(userId, solvedProblemId);
+        game.SkipCurrentRound(userId);
+        game.StartRoundFor(userId, solvedProblemId);
 
-        game.SolveCurrentRoundAndAdvance(userId, AppendNextRound(game), Guid.NewGuid());
+        game.SolveCurrentRound(userId, Guid.NewGuid());
 
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
         GameRoundResult progress = RoundResultFor(game, participant, skippedProblemId);
@@ -148,24 +182,21 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void SolveCurrentRoundAndAdvance_WithEmptySubmissionId_Throws()
+    public void SolveCurrentRound_WithEmptySubmissionId_Throws()
     {
         var (game, userId, _) = CreateRunningGameWithActiveRound();
-        Guid nextProblemId = AppendNextRound(game);
 
-        Assert.Throws<ArgumentException>(() =>
-            game.SolveCurrentRoundAndAdvance(userId, nextProblemId, Guid.Empty)
-        );
+        Assert.Throws<ArgumentException>(() => game.SolveCurrentRound(userId, Guid.Empty));
     }
 
     [Fact]
-    public void SolveCurrentRoundAndAdvance_RecordsTheSolvingSubmission()
+    public void SolveCurrentRound_RecordsTheSolvingSubmission()
     {
         var (game, userId, solvedProblemId) = CreateRunningGameWithActiveRound();
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
         var submissionId = Guid.NewGuid();
 
-        game.SolveCurrentRoundAndAdvance(userId, AppendNextRound(game), submissionId);
+        game.SolveCurrentRound(userId, submissionId);
 
         GameRoundResult result = RoundResultFor(game, participant, solvedProblemId);
         Assert.Equal(GameRoundOutcome.Solved, result.Outcome);
@@ -173,12 +204,12 @@ public class GameParticipantTests
     }
 
     [Fact]
-    public void SkipCurrentRoundAndAdvance_WithNoSubmission_IsAllowed()
+    public void SkipCurrentRound_WithNoSubmission_IsAllowed()
     {
         var (game, userId, skippedProblemId) = CreateRunningGameWithActiveRound();
         GameParticipant participant = game.Participants.Single(p => p.UserId == userId);
 
-        game.SkipCurrentRoundAndAdvance(userId, AppendNextRound(game));
+        game.SkipCurrentRound(userId);
 
         GameRoundResult progress = RoundResultFor(game, participant, skippedProblemId);
         Assert.Equal(GameRoundOutcome.Skipped, progress.Outcome);
