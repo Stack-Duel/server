@@ -85,8 +85,8 @@ public static class ApiServiceRegistration
         app.UseHttpsRedirection();
         app.UseWebSockets();
         app.UseAuthentication();
-        app.UseAuthorization();
         app.UseRateLimiter();
+        app.UseAuthorization();
         app.UseMiddleware<AccountContextMiddleware>();
         app.MapControllers();
         app.MapHub<GameHub>("/hubs/game");

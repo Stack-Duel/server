@@ -442,5 +442,5 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .ToListAsync(cancellationToken);
 
     public async Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default) =>
-        await context.Problems.AnyAsync(problem => problem.Slug == slug, cancellationToken);
+        await context.Problems.IgnoreQueryFilters().AnyAsync(problem => problem.Slug == slug, cancellationToken);
 }

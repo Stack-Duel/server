@@ -1,5 +1,7 @@
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Application.Problems;
+using StackDuel.Application.Services.Problems;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
@@ -10,7 +12,9 @@ namespace StackDuel.Application.Commands.Problems.UpdateProblem;
 
 internal sealed class UpdateProblemHandler(
     IValidator<UpdateProblemCommand> validator,
-    IProblemRepository problemRepository
+    IProblemRepository problemRepository,
+    IProblemReadRepository problemReadRepository,
+    ISlugService slugService
 ) : AbstractCommandHandler<UpdateProblemCommand>(validator)
 {
     protected override async Task<Result> HandleValidated(
@@ -46,7 +50,7 @@ internal sealed class UpdateProblemHandler(
 
         await SyncTagsAsync(problem, content.TagNames, cancellationToken);
 
-        ApplyStatusTransition(problem, request.Status);
+        await ApplyStatusTransitionAsync(problem, request.Status, cancellationToken);
 
         await problemRepository.UpdateAsync(problem, cancellationToken);
 
@@ -129,15 +133,38 @@ internal sealed class UpdateProblemHandler(
         }
     }
 
-    private static void ApplyStatusTransition(Problem problem, ProblemStatus? newStatus)
+    private async Task ApplyStatusTransitionAsync(
+        Problem problem,
+        ProblemStatus? newStatus,
+        CancellationToken cancellationToken
+    )
     {
         if (newStatus is not { } status || status == problem.Status)
             return;
 
         if (status == ProblemStatus.Published)
+        {
+            Slug slug = await ResolveUniqueSlugAsync(problem.Title, cancellationToken);
+            problem.UpdateSlug(slug);
             problem.Publish();
+        }
         else if (status == ProblemStatus.Archived)
             problem.Archive();
+    }
+
+    private async Task<Slug> ResolveUniqueSlugAsync(Title title, CancellationToken cancellationToken)
+    {
+        Slug baseSlug = slugService.GenerateSlugFromTitle(title);
+        Slug slug = baseSlug;
+        int suffix = 2;
+
+        while (await problemReadRepository.SlugExistsAsync(slug, cancellationToken))
+        {
+            slug = new Slug($"{baseSlug.Value}-{suffix}");
+            suffix++;
+        }
+
+        return slug;
     }
 
     private sealed record ParsedContent(

@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Core;
@@ -16,7 +17,9 @@ public static class RateLimiterExtensions
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
             {
                 string key =
-                    ctx.User?.FindFirst("sub")?.Value ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    ctx.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                    ?? ctx.Connection.RemoteIpAddress?.ToString()
+                    ?? "unknown";
 
                 return RateLimitPartition.GetFixedWindowLimiter(
                     key,
@@ -35,7 +38,9 @@ public static class RateLimiterExtensions
                 ctx =>
                 {
                     string key =
-                        ctx.User?.FindFirst("sub")?.Value ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                        ctx.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? ctx.Connection.RemoteIpAddress?.ToString()
+                        ?? "unknown";
 
                     return RateLimitPartition.GetFixedWindowLimiter(
                         key,
@@ -55,7 +60,9 @@ public static class RateLimiterExtensions
                 ctx =>
                 {
                     string key =
-                        ctx.User?.FindFirst("sub")?.Value ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                        ctx.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? ctx.Connection.RemoteIpAddress?.ToString()
+                        ?? "unknown";
 
                     return RateLimitPartition.GetSlidingWindowLimiter(
                         key,
@@ -76,7 +83,9 @@ public static class RateLimiterExtensions
                 ctx =>
                 {
                     string key =
-                        ctx.User?.FindFirst("sub")?.Value ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                        ctx.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? ctx.Connection.RemoteIpAddress?.ToString()
+                        ?? "unknown";
 
                     return RateLimitPartition.GetSlidingWindowLimiter(
                         key,
@@ -97,7 +106,9 @@ public static class RateLimiterExtensions
                 ctx =>
                 {
                     string key =
-                        ctx.User?.FindFirst("sub")?.Value ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                        ctx.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? ctx.Connection.RemoteIpAddress?.ToString()
+                        ?? "unknown";
 
                     return RateLimitPartition.GetSlidingWindowLimiter(
                         key,

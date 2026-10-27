@@ -1,5 +1,7 @@
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Problems;
+using StackDuel.Application.Services.Problems;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
@@ -14,13 +16,26 @@ public class UpdateProblemHandlerTests
 {
     private static readonly string ValidQuestion = new('q', 60);
 
-    private Mock<IProblemRepository> _problemRepository = null!;
-    private UpdateProblemHandler _handler = null!;
+    private readonly Mock<IProblemRepository> _problemRepository = new();
+    private readonly Mock<IProblemReadRepository> _problemReadRepository = new();
+    private readonly Mock<ISlugService> _slugService = new();
+    private readonly UpdateProblemHandler _handler;
 
     public UpdateProblemHandlerTests()
     {
-        _problemRepository = new Mock<IProblemRepository>();
-        _handler = new UpdateProblemHandler(new UpdateProblemValidator(), _problemRepository.Object);
+        _handler = new UpdateProblemHandler(
+            new UpdateProblemValidator(),
+            _problemRepository.Object,
+            _problemReadRepository.Object,
+            _slugService.Object
+        );
+
+        _slugService
+            .Setup(x => x.GenerateSlugFromTitle(It.IsAny<Title>()))
+            .Returns((Title title) => Slug.FromTitle(title));
+        _problemReadRepository
+            .Setup(x => x.SlugExistsAsync(It.IsAny<Slug>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
     }
 
     private static Problem CreateProblem() =>
@@ -87,6 +102,32 @@ public class UpdateProblemHandlerTests
         await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
 
         Assert.Equal(ProblemStatus.Published, problem.Status);
+    }
+
+    [Fact]
+    public async Task Handle_PublishingADraft_RegeneratesSlugFromTitle()
+    {
+        var problem = CreateProblem();
+        _problemRepository.Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>())).ReturnsAsync(problem);
+
+        await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
+
+        Assert.Equal("updated-title", problem.Slug.Value);
+    }
+
+    [Fact]
+    public async Task Handle_PublishingADraft_AppendsSuffixOnSlugCollision()
+    {
+        var problem = CreateProblem();
+        _problemRepository.Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>())).ReturnsAsync(problem);
+        _problemReadRepository
+            .SetupSequence(x => x.SlugExistsAsync(It.IsAny<Slug>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true)
+            .ReturnsAsync(false);
+
+        await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
+
+        Assert.Equal("updated-title-2", problem.Slug.Value);
     }
 
     [Fact]
