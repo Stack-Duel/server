@@ -12,6 +12,8 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.Queries.Problems.GetAdminProblemDetail;
 using StackDuel.Application.Queries.Problems.GetAdminProblemsPageable;
+using StackDuel.Application.Queries.Problems.GetMyProblems;
+using StackDuel.Application.Queries.Problems.GetMyProblemsMetadata;
 using StackDuel.Application.Queries.Problems.GetProblemById;
 using StackDuel.Application.Queries.Problems.GetProblemBySlug;
 using StackDuel.Application.Queries.Problems.GetProblemReactionSummary;
@@ -62,6 +64,13 @@ public interface IProblemService
     );
 
     Task<Result<AdminProblemDetailDto>> GetAdminProblemDetailAsync(Guid problemId, CancellationToken cancellationToken);
+
+    Task<Result<PageResult<MyProblemListItemDto>>> GetMyProblemsPageableAsync(
+        GetMyProblemsInput input,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result<MyProblemsMetadataDto>> GetMyProblemsMetadataAsync(CancellationToken cancellationToken);
 
     Task<Result> UpdateProblemAsync(
         Guid problemId,
@@ -208,6 +217,23 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
     )
     {
         var result = await mediator.Send(new GetAdminProblemDetailQuery(problemId), cancellationToken);
+
+        return result;
+    }
+
+    public async Task<Result<PageResult<MyProblemListItemDto>>> GetMyProblemsPageableAsync(
+        GetMyProblemsInput input,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await mediator.Send(new GetMyProblemsQuery(input), cancellationToken);
+
+        return result;
+    }
+
+    public async Task<Result<MyProblemsMetadataDto>> GetMyProblemsMetadataAsync(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetMyProblemsMetadataQuery(), cancellationToken);
 
         return result;
     }

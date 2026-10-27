@@ -12,4 +12,9 @@ public interface IProblemReactionReadRepository
         Guid? userId,
         CancellationToken cancellationToken = default
     );
+
+    Task<IReadOnlyList<ProblemReactionCountDto>> GetReactionBreakdownForCreatorAsync(
+        Guid creatorId,
+        CancellationToken cancellationToken = default
+    );
 }

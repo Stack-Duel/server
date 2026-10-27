@@ -371,6 +371,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IProblemReactionReadRepository, ProblemReactionReadRepository>();
         services.AddScoped<IProblemReactionWriteRepository, ProblemReactionWriteRepository>();
         services.AddScoped<StackDuel.Domain.SeedWork.IUnitOfWork, UnitOfWork>();
+        services.AddScoped<StackDuel.Domain.SeedWork.IAdvisoryLockService, AdvisoryLockService>();
         services.AddScoped<IGameWriteRepository, GameWriteRepository>();
         services.AddScoped<IGameRoundSubmissionWriteRepository, GameRoundSubmissionWriteRepository>();
         services.AddScoped<IGameRoundSubmissionReadRepository, GameRoundSubmissionReadRepository>();

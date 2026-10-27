@@ -41,7 +41,11 @@ public abstract class ApiIntegrationTestBase(IntegrationTestEnvironment environm
                 users,
                 groups,
                 roles,
-                permissions
+                permissions,
+                problem_tags,
+                tags,
+                problems,
+                tracks
             RESTART IDENTITY CASCADE
             """;
         await command.ExecuteNonQueryAsync();

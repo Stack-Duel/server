@@ -1,12 +1,15 @@
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems.Entities;
+using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Problems;
 
 public interface IProblemReadRepository
 {
+    Task<int> CountUnresolvedProblemsByCreatorAsync(Guid creatorId, CancellationToken cancellationToken = default);
+
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsForAdminAsync(Guid id, CancellationToken cancellationToken = default);
@@ -40,6 +43,14 @@ public interface IProblemReadRepository
 
     Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
+    Task<PageResult<AdminProblemListRowDto>> GetMyProblemsPagedAsync(
+        Guid creatorId,
+        IReadOnlyCollection<ProblemStatus> statuses,
+        PaginationRequest pagination,
+        string? search,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(
         Guid poolId,
         CancellationToken cancellationToken = default
@@ -66,6 +77,11 @@ public interface IProblemReadRepository
         IReadOnlyCollection<Guid> excludedProblemIds,
         long selectionSeed,
         IReadOnlyCollection<Guid> allowedLanguageVersionIds,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<ProblemStatusCountDto>> GetStatusBreakdownForCreatorAsync(
+        Guid creatorId,
         CancellationToken cancellationToken = default
     );
 

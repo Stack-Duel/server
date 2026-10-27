@@ -196,6 +196,11 @@ public sealed class Problem : AggregateRoot
 
     public IReadOnlyCollection<ProblemHistory> History => _history.AsReadOnly();
 
+    public const int MaxOpenProblemsPerCreator = 10;
+
+    public const int MinTagCount = 1;
+    public const int MaxTagCount = 5;
+
     public static readonly IReadOnlySet<ProblemStatus> ResolveSubmittedStatuses = new HashSet<ProblemStatus>
     {
         ProblemStatus.Published,

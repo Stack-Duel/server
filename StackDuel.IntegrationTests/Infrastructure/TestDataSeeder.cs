@@ -1,5 +1,6 @@
 using Npgsql;
 using StackDuel.Domain.Authorization.Rbac.Enums;
+using StackDuel.Domain.Submissions.Enums;
 
 namespace StackDuel.IntegrationTests.Infrastructure;
 
@@ -86,6 +87,76 @@ public sealed class TestDataSeeder(string connectionString)
             ("userId", userId),
             ("groupId", groupId)
         );
+
+    public async Task<Guid> CreateTrackAsync(
+        string key,
+        string name,
+        bool isActive = true,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO tracks (id, key, name, is_active, allows_language_selection)
+            VALUES (@id, @key, @name, @isActive, true)
+            """,
+            cancellationToken,
+            ("id", id),
+            ("key", key),
+            ("name", name),
+            ("isActive", isActive)
+        );
+        return id;
+    }
+
+    public async Task<Guid> GetLanguageVersionIdBySlugAsync(
+        string languageSlug,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT lv.id
+            FROM language_versions lv
+            JOIN languages l ON l.id = lv.language_id
+            WHERE l.slug = @slug
+            LIMIT 1
+            """;
+        command.Parameters.AddWithValue("slug", languageSlug);
+
+        object? result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is Guid id
+            ? id
+            : throw new InvalidOperationException($"No language version found for slug '{languageSlug}'.");
+    }
+
+    public async Task<Guid> CreateSubmissionAsync(
+        Guid userId,
+        Guid problemSetupId,
+        SubmissionStatus status,
+        SubmissionType type = SubmissionType.Submit,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO submissions (id, user_id, problem_setup_id, type, status, created_at, source_code, additional_files)
+            VALUES (@id, @userId, @problemSetupId, @type, @status, now(), @sourceCode, @additionalFiles)
+            """,
+            cancellationToken,
+            ("id", id),
+            ("userId", userId),
+            ("problemSetupId", problemSetupId),
+            ("type", (int)type),
+            ("status", (int)status),
+            ("sourceCode", "print('hi')"),
+            ("additionalFiles", "[]")
+        );
+        return id;
+    }
 
     private async Task ExecuteAsync(
         string commandText,

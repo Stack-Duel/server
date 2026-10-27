@@ -14,7 +14,9 @@ internal sealed class CreateDraftProblemHandler(
     ITrackReadRepository trackReadRepository,
     IProblemRepository problemRepository,
     ISlugService slugService,
+    IProblemLimitService problemLimitService,
     IUnitOfWork unitOfWork,
+    IAdvisoryLockService advisoryLockService,
     UserContext userContext
 ) : AbstractCommandHandler<CreateDraftProblemCommand, Guid>(validator)
 {
@@ -29,6 +31,18 @@ internal sealed class CreateDraftProblemHandler(
         var timeLimit = new TimeLimit(command.Input.TimeLimitMs);
         var memoryLimit = new MemoryLimit(command.Input.MemoryLimitMb);
         var desiredTags = command.Input.Tags.Select(t => new Tag(t)).ToList();
+
+        await using ITransactionScope transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await advisoryLockService.AcquireUserScopedLockAsync(userContext.User!.Id, cancellationToken);
+
+        if (await problemLimitService.HasReachedOpenProblemLimitAsync(userContext.User!.Id, cancellationToken))
+        {
+            return Result.Invalid(
+                new ValidationError(
+                    $"Reached the {Problem.MaxOpenProblemsPerCreator}-problem limit. Submit or archive one first."
+                )
+            );
+        }
 
         var track = await trackReadRepository.FindByIdAsync(command.Input.TrackId, cancellationToken);
         if (track?.IsActive is not true)
@@ -55,6 +69,7 @@ internal sealed class CreateDraftProblemHandler(
 
         await problemRepository.AddAsync(problem, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Result.Success(problem.Id);
     }

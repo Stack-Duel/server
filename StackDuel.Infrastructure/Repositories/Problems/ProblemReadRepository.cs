@@ -11,6 +11,8 @@ namespace StackDuel.Infrastructure.Repositories.Problems;
 
 internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProblemReadRepository
 {
+    private static readonly List<ProblemStatus> ResolvedStatuses = [.. Problem.ResolveSubmittedStatuses];
+
     private static IQueryable<Problem> ApplyAdminSearchFilter(IQueryable<Problem> query, string? search)
     {
         string? term = search?.Trim();
@@ -25,6 +27,17 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
         );
     }
+
+    public async Task<int> CountUnresolvedProblemsByCreatorAsync(
+        Guid creatorId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await context
+            .Problems.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(problem => problem.CreatedById == creatorId)
+            .Where(problem => !ResolvedStatuses.Contains(problem.Status))
+            .CountAsync(cancellationToken);
 
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.Problems.AsNoTracking().AnyAsync(problem => problem.Id == id, cancellationToken);
@@ -195,6 +208,58 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .Select(p => p.Id)
             .SingleOrDefaultAsync(cancellationToken);
 
+    public async Task<PageResult<AdminProblemListRowDto>> GetMyProblemsPagedAsync(
+        Guid creatorId,
+        IReadOnlyCollection<ProblemStatus> statuses,
+        PaginationRequest pagination,
+        string? search,
+        CancellationToken cancellationToken = default
+    )
+    {
+        int offset = (pagination.Page - 1) * pagination.Size;
+
+        List<ProblemStatus> statusList = [.. statuses];
+
+        var query = ApplyAdminSearchFilter(
+            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.CreatedById == creatorId),
+            search
+        );
+
+        if (statusList.Count > 0)
+            query = query.Where(p => statusList.Contains(p.Status));
+
+        int total = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Skip(offset)
+            .Take(pagination.Size)
+            .Select(p => new AdminProblemListRowDto(
+                p.Id,
+                p.Slug.Value,
+                p.Title.Value,
+                p.Difficulty.Value,
+                p.Status,
+                p.TimeLimit.Milliseconds,
+                p.MemoryLimit.Megabytes,
+                p.Tags.Select(t => t.Name.Value).ToList(),
+                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
+                p.Setups.Count,
+                p.CreatedAt,
+                p.CreatedBy != null ? p.CreatedBy.Username.Value : null
+            ))
+            .ToListAsync(cancellationToken);
+
+        return new PageResult<AdminProblemListRowDto>
+        {
+            Results = items,
+            Total = total,
+            Page = pagination.Page,
+            Size = pagination.Size,
+        };
+    }
+
     public async Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(
         Guid poolId,
         CancellationToken cancellationToken = default
@@ -363,6 +428,18 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         int selectedIndex = (int)(unchecked((ulong)selectionSeed) % (ulong)candidateIds.Count);
         return candidateIds[selectedIndex];
     }
+
+    public async Task<IReadOnlyList<ProblemStatusCountDto>> GetStatusBreakdownForCreatorAsync(
+        Guid creatorId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await context
+            .Problems.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => p.CreatedById == creatorId)
+            .GroupBy(p => p.Status)
+            .Select(group => new ProblemStatusCountDto(group.Key, group.Count()))
+            .ToListAsync(cancellationToken);
 
     public async Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default) =>
         await context.Problems.AnyAsync(problem => problem.Slug == slug, cancellationToken);
