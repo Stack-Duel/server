@@ -86,6 +86,9 @@ internal sealed partial class RabbitMqConsumerService(
         return Task.CompletedTask;
     }
 
+    private const int MaxProcessingRetries = 5;
+    private const string RetryCountHeader = "x-retry-count";
+
     private void Subscribe<TMessage>(
         ICollection<IModel> channels,
         Func<IServiceProvider, TMessage, CancellationToken, Task> handle,
@@ -95,6 +98,8 @@ internal sealed partial class RabbitMqConsumerService(
         where TMessage : IMessage
     {
         string queueName = QueueNames.ForType<TMessage>();
+        string retryExchangeName = $"{queueName}.retry";
+        string deadLetterQueueName = $"{queueName}.dlq";
 
         for (int i = 0; i < consumerConcurrency; i++)
         {
@@ -102,6 +107,7 @@ internal sealed partial class RabbitMqConsumerService(
             channels.Add(channel);
 
             channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false);
+            DeclareRetryInfrastructure(channel, queueName, retryExchangeName, deadLetterQueueName);
             channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
 
             AsyncEventingBasicConsumer consumer = new(channel);
@@ -123,12 +129,77 @@ internal sealed partial class RabbitMqConsumerService(
                 catch (Exception ex)
                 {
                     LogProcessingError(ex);
-                    channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: true);
+                    HandleProcessingFailure(channel, ea, queueName, retryExchangeName, deadLetterQueueName);
                 }
             };
 
             channel.BasicConsume(queueName, autoAck: false, consumer);
         }
+    }
+
+    private static void DeclareRetryInfrastructure(
+        IModel channel,
+        string queueName,
+        string retryExchangeName,
+        string deadLetterQueueName
+    )
+    {
+        channel.ExchangeDeclare(
+            retryExchangeName,
+            type: "x-delayed-message",
+            durable: true,
+            arguments: new Dictionary<string, object> { ["x-delayed-type"] = "direct" }
+        );
+        channel.QueueBind(queueName, retryExchangeName, routingKey: queueName);
+        channel.QueueDeclare(deadLetterQueueName, durable: true, exclusive: false, autoDelete: false);
+    }
+
+    private void HandleProcessingFailure(
+        IModel channel,
+        BasicDeliverEventArgs ea,
+        string queueName,
+        string retryExchangeName,
+        string deadLetterQueueName
+    )
+    {
+        int retryCount = GetRetryCount(ea.BasicProperties);
+
+        if (retryCount >= MaxProcessingRetries)
+        {
+            LogMovedToDeadLetter(queueName, retryCount);
+
+            IBasicProperties deadLetterProps = channel.CreateBasicProperties();
+            deadLetterProps.Headers = new Dictionary<string, object> { [RetryCountHeader] = retryCount };
+            channel.BasicPublish(string.Empty, deadLetterQueueName, deadLetterProps, ea.Body);
+            channel.BasicAck(ea.DeliveryTag, multiple: false);
+            return;
+        }
+
+        TimeSpan delay = TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryCount)));
+        LogRetryScheduled(queueName, retryCount + 1, delay);
+
+        IBasicProperties retryProps = channel.CreateBasicProperties();
+        retryProps.Headers = new Dictionary<string, object>
+        {
+            [RetryCountHeader] = retryCount + 1,
+            ["x-delay"] = (int)delay.TotalMilliseconds,
+        };
+        channel.BasicPublish(retryExchangeName, queueName, retryProps, ea.Body);
+        channel.BasicAck(ea.DeliveryTag, multiple: false);
+    }
+
+    private static int GetRetryCount(IBasicProperties properties)
+    {
+        if (properties.Headers is null || !properties.Headers.TryGetValue(RetryCountHeader, out object? value))
+            return 0;
+
+        return value switch
+        {
+            int i => i,
+            long l => (int)l,
+            byte[] bytes when int.TryParse(Encoding.UTF8.GetString(bytes), out int parsed) => parsed,
+            _ => 0,
+        };
     }
 
     /// <summary>
@@ -145,6 +216,8 @@ internal sealed partial class RabbitMqConsumerService(
     {
         string queueName = QueueNames.ForType<GameTimeExpiredMessage>();
         string exchangeName = $"{queueName}.delayed";
+        string retryExchangeName = $"{queueName}.retry";
+        string deadLetterQueueName = $"{queueName}.dlq";
 
         for (int i = 0; i < consumerConcurrency; i++)
         {
@@ -159,6 +232,7 @@ internal sealed partial class RabbitMqConsumerService(
             );
             channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false);
             channel.QueueBind(queueName, exchangeName, routingKey: queueName);
+            DeclareRetryInfrastructure(channel, queueName, retryExchangeName, deadLetterQueueName);
 
             channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
 
@@ -181,7 +255,7 @@ internal sealed partial class RabbitMqConsumerService(
                 catch (Exception ex)
                 {
                     LogProcessingError(ex);
-                    channel.BasicNack(ea.DeliveryTag, multiple: false, requeue: true);
+                    HandleProcessingFailure(channel, ea, queueName, retryExchangeName, deadLetterQueueName);
                 }
             };
 
@@ -228,4 +302,16 @@ internal sealed partial class RabbitMqConsumerService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error processing message from RabbitMQ")]
     private partial void LogProcessingError(Exception ex);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Retrying message from {QueueName} (attempt {RetryCount}) after {Delay}"
+    )]
+    private partial void LogRetryScheduled(string queueName, int retryCount, TimeSpan delay);
+
+    [LoggerMessage(
+        Level = LogLevel.Critical,
+        Message = "Message from {QueueName} failed {RetryCount} times and was moved to its dead-letter queue"
+    )]
+    private partial void LogMovedToDeadLetter(string queueName, int retryCount);
 }
