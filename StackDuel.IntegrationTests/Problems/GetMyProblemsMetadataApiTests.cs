@@ -50,6 +50,8 @@ public sealed class GetMyProblemsMetadataApiTests(IntegrationTestEnvironment env
         const string reactor2Sub = "sub-metadata-reactor2";
         await CreateAccountAsync(reactor1Sub, "metareactor1");
         await CreateAccountAsync(reactor2Sub, "metareactor2");
+        await Seeder.EnsureReactionTypeAsync("like", "Like", sortOrder: 1);
+        await Seeder.EnsureReactionTypeAsync("dislike", "Dislike", sortOrder: 2);
         await ReactAsync(reactor1Sub, problemId, "like");
         await ReactAsync(reactor2Sub, problemId, "dislike");
 
@@ -103,6 +105,7 @@ public sealed class GetMyProblemsMetadataApiTests(IntegrationTestEnvironment env
         Guid otherUserId = await Seeder.GetUserIdBySubAsync(otherSub);
         await Seeder.CreateSubmissionAsync(otherUserId, otherSetupId, SubmissionStatus.Accepted);
         await Seeder.CreateSubmissionAsync(otherUserId, otherSetupId, SubmissionStatus.Accepted);
+        await Seeder.EnsureReactionTypeAsync("like", "Like", sortOrder: 1);
         await ReactAsync(otherSub, otherProblemId, "like");
 
         HttpRequestMessage request = AuthenticatedRequest(HttpMethod.Get, MetadataUrl, ownerSub);

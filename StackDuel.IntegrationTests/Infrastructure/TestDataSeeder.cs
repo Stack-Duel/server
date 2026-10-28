@@ -172,6 +172,35 @@ public sealed class TestDataSeeder(string connectionString)
         return id;
     }
 
+    public async Task EnsureReactionTypeAsync(
+        string key,
+        string name,
+        int sortOrder,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = "SELECT id FROM problem_reaction_types WHERE key = @key LIMIT 1";
+        selectCommand.Parameters.AddWithValue("key", key);
+
+        object? existing = await selectCommand.ExecuteScalarAsync(cancellationToken);
+        if (existing is Guid)
+            return;
+
+        await ExecuteAsync(
+            """
+            INSERT INTO problem_reaction_types (id, key, name, emoji, sort_order, is_enabled, created_at)
+            VALUES (@id, @key, @name, null, @sortOrder, true, now())
+            """,
+            cancellationToken,
+            ("id", Guid.NewGuid()),
+            ("key", key),
+            ("name", name),
+            ("sortOrder", sortOrder)
+        );
+    }
+
     public async Task<Guid> CreateSubmissionAsync(
         Guid userId,
         Guid problemSetupId,
