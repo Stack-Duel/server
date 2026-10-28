@@ -1,7 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Api.Requests.User;
 using StackDuel.Application.Problems.Dtos;
@@ -10,6 +6,10 @@ using StackDuel.Domain.Authorization.Rbac.Enums;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Submissions.Enums;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace StackDuel.IntegrationTests.Problems;
 
