@@ -1,7 +1,7 @@
 ﻿using Ardalis.Result;
 using MediatR;
 using StackDuel.Application.Commands.Problems.AddProblemSetup;
-using StackDuel.Application.Commands.Problems.CreateProblemDraft;
+using StackDuel.Application.Commands.Problems.CreateDraftProblem;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemReaction;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
@@ -12,6 +12,8 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.Queries.Problems.GetAdminProblemDetail;
 using StackDuel.Application.Queries.Problems.GetAdminProblemsPageable;
+using StackDuel.Application.Queries.Problems.GetMyProblems;
+using StackDuel.Application.Queries.Problems.GetMyProblemsMetadata;
 using StackDuel.Application.Queries.Problems.GetProblemById;
 using StackDuel.Application.Queries.Problems.GetProblemBySlug;
 using StackDuel.Application.Queries.Problems.GetProblemReactionSummary;
@@ -24,6 +26,8 @@ namespace StackDuel.Application.Services.Problems;
 
 public interface IProblemService
 {
+    Task<Result<Guid>> CreateDraftProblemAsync(CreateDraftProblemInput input, CancellationToken cancellationToken);
+
     Task<Result<ProblemSetupDto>> GetProblemSetupAsync(
         string slug,
         Guid languageVersionId,
@@ -61,6 +65,13 @@ public interface IProblemService
 
     Task<Result<AdminProblemDetailDto>> GetAdminProblemDetailAsync(Guid problemId, CancellationToken cancellationToken);
 
+    Task<Result<PageResult<MyProblemListItemDto>>> GetMyProblemsPageableAsync(
+        GetMyProblemsInput input,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result<MyProblemsMetadataDto>> GetMyProblemsMetadataAsync(CancellationToken cancellationToken);
+
     Task<Result> UpdateProblemAsync(
         Guid problemId,
         string title,
@@ -72,8 +83,6 @@ public interface IProblemService
         ProblemStatus? status,
         CancellationToken cancellationToken
     );
-
-    Task<Result<Guid>> CreateProblemDraftAsync(CreateProblemDraftInput input, CancellationToken cancellationToken);
 
     Task<Result<Guid>> AddProblemSetupAsync(
         Guid problemId,
@@ -110,6 +119,16 @@ public interface IProblemService
 
 internal sealed class ProblemService(IMediator mediator) : IProblemService
 {
+    public async Task<Result<Guid>> CreateDraftProblemAsync(
+        CreateDraftProblemInput input,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await mediator.Send(new CreateDraftProblemCommand(input), cancellationToken);
+
+        return result;
+    }
+
     public async Task<Result<ProblemSetupDto>> GetProblemSetupAsync(
         string slug,
         Guid languageVersionId,
@@ -202,6 +221,23 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
         return result;
     }
 
+    public async Task<Result<PageResult<MyProblemListItemDto>>> GetMyProblemsPageableAsync(
+        GetMyProblemsInput input,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await mediator.Send(new GetMyProblemsQuery(input), cancellationToken);
+
+        return result;
+    }
+
+    public async Task<Result<MyProblemsMetadataDto>> GetMyProblemsMetadataAsync(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetMyProblemsMetadataQuery(), cancellationToken);
+
+        return result;
+    }
+
     public async Task<Result> UpdateProblemAsync(
         Guid problemId,
         string title,
@@ -216,27 +252,6 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
     {
         var result = await mediator.Send(
             new UpdateProblemCommand(problemId, title, question, difficulty, timeLimitMs, memoryLimitMb, tags, status),
-            cancellationToken
-        );
-
-        return result;
-    }
-
-    public async Task<Result<Guid>> CreateProblemDraftAsync(
-        CreateProblemDraftInput input,
-        CancellationToken cancellationToken
-    )
-    {
-        var result = await mediator.Send(
-            new CreateProblemDraftCommand(
-                input.Title,
-                input.Question,
-                input.Difficulty,
-                input.TimeLimitMs,
-                input.MemoryLimitMb,
-                input.Tags,
-                input.TrackId
-            ),
             cancellationToken
         );
 

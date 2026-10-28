@@ -84,8 +84,8 @@ public static class ApiServiceRegistration
 
         app.UseHttpsRedirection();
         app.UseWebSockets();
-        app.UseRateLimiter();
         app.UseAuthentication();
+        app.UseRateLimiter();
         app.UseAuthorization();
         app.UseMiddleware<AccountContextMiddleware>();
         app.MapControllers();

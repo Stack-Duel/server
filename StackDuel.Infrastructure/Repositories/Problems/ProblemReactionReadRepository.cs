@@ -68,4 +68,40 @@ internal sealed class ProblemReactionReadRepository(StackDuelDbContext context) 
             currentUserReactionKey
         );
     }
+
+    public async Task<IReadOnlyList<ProblemReactionCountDto>> GetReactionBreakdownForCreatorAsync(
+        Guid creatorId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .ProblemReactions.AsNoTracking()
+            .Where(reaction => reaction.IsActive)
+            .Join(
+                context.Problems.IgnoreQueryFilters().AsNoTracking(),
+                reaction => reaction.ProblemId,
+                problem => problem.Id,
+                (reaction, problem) => new { reaction.ReactionTypeId, problem.CreatedById }
+            )
+            .Where(x => x.CreatedById == creatorId)
+            .GroupBy(x => x.ReactionTypeId)
+            .Select(group => new { ReactionTypeId = group.Key, Count = group.Count() })
+            .Join(
+                context.ProblemReactionTypes.AsNoTracking(),
+                group => group.ReactionTypeId,
+                type => type.Id,
+                (group, type) =>
+                    new
+                    {
+                        type.Key,
+                        type.Name,
+                        type.Emoji,
+                        type.SortOrder,
+                        group.Count,
+                    }
+            )
+            .OrderBy(x => x.SortOrder)
+            .Select(x => new ProblemReactionCountDto(x.Key, x.Name, x.Emoji, x.Count))
+            .ToListAsync(cancellationToken);
+    }
 }

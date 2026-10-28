@@ -8,5 +8,7 @@ public static class WellKnownPolicies
 
     public const string AvatarUpload = "rl:avatar-upload";
 
+    public const string ProblemCreation = "rl:problem-creation";
+
     public const string Judge0Callback = "rl:judge0-callback";
 }

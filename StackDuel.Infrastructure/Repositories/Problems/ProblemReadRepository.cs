@@ -11,22 +11,33 @@ namespace StackDuel.Infrastructure.Repositories.Problems;
 
 internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProblemReadRepository
 {
-    public async Task<Problem?> FindBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
+    private static readonly List<ProblemStatus> ResolvedStatuses = [.. Problem.ResolveSubmittedStatuses];
+
+    private static IQueryable<Problem> ApplyAdminSearchFilter(IQueryable<Problem> query, string? search)
+    {
+        string? term = search?.Trim();
+        if (string.IsNullOrEmpty(term))
+            return query;
+
+        if (Guid.TryParse(term, out Guid id))
+            return query.Where(p => p.Id == id);
+
+        string pattern = $"%{term}%";
+        return query.Where(p =>
+            EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
+        );
+    }
+
+    public async Task<int> CountUnresolvedProblemsByCreatorAsync(
+        Guid creatorId,
+        CancellationToken cancellationToken = default
+    ) =>
         await context
-            .Problems.AsNoTracking()
-            .AsSplitQuery()
-            .Include(problem => problem.CreatedBy)
-            .Include(problem => problem.Tags)
-            .Include(problem => problem.Setups)
-                .ThenInclude(setup => setup.TestSuites)
-                    .ThenInclude(testSuite => testSuite.TestCases)
-                        .ThenInclude(testCase => testCase.Inputs.OrderBy(i => i.Position))
-            .Include(problem => problem.Setups)
-                .ThenInclude(setup => setup.TestSuites)
-                    .ThenInclude(testSuite => testSuite.TestCases)
-                        .ThenInclude(testCase => testCase.ExpectedOutputs)
-            .Where(problem => problem.Slug.Value == slug)
-            .SingleOrDefaultAsync(cancellationToken);
+            .Problems.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(problem => problem.CreatedById == creatorId)
+            .Where(problem => !ResolvedStatuses.Contains(problem.Status))
+            .CountAsync(cancellationToken);
 
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context.Problems.AsNoTracking().AnyAsync(problem => problem.Id == id, cancellationToken);
@@ -36,13 +47,6 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .Problems.IgnoreQueryFilters()
             .AsNoTracking()
             .AnyAsync(problem => problem.Id == id, cancellationToken);
-
-    public async Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
-        await context
-            .Problems.AsNoTracking()
-            .Where(p => p.Slug.Value == slug)
-            .Select(p => p.Id)
-            .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
@@ -79,48 +83,80 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .Where(problem => problem.Id == id)
             .SingleOrDefaultAsync(cancellationToken);
 
-    public async Task<PageResult<ProblemListRowDto>> GetPagedAsync(
-        PaginationRequest pagination,
-        string? search,
+    public async Task<IReadOnlyList<AdminProblemListRowDto>> FindByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken = default
     )
     {
-        int offset = (pagination.Page - 1) * pagination.Size;
+        if (ids.Count == 0)
+            return [];
 
-        var query = context.Problems.AsNoTracking().Where(p => p.Status == ProblemStatus.Published);
-
-        string? term = search?.Trim();
-        if (!string.IsNullOrEmpty(term))
-        {
-            string pattern = $"%{term}%";
-            query = query.Where(p =>
-                EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
-            );
-        }
-
-        int total = await query.CountAsync(cancellationToken);
-
-        var items = await query
-            .OrderBy(p => p.Id)
-            .Skip(offset)
-            .Take(pagination.Size)
-            .Select(p => new ProblemListRowDto(
+        return await context
+            .Problems.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => ids.Contains(p.Id))
+            .OrderBy(p => p.Title.Value)
+            .Select(p => new AdminProblemListRowDto(
                 p.Id,
                 p.Slug.Value,
                 p.Title.Value,
                 p.Difficulty.Value,
+                p.Status,
+                p.TimeLimit.Milliseconds,
+                p.MemoryLimit.Megabytes,
                 p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
+                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
+                p.Setups.Count,
+                p.CreatedAt,
+                p.CreatedBy != null ? p.CreatedBy.Username.Value : null
             ))
             .ToListAsync(cancellationToken);
+    }
 
-        return new PageResult<ProblemListRowDto>
-        {
-            Results = items,
-            Total = total,
-            Page = pagination.Page,
-            Size = pagination.Size,
-        };
+    public async Task<Problem?> FindBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
+        await context
+            .Problems.AsNoTracking()
+            .AsSplitQuery()
+            .Include(problem => problem.CreatedBy)
+            .Include(problem => problem.Tags)
+            .Include(problem => problem.Setups)
+                .ThenInclude(setup => setup.TestSuites)
+                    .ThenInclude(testSuite => testSuite.TestCases)
+                        .ThenInclude(testCase => testCase.Inputs.OrderBy(i => i.Position))
+            .Include(problem => problem.Setups)
+                .ThenInclude(setup => setup.TestSuites)
+                    .ThenInclude(testSuite => testSuite.TestCases)
+                        .ThenInclude(testCase => testCase.ExpectedOutputs)
+            .Where(problem => problem.Slug.Value == slug)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<ProblemDifficultyLookupDto?> FindDifficultyByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => setup.Id == problemSetupId)
+            .Join(
+                context.Problems.AsNoTracking().IgnoreQueryFilters(),
+                setup => EF.Property<Guid>(setup, "problem_id"),
+                problem => problem.Id,
+                (setup, problem) => new ProblemDifficultyLookupDto(problem.Id, problem.Difficulty.Value)
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
+        string? search,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var query = ApplyAdminSearchFilter(context.Problems.IgnoreQueryFilters().AsNoTracking().AsQueryable(), search);
+
+        return await query.Select(p => p.Id).ToListAsync(cancellationToken);
     }
 
     public async Task<PageResult<AdminProblemListRowDto>> GetAdminProblemsPagedAsync(
@@ -165,19 +201,40 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         };
     }
 
-    public async Task<IReadOnlyList<AdminProblemListRowDto>> FindByIdsAsync(
-        IReadOnlyCollection<Guid> ids,
+    public async Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
+        await context
+            .Problems.AsNoTracking()
+            .Where(p => p.Slug.Value == slug)
+            .Select(p => p.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<PageResult<AdminProblemListRowDto>> GetMyProblemsPagedAsync(
+        Guid creatorId,
+        IReadOnlyCollection<ProblemStatus> statuses,
+        PaginationRequest pagination,
+        string? search,
         CancellationToken cancellationToken = default
     )
     {
-        if (ids.Count == 0)
-            return [];
+        int offset = (pagination.Page - 1) * pagination.Size;
 
-        return await context
-            .Problems.IgnoreQueryFilters()
-            .AsNoTracking()
-            .Where(p => ids.Contains(p.Id))
-            .OrderBy(p => p.Title.Value)
+        List<ProblemStatus> statusList = [.. statuses];
+
+        var query = ApplyAdminSearchFilter(
+            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.CreatedById == creatorId),
+            search
+        );
+
+        if (statusList.Count > 0)
+            query = query.Where(p => statusList.Contains(p.Status));
+
+        int total = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Skip(offset)
+            .Take(pagination.Size)
             .Select(p => new AdminProblemListRowDto(
                 p.Id,
                 p.Slug.Value,
@@ -193,6 +250,77 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.CreatedBy != null ? p.CreatedBy.Username.Value : null
             ))
             .ToListAsync(cancellationToken);
+
+        return new PageResult<AdminProblemListRowDto>
+        {
+            Results = items,
+            Total = total,
+            Page = pagination.Page,
+            Size = pagination.Size,
+        };
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(
+        Guid poolId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var poolItems = context.Set<ProblemPoolItem>().Where(item => EF.Property<Guid>(item, "pool_id") == poolId);
+
+        return await poolItems
+            .Join(
+                context.Problems.Where(problem => problem.Status == ProblemStatus.Published),
+                item => item.ProblemId,
+                problem => problem.Id,
+                (item, problem) => new { item.Position, problem.Id }
+            )
+            .OrderBy(x => x.Position)
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PageResult<ProblemListRowDto>> GetPagedAsync(
+        PaginationRequest pagination,
+        string? search,
+        CancellationToken cancellationToken = default
+    )
+    {
+        int offset = (pagination.Page - 1) * pagination.Size;
+
+        var query = context.Problems.AsNoTracking().Where(p => p.Status == ProblemStatus.Published);
+
+        string? term = search?.Trim();
+        if (!string.IsNullOrEmpty(term))
+        {
+            string pattern = $"%{term}%";
+            query = query.Where(p =>
+                EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
+            );
+        }
+
+        int total = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderBy(p => p.Id)
+            .Skip(offset)
+            .Take(pagination.Size)
+            .Select(p => new ProblemListRowDto(
+                p.Id,
+                p.Slug.Value,
+                p.Title.Value,
+                p.Difficulty.Value,
+                p.Tags.Select(t => t.Name.Value).ToList(),
+                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
+            ))
+            .ToListAsync(cancellationToken);
+
+        return new PageResult<ProblemListRowDto>
+        {
+            Results = items,
+            Total = total,
+            Page = pagination.Page,
+            Size = pagination.Size,
+        };
     }
 
     public async Task<PageResult<AdminProblemListRowDto>> GetPoolMembersPagedAsync(
@@ -240,29 +368,18 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         };
     }
 
-    public async Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
-        string? search,
+    public async Task<Guid?> GetProblemIdByProblemSetupIdAsync(
+        Guid problemSetupId,
         CancellationToken cancellationToken = default
     )
     {
-        var query = ApplyAdminSearchFilter(context.Problems.IgnoreQueryFilters().AsNoTracking().AsQueryable(), search);
-
-        return await query.Select(p => p.Id).ToListAsync(cancellationToken);
-    }
-
-    private static IQueryable<Problem> ApplyAdminSearchFilter(IQueryable<Problem> query, string? search)
-    {
-        string? term = search?.Trim();
-        if (string.IsNullOrEmpty(term))
-            return query;
-
-        if (Guid.TryParse(term, out Guid id))
-            return query.Where(p => p.Id == id);
-
-        string pattern = $"%{term}%";
-        return query.Where(p =>
-            EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
-        );
+        return await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => setup.Id == problemSetupId)
+            .Select(setup => (Guid?)EF.Property<Guid>(setup, "problem_id"))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<Guid?> GetRandomProblemIdByDifficultyAsync(
@@ -312,57 +429,18 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         return candidateIds[selectedIndex];
     }
 
-    public async Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(
-        Guid poolId,
+    public async Task<IReadOnlyList<ProblemStatusCountDto>> GetStatusBreakdownForCreatorAsync(
+        Guid creatorId,
         CancellationToken cancellationToken = default
-    )
-    {
-        var poolItems = context
-            .Set<ProblemPoolItem>()
-            .Where(item => EF.Property<Guid>(item, "pool_id") == poolId);
-
-        return await poolItems
-            .Join(
-                context.Problems.Where(problem => problem.Status == ProblemStatus.Published),
-                item => item.ProblemId,
-                problem => problem.Id,
-                (item, problem) => new { item.Position, problem.Id }
-            )
-            .OrderBy(x => x.Position)
-            .Select(x => x.Id)
+    ) =>
+        await context
+            .Problems.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(p => p.CreatedById == creatorId)
+            .GroupBy(p => p.Status)
+            .Select(group => new ProblemStatusCountDto(group.Key, group.Count()))
             .ToListAsync(cancellationToken);
-    }
 
-    public async Task<ProblemDifficultyLookupDto?> FindDifficultyByProblemSetupIdAsync(
-        Guid problemSetupId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        return await context
-            .Set<ProblemSetup>()
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(setup => setup.Id == problemSetupId)
-            .Join(
-                context.Problems.AsNoTracking().IgnoreQueryFilters(),
-                setup => EF.Property<Guid>(setup, "problem_id"),
-                problem => problem.Id,
-                (setup, problem) => new ProblemDifficultyLookupDto(problem.Id, problem.Difficulty.Value)
-            )
-            .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async Task<Guid?> GetProblemIdByProblemSetupIdAsync(
-        Guid problemSetupId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        return await context
-            .Set<ProblemSetup>()
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(setup => setup.Id == problemSetupId)
-            .Select(setup => (Guid?)EF.Property<Guid>(setup, "problem_id"))
-            .FirstOrDefaultAsync(cancellationToken);
-    }
+    public async Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default) =>
+        await context.Problems.IgnoreQueryFilters().AnyAsync(problem => problem.Slug == slug, cancellationToken);
 }

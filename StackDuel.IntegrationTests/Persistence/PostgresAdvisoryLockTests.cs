@@ -94,7 +94,7 @@ public sealed class PostgresAdvisoryLockTests(IntegrationTestEnvironment environ
     private async Task<string> RunAsAsync(Guid key, Func<CancellationToken, Task<string>> action)
     {
         await using AsyncServiceScope scope = environment.Factory.Services.CreateAsyncScope();
-        var advisoryLock = scope.ServiceProvider.GetRequiredService<IAdvisoryLock>();
+        var advisoryLock = scope.ServiceProvider.GetRequiredService<IAdvisoryLockService>();
 
         return await advisoryLock.RunExclusiveAsync("integration-test", key, action);
     }

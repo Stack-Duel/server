@@ -1,7 +1,9 @@
 namespace StackDuel.Domain.SeedWork;
 
-public interface IAdvisoryLock
+public interface IAdvisoryLockService
 {
+    Task AcquireUserScopedLockAsync(Guid key, CancellationToken cancellationToken = default);
+
     Task<T> RunExclusiveAsync<T>(
         string lockNamespace,
         Guid key,

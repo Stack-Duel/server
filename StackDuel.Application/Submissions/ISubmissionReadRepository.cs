@@ -65,4 +65,9 @@ public interface ISubmissionReadRepository
         IReadOnlyCollection<Guid> problemIds,
         CancellationToken cancellationToken = default
     );
+
+    Task<SubmissionStatsDto> GetSubmissionStatsForCreatorAsync(
+        Guid creatorId,
+        CancellationToken cancellationToken = default
+    );
 }

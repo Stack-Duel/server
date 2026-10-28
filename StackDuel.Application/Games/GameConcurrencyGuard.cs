@@ -2,7 +2,7 @@ using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Application.Games;
 
-internal sealed class GameConcurrencyGuard(IAdvisoryLock advisoryLock) : IGameConcurrencyGuard
+internal sealed class GameConcurrencyGuard(IAdvisoryLockService advisoryLockService) : IGameConcurrencyGuard
 {
     private const string LockNamespace = "game";
 
@@ -10,5 +10,5 @@ internal sealed class GameConcurrencyGuard(IAdvisoryLock advisoryLock) : IGameCo
         Guid gameId,
         Func<CancellationToken, Task<T>> action,
         CancellationToken cancellationToken = default
-    ) => advisoryLock.RunExclusiveAsync(LockNamespace, gameId, action, cancellationToken);
+    ) => advisoryLockService.RunExclusiveAsync(LockNamespace, gameId, action, cancellationToken);
 }

@@ -1,25 +1,36 @@
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems.Entities;
+using StackDuel.Domain.Problems.Enums;
+using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Problems;
 
 public interface IProblemReadRepository
 {
-    Task<Problem?> FindBySlugAsync(string slug, CancellationToken cancellationToken = default);
-
-    Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
-
-    Task<Problem?> FindByIdForAdminAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<int> CountUnresolvedProblemsByCreatorAsync(Guid creatorId, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsForAdminAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default);
+    Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PageResult<ProblemListRowDto>> GetPagedAsync(
-        PaginationRequest pagination,
+    Task<Problem?> FindByIdForAdminAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AdminProblemListRowDto>> FindByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<Problem?> FindBySlugAsync(string slug, CancellationToken cancellationToken = default);
+
+    Task<ProblemDifficultyLookupDto?> FindDifficultyByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
         string? search,
         CancellationToken cancellationToken = default
     );
@@ -30,8 +41,24 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<AdminProblemListRowDto>> FindByIdsAsync(
-        IReadOnlyCollection<Guid> ids,
+    Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default);
+
+    Task<PageResult<AdminProblemListRowDto>> GetMyProblemsPagedAsync(
+        Guid creatorId,
+        IReadOnlyCollection<ProblemStatus> statuses,
+        PaginationRequest pagination,
+        string? search,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(
+        Guid poolId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<PageResult<ProblemListRowDto>> GetPagedAsync(
+        PaginationRequest pagination,
+        string? search,
         CancellationToken cancellationToken = default
     );
 
@@ -41,10 +68,7 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
-        string? search,
-        CancellationToken cancellationToken = default
-    );
+    Task<Guid?> GetProblemIdByProblemSetupIdAsync(Guid problemSetupId, CancellationToken cancellationToken = default);
 
     Task<Guid?> GetRandomProblemIdByDifficultyAsync(
         Guid poolId,
@@ -56,12 +80,10 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<ProblemDifficultyLookupDto?> FindDifficultyByProblemSetupIdAsync(
-        Guid problemSetupId,
+    Task<IReadOnlyList<ProblemStatusCountDto>> GetStatusBreakdownForCreatorAsync(
+        Guid creatorId,
         CancellationToken cancellationToken = default
     );
 
-    Task<Guid?> GetProblemIdByProblemSetupIdAsync(Guid problemSetupId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<Guid>> GetOrderedEligibleProblemIdsAsync(Guid poolId, CancellationToken cancellationToken = default);
+    Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default);
 }

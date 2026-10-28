@@ -66,6 +66,45 @@ public sealed class ProblemController(
         );
     }
 
+    [HttpGet("mine")]
+    [RequireUser]
+    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PageResult<MyProblemListItemDto>>> GetMyProblems(
+        [FromQuery] GetMyProblemsRequest query,
+        CancellationToken cancellationToken
+    )
+    {
+        return this.ToActionResult(
+            await problemService.GetMyProblemsPageableAsync(
+                new GetMyProblemsInput(
+                    new PaginationRequest
+                    {
+                        Page = query.Page,
+                        Size = query.Size,
+                        Timestamp = query.Timestamp,
+                    },
+                    query.Statuses ?? [],
+                    query.Search
+                ),
+                cancellationToken
+            )
+        );
+    }
+
+    [HttpGet("mine/metadata")]
+    [RequireUser]
+    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<MyProblemsMetadataDto>> GetMyProblemsMetadata(CancellationToken cancellationToken)
+    {
+        return this.ToActionResult(await problemService.GetMyProblemsMetadataAsync(cancellationToken));
+    }
+
     [HttpGet("{slug}/setup")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -149,27 +188,28 @@ public sealed class ProblemController(
         );
     }
 
-    [HttpPost("admin")]
+    [HttpPost]
     [RequireUser]
     [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [EnableRateLimiting(WellKnownPolicies.ProblemCreation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<Guid>> CreateProblemDraft(
-        [FromBody] CreateProblemDraftRequest request,
+    public async Task<ActionResult<Guid>> CreateProblemAsync(
+        [FromBody] CreateDraftProblemRequest request,
         CancellationToken cancellationToken
     )
     {
         return this.ToActionResult(
-            await problemService.CreateProblemDraftAsync(
-                new CreateProblemDraftInput(
+            await problemService.CreateDraftProblemAsync(
+                new CreateDraftProblemInput(
                     request.Title,
                     request.Question,
+                    request.Tags,
                     request.Difficulty,
                     request.TimeLimitMs,
                     request.MemoryLimitMb,
-                    request.Tags,
                     request.TrackId
                 ),
                 cancellationToken

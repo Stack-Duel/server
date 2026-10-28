@@ -50,14 +50,14 @@ public class SetProblemReactionHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.Equal(ResultStatus.Invalid, result.Status);
-        _problemReadRepository.Verify(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _problemReadRepository.Verify(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task Handle_ProblemNotFound_ReturnsNotFound()
     {
         _problemReadRepository
-            .Setup(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var result = await _handler.Handle(ValidCommand(), CancellationToken.None);
@@ -69,7 +69,7 @@ public class SetProblemReactionHandlerTests
     public async Task Handle_UnknownReactionType_ReturnsNotFound()
     {
         _problemReadRepository
-            .Setup(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _problemReactionReadRepository
             .Setup(x => x.FindReactionTypeByKeyAsync("bogus", It.IsAny<CancellationToken>()))
@@ -95,7 +95,7 @@ public class SetProblemReactionHandlerTests
     {
         var reactionType = CreateReactionType("like");
         _problemReadRepository
-            .Setup(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _problemReactionReadRepository
             .Setup(x => x.FindReactionTypeByKeyAsync("like", It.IsAny<CancellationToken>()))
@@ -140,7 +140,7 @@ public class SetProblemReactionHandlerTests
         var existing = new ProblemReaction(Guid.NewGuid(), Guid.NewGuid(), reactionType.Id);
 
         _problemReadRepository
-            .Setup(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _problemReactionReadRepository
             .Setup(x => x.FindReactionTypeByKeyAsync("like", It.IsAny<CancellationToken>()))
@@ -179,7 +179,7 @@ public class SetProblemReactionHandlerTests
         existing.Deactivate();
 
         _problemReadRepository
-            .Setup(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _problemReactionReadRepository
             .Setup(x => x.FindReactionTypeByKeyAsync("like", It.IsAny<CancellationToken>()))
@@ -221,7 +221,7 @@ public class SetProblemReactionHandlerTests
         var activeDislike = new ProblemReaction(problemId, userId, dislikeType.Id);
 
         _problemReadRepository
-            .Setup(x => x.ExistsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForAdminAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _problemReactionReadRepository
             .Setup(x => x.FindReactionTypeByKeyAsync("like", It.IsAny<CancellationToken>()))

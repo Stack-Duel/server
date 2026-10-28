@@ -4,7 +4,6 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Problems.ValueObjects;
-using DifficultyTier = StackDuel.Domain.Problems.Enums.DifficultyTier;
 
 namespace StackDuel.Application.Queries.Problems.GetAdminProblemsPageable;
 
@@ -40,7 +39,7 @@ internal sealed class GetAdminProblemsPageableHandler(
                 row.Slug,
                 row.Title,
                 row.DifficultyValue,
-                ToDifficultyTier(row.DifficultyValue),
+                new Difficulty(row.DifficultyValue).Tier,
                 row.Status,
                 row.TimeLimitMs,
                 row.MemoryLimitMb,
@@ -62,11 +61,4 @@ internal sealed class GetAdminProblemsPageableHandler(
             }
         );
     }
-
-    private static DifficultyTier ToDifficultyTier(int difficultyValue) =>
-        difficultyValue <= Difficulty.BeginnerMax ? DifficultyTier.Beginner
-        : difficultyValue <= Difficulty.EasyMax ? DifficultyTier.Easy
-        : difficultyValue <= Difficulty.IntermediateMax ? DifficultyTier.Intermediate
-        : difficultyValue <= Difficulty.AdvancedMax ? DifficultyTier.Advanced
-        : DifficultyTier.Expert;
 }

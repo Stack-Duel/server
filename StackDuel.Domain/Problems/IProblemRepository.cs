@@ -11,7 +11,7 @@ public interface IProblemRepository : IRepository<Problem>
     Task<Problem?> FindBySlugAsync(Slug slug, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<ProblemTag>> FindOrCreateTagsAsync(
-        IReadOnlyCollection<string> tagNames,
+        IEnumerable<Tag> tags,
         CancellationToken cancellationToken = default
     );
 }

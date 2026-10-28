@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -8,10 +9,15 @@ namespace StackDuel.Infrastructure.Repositories.Problems;
 
 internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRepository
 {
+    private const string InsertTagsOnConflictDoNothing = """
+        INSERT INTO tags (id, name)
+        SELECT gen_random_uuid(), unnest(@names)
+        ON CONFLICT (name) DO NOTHING
+        """;
+
     public async Task AddAsync(Problem entity, CancellationToken cancellationToken = default)
     {
         await context.Problems.AddAsync(entity, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateAsync(Problem entity, CancellationToken cancellationToken = default)
@@ -64,30 +70,23 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyCollection<ProblemTag>> FindOrCreateTagsAsync(
-        IReadOnlyCollection<string> tagNames,
+        IEnumerable<Tag> tags,
         CancellationToken cancellationToken = default
     )
     {
-        if (tagNames.Count == 0)
+        List<Tag> tagList = [.. tags];
+
+        if (tagList.Count == 0)
             return [];
 
-        // Filtered in-memory rather than via a `.Name.Value` predicate — member access on a
-        // HasConversion-mapped property is unreliable to translate outside a terminal Select
-        // (see the OrderBy(g => g.Name.Value) failure fixed in GroupReadRepository). The tags
-        // table is small, so loading it fully here is cheap.
-        List<ProblemTag> allTags = await context.Tags.ToListAsync(cancellationToken);
-        List<ProblemTag> existing = [.. allTags.Where(t => tagNames.Contains(t.Name.Value))];
+        string[] names = [.. tagList.Select(t => t.Value)];
 
-        HashSet<string> existingNames = [.. existing.Select(t => t.Name.Value)];
+        await context.Database.ExecuteSqlRawAsync(
+            InsertTagsOnConflictDoNothing,
+            [new NpgsqlParameter("names", names)],
+            cancellationToken
+        );
 
-        List<ProblemTag> created = [];
-        foreach (string name in tagNames.Where(n => !existingNames.Contains(n)))
-        {
-            var tag = new ProblemTag(new Tag(name));
-            context.Tags.Add(tag);
-            created.Add(tag);
-        }
-
-        return [.. existing, .. created];
+        return await context.Tags.Where(t => tagList.Contains(t.Name)).ToListAsync(cancellationToken);
     }
 }

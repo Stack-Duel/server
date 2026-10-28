@@ -48,7 +48,7 @@ internal sealed class Judge0ExecutionEngineStrategy(HttpClient http, Judge0Optio
                             SourceCode = Encode(s.SourceCode),
                             LanguageId = s.LanguageId,
                             StdIn = Encode(s.Stdin),
-                            AdditionalFiles = s.AdditionalFiles is null
+                            AdditionalFiles = s.AdditionalFiles is null or { Length: 0 }
                                 ? null
                                 : Convert.ToBase64String(s.AdditionalFiles),
                             CpuTimeLimit = s.TimeLimitMs.HasValue ? (double?)s.TimeLimitMs.Value / 1000.0 : null,
@@ -156,7 +156,11 @@ internal sealed class Judge0ExecutionEngineStrategy(HttpClient http, Judge0Optio
             return;
 
         string body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new HttpRequestException($"Judge0 returned {(int)response.StatusCode} {response.ReasonPhrase}: {body}");
+        throw new HttpRequestException(
+            $"Judge0 returned {(int)response.StatusCode} {response.ReasonPhrase}: {body}",
+            inner: null,
+            statusCode: response.StatusCode
+        );
     }
 
     private string? BuildCallbackUrl(Guid? submissionId)

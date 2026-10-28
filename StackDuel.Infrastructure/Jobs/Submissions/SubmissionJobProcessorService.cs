@@ -204,7 +204,11 @@ internal sealed partial class SubmissionJobProcessorService(
                 step.StepType,
                 job.Id
             );
-            result = new StepHandlerResult(Succeeded: false, Error: $"Unhandled exception: {ex.Message}");
+            result = new StepHandlerResult(
+                Succeeded: false,
+                Error: $"Unhandled exception: {ex.Message}",
+                IsRetryable: !IsNonRetryableHttpError(ex)
+            );
         }
 
         if (result.Succeeded)
@@ -227,10 +231,13 @@ internal sealed partial class SubmissionJobProcessorService(
         {
             attempt.Fail(result.Error ?? "Unknown error.", result.RequestPayload, result.ResponsePayload);
 
-            bool hasRetriesLeft = job.AttemptCountForCurrentStep() < step.MaxAttempts;
+            bool hasRetriesLeft = result.IsRetryable && job.AttemptCountForCurrentStep() < step.MaxAttempts;
             if (!hasRetriesLeft)
             {
-                job.Fail($"Step '{step.Name}' failed after {step.MaxAttempts} attempt(s): {result.Error}");
+                string failureReason = result.IsRetryable
+                    ? $"Step '{step.Name}' failed after {step.MaxAttempts} attempt(s): {result.Error}"
+                    : $"Step '{step.Name}' failed with a non-retryable error: {result.Error}";
+                job.Fail(failureReason);
                 LogStepFailed(job.Id, step.Name, result.Error);
                 await jobRepository.UpdateAsync(job, ct);
                 await FailSubmissionAsync(job.SubmissionId, submissionRepository, domainEventDispatcher, ct);
@@ -261,6 +268,10 @@ internal sealed partial class SubmissionJobProcessorService(
             {
                 var delay = ComputePollDelay(job.AttemptCountForCurrentStep(), step.TimeoutSeconds);
                 await Task.Delay(delay, ct);
+            }
+            else if (isRetryOfSameStep)
+            {
+                await Task.Delay(NonPollingRetryDelay, ct);
             }
 
             await messagePublisher.PublishAsync(new SubmissionJobContinuationMessage(job.SubmissionId), ct);
@@ -307,6 +318,7 @@ internal sealed partial class SubmissionJobProcessorService(
     // wait budget (MaxAttempts * cap) is unchanged.
     private const int PollBaseDelayMs = 200;
     private const double PollBackoffMultiplier = 1.7;
+    private static readonly TimeSpan NonPollingRetryDelay = TimeSpan.FromSeconds(1);
 
     private static TimeSpan ComputePollDelay(int attemptNumber, int capSeconds)
     {
@@ -314,6 +326,20 @@ internal sealed partial class SubmissionJobProcessorService(
         double cappedMs = Math.Min(delayMs, capSeconds * 1000d);
         return TimeSpan.FromMilliseconds(cappedMs);
     }
+
+    private static bool IsNonRetryableHttpError(Exception ex)
+    {
+        for (Exception? current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is HttpRequestException { StatusCode: { } status } && IsNonRetryableStatusCode(status))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsNonRetryableStatusCode(System.Net.HttpStatusCode status) =>
+        (int)status is >= 400 and < 500 and not 408 and not 429;
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Found {Count} pending submission jobs.")]
     private partial void LogFound(int count);

@@ -1,5 +1,6 @@
 using Npgsql;
 using StackDuel.Domain.Authorization.Rbac.Enums;
+using StackDuel.Domain.Submissions.Enums;
 
 namespace StackDuel.IntegrationTests.Infrastructure;
 
@@ -86,6 +87,145 @@ public sealed class TestDataSeeder(string connectionString)
             ("userId", userId),
             ("groupId", groupId)
         );
+
+    public async Task<Guid> CreateTrackAsync(
+        string key,
+        string name,
+        bool isActive = true,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO tracks (id, key, name, is_active, allows_language_selection)
+            VALUES (@id, @key, @name, @isActive, true)
+            """,
+            cancellationToken,
+            ("id", id),
+            ("key", key),
+            ("name", name),
+            ("isActive", isActive)
+        );
+        return id;
+    }
+
+    public async Task<Guid> CreateLanguageVersionAsync(
+        string languageSlug,
+        int judge0Id,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid trackId = await CreateTrackAsync(
+            $"track-{languageSlug}-{Guid.NewGuid():N}",
+            languageSlug,
+            cancellationToken: cancellationToken
+        );
+
+        Guid languageId = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO languages (id, name, slug, status, track_id)
+            VALUES (@id, @name, @slug, 0, @trackId)
+            """,
+            cancellationToken,
+            ("id", languageId),
+            ("name", languageSlug),
+            ("slug", languageSlug),
+            ("trackId", trackId)
+        );
+
+        Guid versionId = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO language_versions (id, language_id, version, judge0_id, status, execution_mode)
+            VALUES (@id, @languageId, @version, @judge0Id, 0, 0)
+            """,
+            cancellationToken,
+            ("id", versionId),
+            ("languageId", languageId),
+            ("version", "1.0"),
+            ("judge0Id", judge0Id)
+        );
+
+        return versionId;
+    }
+
+    public async Task<Guid> EnsureExecutionPipelineAsync(string name, CancellationToken cancellationToken = default)
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = "SELECT id FROM execution_pipelines WHERE name = @name LIMIT 1";
+        selectCommand.Parameters.AddWithValue("name", name);
+
+        object? existing = await selectCommand.ExecuteScalarAsync(cancellationToken);
+        if (existing is Guid existingId)
+            return existingId;
+
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            "INSERT INTO execution_pipelines (id, name) VALUES (@id, @name)",
+            cancellationToken,
+            ("id", id),
+            ("name", name)
+        );
+        return id;
+    }
+
+    public async Task EnsureReactionTypeAsync(
+        string key,
+        string name,
+        int sortOrder,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = "SELECT id FROM problem_reaction_types WHERE key = @key LIMIT 1";
+        selectCommand.Parameters.AddWithValue("key", key);
+
+        object? existing = await selectCommand.ExecuteScalarAsync(cancellationToken);
+        if (existing is Guid)
+            return;
+
+        await ExecuteAsync(
+            """
+            INSERT INTO problem_reaction_types (id, key, name, emoji, sort_order, is_enabled, created_at)
+            VALUES (@id, @key, @name, null, @sortOrder, true, now())
+            """,
+            cancellationToken,
+            ("id", Guid.NewGuid()),
+            ("key", key),
+            ("name", name),
+            ("sortOrder", sortOrder)
+        );
+    }
+
+    public async Task<Guid> CreateSubmissionAsync(
+        Guid userId,
+        Guid problemSetupId,
+        SubmissionStatus status,
+        SubmissionType type = SubmissionType.Submit,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO submissions (id, user_id, problem_setup_id, type, status, created_at, source_code, additional_files)
+            VALUES (@id, @userId, @problemSetupId, @type, @status, now(), @sourceCode, @additionalFiles)
+            """,
+            cancellationToken,
+            ("id", id),
+            ("userId", userId),
+            ("problemSetupId", problemSetupId),
+            ("type", (int)type),
+            ("status", (int)status),
+            ("sourceCode", "print('hi')"),
+            ("additionalFiles", "[]")
+        );
+        return id;
+    }
 
     private async Task ExecuteAsync(
         string commandText,
