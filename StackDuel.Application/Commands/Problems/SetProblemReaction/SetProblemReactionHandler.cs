@@ -19,7 +19,7 @@ internal sealed class SetProblemReactionHandler(
         CancellationToken cancellationToken
     )
     {
-        bool problemExists = await problemReadRepository.ExistsAsync(request.ProblemId, cancellationToken);
+        bool problemExists = await problemReadRepository.ExistsForAdminAsync(request.ProblemId, cancellationToken);
         if (!problemExists)
             return Result<ProblemReactionSummaryDto>.NotFound($"Problem '{request.ProblemId}' was not found.");
 
