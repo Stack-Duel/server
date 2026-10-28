@@ -110,26 +110,66 @@ public sealed class TestDataSeeder(string connectionString)
         return id;
     }
 
-    public async Task<Guid> GetLanguageVersionIdBySlugAsync(
+    public async Task<Guid> CreateLanguageVersionAsync(
         string languageSlug,
+        int judge0Id,
         CancellationToken cancellationToken = default
     )
     {
-        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
-        await using NpgsqlCommand command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT lv.id
-            FROM language_versions lv
-            JOIN languages l ON l.id = lv.language_id
-            WHERE l.slug = @slug
-            LIMIT 1
-            """;
-        command.Parameters.AddWithValue("slug", languageSlug);
+        Guid trackId = await CreateTrackAsync(
+            $"track-{languageSlug}-{Guid.NewGuid():N}",
+            languageSlug,
+            cancellationToken: cancellationToken
+        );
 
-        object? result = await command.ExecuteScalarAsync(cancellationToken);
-        return result is Guid id
-            ? id
-            : throw new InvalidOperationException($"No language version found for slug '{languageSlug}'.");
+        Guid languageId = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO languages (id, name, slug, status, track_id)
+            VALUES (@id, @name, @slug, 0, @trackId)
+            """,
+            cancellationToken,
+            ("id", languageId),
+            ("name", languageSlug),
+            ("slug", languageSlug),
+            ("trackId", trackId)
+        );
+
+        Guid versionId = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO language_versions (id, language_id, version, judge0_id, status, execution_mode)
+            VALUES (@id, @languageId, @version, @judge0Id, 0, 0)
+            """,
+            cancellationToken,
+            ("id", versionId),
+            ("languageId", languageId),
+            ("version", "1.0"),
+            ("judge0Id", judge0Id)
+        );
+
+        return versionId;
+    }
+
+    public async Task<Guid> EnsureExecutionPipelineAsync(string name, CancellationToken cancellationToken = default)
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = "SELECT id FROM execution_pipelines WHERE name = @name LIMIT 1";
+        selectCommand.Parameters.AddWithValue("name", name);
+
+        object? existing = await selectCommand.ExecuteScalarAsync(cancellationToken);
+        if (existing is Guid existingId)
+            return existingId;
+
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            "INSERT INTO execution_pipelines (id, name) VALUES (@id, @name)",
+            cancellationToken,
+            ("id", id),
+            ("name", name)
+        );
+        return id;
     }
 
     public async Task<Guid> CreateSubmissionAsync(

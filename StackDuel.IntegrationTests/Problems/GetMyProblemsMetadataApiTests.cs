@@ -1,14 +1,15 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Api.Requests.User;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Authorization.Rbac.Enums;
+using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Submissions.Enums;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace StackDuel.IntegrationTests.Problems;
 
@@ -151,7 +152,8 @@ public sealed class GetMyProblemsMetadataApiTests(IntegrationTestEnvironment env
 
     private async Task<Guid> AddSetupAsync(string sub, Guid problemId)
     {
-        Guid languageVersionId = await Seeder.GetLanguageVersionIdBySlugAsync("python");
+        await Seeder.EnsureExecutionPipelineAsync(WellKnownExecutionPipelines.DefaultName);
+        Guid languageVersionId = await Seeder.CreateLanguageVersionAsync("python", judge0Id: 71);
 
         HttpRequestMessage request = AuthenticatedRequest(
             HttpMethod.Post,
