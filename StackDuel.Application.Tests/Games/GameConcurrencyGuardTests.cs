@@ -9,7 +9,7 @@ public class GameConcurrencyGuardTests
     [Fact]
     public async Task RunExclusiveAsync_DelegatesToAdvisoryLockUnderAGameNamespacedKey()
     {
-        var advisoryLock = new Mock<IAdvisoryLock>();
+        var advisoryLock = new Mock<IAdvisoryLockService>();
         var guard = new GameConcurrencyGuard(advisoryLock.Object);
         var gameId = Guid.NewGuid();
         var cancellationToken = CancellationToken.None;

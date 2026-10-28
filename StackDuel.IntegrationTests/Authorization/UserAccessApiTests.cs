@@ -1,13 +1,15 @@
+using System.Net;
+using System.Net.Http.Json;
 using StackDuel.Api.Requests.User;
 using StackDuel.Api.Responses.User;
 using StackDuel.Domain.Authorization.Rbac.Enums;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace StackDuel.IntegrationTests.Authorization;
 
 public sealed class UserAccessApiTests(IntegrationTestEnvironment environment) : ApiIntegrationTestBase(environment)
 {
+    private static readonly string[] expected = new[] { "problems.read" };
+
     [Fact]
     public async Task GetAccount_returns_permissions_and_roles_derived_from_the_users_groups()
     {
@@ -32,7 +34,7 @@ public sealed class UserAccessApiTests(IntegrationTestEnvironment environment) :
         UserResponse? body = await response.Content.ReadFromJsonAsync<UserResponse>();
         Assert.NotNull(body);
         Assert.Equal("alice123", body!.Username);
-        Assert.Equivalent(new[] { "problems.read" }, body.Permissions, strict: true);
+        Assert.Equivalent(expected, body.Permissions, strict: true);
         Assert.Equivalent(new[] { "Member" }, body.Roles, strict: true);
     }
 
