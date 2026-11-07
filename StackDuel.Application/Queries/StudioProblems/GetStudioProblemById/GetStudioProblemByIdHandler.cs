@@ -1,10 +1,10 @@
 using Ardalis.Result;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
-using StackDuel.Application.Queries;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
+using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
 
@@ -42,10 +42,7 @@ internal sealed class GetStudioProblemByIdHandler(
         double solveRatePercent =
             submissionStats.TotalSubmissions == 0
                 ? 0
-                : Math.Round(
-                    (double)submissionStats.AcceptedSubmissions / submissionStats.TotalSubmissions * 100,
-                    1
-                );
+                : Math.Round((double)submissionStats.AcceptedSubmissions / submissionStats.TotalSubmissions * 100, 1);
 
         return Result<StudioProblemDetailsDto>.Success(
             details with
@@ -53,6 +50,7 @@ internal sealed class GetStudioProblemByIdHandler(
                 ReactionCount = reactionCount,
                 AttemptCount = submissionStats.TotalSubmissions,
                 SolveRatePercent = solveRatePercent,
+                DifficultyTier = new Difficulty(details.DifficultyValue).Tier,
             }
         );
     }

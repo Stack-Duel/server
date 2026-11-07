@@ -7,7 +7,6 @@ using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.Problems.Enums;
-using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Tests.Queries.StudioProblems.GetStudioProblemById;
 
@@ -30,7 +29,7 @@ public class GetStudioProblemByIdHandlerTests
     private static StudioProblemDetailsDto CreateCoreDetails(Guid problemId) =>
         new(
             problemId,
-            new Slug("two-sum"),
+            "two-sum",
             "Two Sum",
             DifficultyValue: 2,
             ProblemStatus.Published,
@@ -72,6 +71,7 @@ public class GetStudioProblemByIdHandlerTests
         Assert.Equal(10, result.Value.ReactionCount);
         Assert.Equal(40, result.Value.AttemptCount);
         Assert.Equal(62.5, result.Value.SolveRatePercent);
+        Assert.Equal(DifficultyTier.Beginner, result.Value.DifficultyTier);
     }
 
     [Fact]

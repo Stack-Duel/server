@@ -1,11 +1,10 @@
 using StackDuel.Domain.Problems.Enums;
-using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.StudioProblems.Dtos;
 
 public sealed record StudioProblemDetailsDto(
     Guid ProblemId,
-    Slug Slug,
+    string Slug,
     string Title,
     int DifficultyValue,
     ProblemStatus Status,
@@ -15,5 +14,6 @@ public sealed record StudioProblemDetailsDto(
     DateTime CreatedAt,
     int ReactionCount = 0,
     int AttemptCount = 0,
-    double SolveRatePercent = 0
+    double SolveRatePercent = 0,
+    DifficultyTier DifficultyTier = DifficultyTier.Beginner
 );

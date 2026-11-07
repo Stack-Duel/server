@@ -160,7 +160,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .Where(p => p.Id == id)
             .Select(p => new StudioProblemDetailsDto(
                 p.Id,
-                p.Slug,
+                p.Slug.Value,
                 p.Title.Value,
                 p.Difficulty.Value,
                 p.Status,

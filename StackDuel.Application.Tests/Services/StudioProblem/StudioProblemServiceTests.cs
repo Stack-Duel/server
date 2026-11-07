@@ -5,7 +5,6 @@ using StackDuel.Application;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Problems.Enums;
-using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Tests.Services.StudioProblem;
 
@@ -27,7 +26,7 @@ public class StudioProblemServiceTests
         var expected = Result<StudioProblemDetailsDto>.Success(
             new StudioProblemDetailsDto(
                 problemId,
-                new Slug("two-sum"),
+                "two-sum",
                 "Two Sum",
                 DifficultyValue: 2,
                 ProblemStatus.Published,
