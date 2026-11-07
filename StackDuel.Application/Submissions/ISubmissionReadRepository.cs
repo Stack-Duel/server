@@ -70,4 +70,9 @@ public interface ISubmissionReadRepository
         Guid creatorId,
         CancellationToken cancellationToken = default
     );
+
+    Task<SubmissionStatsDto> GetSubmissionStatsForProblemAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -4,7 +4,7 @@
   "classifications": ["StackDuel", "CQRS", "Repository"],
   "identity": "StackDuel.Templates.Repository",
   "name": "StackDuel Repository Interface",
-  "shortName": "stackduel-repository",
+  "shortName": "sd-repository",
   "tags": { "language": "C#", "type": "item" },
   "sourceName": "Sample",
   "symbols": {

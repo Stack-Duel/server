@@ -290,6 +290,11 @@ The deployment script receives the following environment variables:
 - `RABBITMQ_VIRTUALHOST`
 - `APPLICATIONINSIGHTS_CONNECTION_STRING`
 
+### Code generation
+
+Scaffolding for new controllers, services, commands, queries, repositories, domain entities, and
+value objects is available via `dotnet new` templates. See [`CODE_GENERATION.md`](CODE_GENERATION.md).
+
 ### Project structure
 
 | Project                       | Description                                |

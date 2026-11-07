@@ -1,5 +1,6 @@
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
+using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -30,6 +31,8 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
         string? search,
         CancellationToken cancellationToken = default
@@ -40,6 +43,8 @@ public interface IProblemReadRepository
         string? search,
         CancellationToken cancellationToken = default
     );
+
+    Task<Guid?> GetCreatedByIdAsync(Guid problemId, CancellationToken cancellationToken = default);
 
     Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default);
 

@@ -270,6 +270,33 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
         return new SubmissionStatsDto(stats?.Total ?? 0, stats?.Accepted ?? 0);
     }
 
+    public async Task<SubmissionStatsDto> GetSubmissionStatsForProblemAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var setupIds = await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => p.Id == problemId)
+            .SelectMany(p => p.Setups)
+            .Select(ps => ps.Id)
+            .ToListAsync(cancellationToken);
+
+        var stats = await context
+            .Submissions.AsNoTracking()
+            .Where(s => setupIds.Contains(s.ProblemSetupId) && s.Type == SubmissionType.Submit)
+            .GroupBy(s => 1)
+            .Select(g => new
+            {
+                Total = g.Count(),
+                Accepted = g.Count(x => x.Status == SubmissionStatus.Accepted),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new SubmissionStatsDto(stats?.Total ?? 0, stats?.Accepted ?? 0);
+    }
+
     public async Task<SubmissionSummaryDto?> FindSummaryAsync(
         Guid submissionId,
         CancellationToken cancellationToken = default

@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Stack Duel",
+  "classifications": ["StackDuel", "DDD", "ValueObject"],
+  "identity": "StackDuel.Templates.ValueObject",
+  "name": "StackDuel Domain Value Object",
+  "shortName": "sd-value-object",
+  "tags": { "language": "C#", "type": "item" },
+  "sourceName": "Sample",
+  "symbols": {
+    "namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__NAMESPACE__",
+      "defaultValue": "StackDuel.Domain",
+      "description": "Namespace for the generated value object (e.g. StackDuel.Domain.Orders.ValueObjects)."
+    },
+    "valueType": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__VALUE_TYPE__",
+      "defaultValue": "string",
+      "description": "The primitive type this value object wraps (e.g. string, int, decimal)."
+    }
+  }
+}

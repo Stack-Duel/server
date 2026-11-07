@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR.NotificationPublishers;
 using Microsoft.Extensions.DependencyInjection;
+using StackDuel.Application.Authorization;
 using StackDuel.Application.Behaviors;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
@@ -21,6 +22,7 @@ using StackDuel.Application.Services.Users;
 using StackDuel.Application.Submissions;
 using StackDuel.Domain.Feedback.Entities;
 using StackDuel.Domain.Feedback.Factories;
+using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.Factories;
@@ -37,6 +39,7 @@ public static class ApplicationServiceRegistration
         {
             cfg.RegisterServicesFromAssembly(typeof(ApplicationServiceRegistration).Assembly);
             cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+            cfg.AddOpenBehavior(typeof(AuthorizationBehavior<,>));
             cfg.AddOpenBehavior(typeof(AuditBehavior<,>));
             cfg.NotificationPublisher = new TaskWhenAllPublisher();
         });
@@ -45,8 +48,19 @@ public static class ApplicationServiceRegistration
 
         services.AddFactories();
         services.AddServices();
+        services.AddAuthorization();
         services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
         services.AddScoped<UserContext>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddAuthorization(this IServiceCollection services)
+    {
+        services.AddScoped<IOwnershipPolicy<Problem>, ProblemOwnershipPolicy>();
+
+        services.AddScoped<IAuthorizationHandler, OwnershipRequirementHandler<Problem>>();
+        services.AddScoped<IAuthorizationHandler, PermissionRequirementHandler>();
 
         return services;
     }
@@ -85,6 +99,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IFeatureFlagResolutionService, FeatureFlagResolutionService>();
         services.AddScoped<IFeatureFlagAdminService, FeatureFlagAdminService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<IStudioProblemService, StudioProblemService>();
 
         foreach (string gameModeKey in new[] { "solo_rush", "duel", "ffa" })
         {
