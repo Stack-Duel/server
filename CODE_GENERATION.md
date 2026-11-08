@@ -12,8 +12,9 @@ From the `server/` repo root:
 dotnet new install ./templates --force
 ```
 
-Run this again with `--force` whenever a template file changes. Installs are a snapshot, not a
-live link to the source files.
+This installs from the local folder, so edits to a template file show up in the next generated
+file without reinstalling. Re-run with `--force` only when `template.json` itself changes (new
+parameters, renamed template, etc.).
 
 ## Templates
 

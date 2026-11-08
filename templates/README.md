@@ -13,7 +13,9 @@ From the `server/` repo root:
 dotnet new install ./templates --force
 ```
 
-Re-run with `--force` any time you edit a template file — installs are a snapshot, not a live link.
+This installs from the local folder, so edits to a template file show up in the next generated
+file without reinstalling. Re-run with `--force` only when `template.json` itself changes (new
+parameters, renamed template, etc.).
 
 ## Templates
 
@@ -59,8 +61,9 @@ dotnet new sd-service -n Order
 ```
 
 Run this from the **repo root**. It generates `IOrderService`/`OrderService(IMediator mediator)` in
-one file at `StackDuel.Application/OrderService.cs`, with empty method bodies you fill in by
-calling `mediator.Send(new SomeCommand(...), cancellationToken)`, plus a matching test at
+one file at `StackDuel.Application/OrderService.cs`. Neither has any methods yet, just a `TODO`
+comment on each: add the methods to the interface yourself, then implement them on the class by
+calling `mediator.Send(new SomeCommand(...), cancellationToken)`. It also generates a matching test at
 `StackDuel.Application.Tests/Services/Order/OrderServiceTests.cs` that constructs the service with a
 mocked `IMediator` and leaves a `TODO` for the real assertions once the service has methods.
 
@@ -100,7 +103,7 @@ the handler bodies (marked `throw new NotImplementedException()`), and fill in t
 ### `sd-entity` (Domain entity, Domain layer)
 
 ```sh
-dotnet new sd-entity -n Order --namespace StackDuel.Domain.Orders.Entities
+dotnet new sd-entity -n Order --namespace StackDuel.Domain.Order.Entities
 ```
 
 By default this generates a class deriving from `AggregateRoot`, the same way `User` is built.
@@ -108,7 +111,7 @@ Pass `--base Entity` for a child entity referenced by an aggregate root, the way
 built. A child entity gets no repository or domain events of its own:
 
 ```sh
-dotnet new sd-entity -n OrderLine --namespace StackDuel.Domain.Orders.Entities --base Entity
+dotnet new sd-entity -n OrderLine --namespace StackDuel.Domain.Order.Entities --base Entity
 ```
 
 This scaffolds the shell only (`TODO` comments for properties/behavior). Write the constructor,
@@ -131,7 +134,7 @@ dotnet new sd-value-object -n Money --namespace StackDuel.Domain.Orders.ValueObj
 ### `sd-controller` (Api controller, Api layer)
 
 ```sh
-dotnet new sd-controller -n Order --serviceNamespace StackDuel.Application.Orders
+dotnet new sd-controller -n Order --serviceNamespace StackDuel.Application
 ```
 
 Generates `OrderController : ControllerBase` constructor-injected with `IOrderService`, with the

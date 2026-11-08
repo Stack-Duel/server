@@ -5,9 +5,12 @@ public abstract class AuthorizationHandler<TRequirement> : IAuthorizationHandler
 {
     public async Task HandleAsync(AuthorizationContext context)
     {
-        foreach (TRequirement requirement in context.PendingRequirements.OfType<TRequirement>())
+        foreach (IAuthorizationRequirement requirement in context.PendingRequirements)
         {
-            if (await IsSatisfiedAsync(requirement, context.CancellationToken))
+            if (requirement is not TRequirement typed)
+                continue;
+
+            if (await IsSatisfiedAsync(typed, context.CancellationToken))
                 context.Succeed(requirement);
         }
     }

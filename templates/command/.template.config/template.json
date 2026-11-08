@@ -4,7 +4,7 @@
   "classifications": ["StackDuel", "CQRS", "Command"],
   "identity": "StackDuel.Templates.Command",
   "name": "StackDuel CQRS Command",
-  "shortName": "sd-command",
+  "shortName": ["sd-command", "stackduel-command"],
   "tags": { "language": "C#", "type": "item" },
   "sourceName": "Sample",
   "symbols": {

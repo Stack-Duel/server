@@ -14,6 +14,17 @@ public class AuthorizationBehaviorTests
             Task.FromResult(succeeds);
     }
 
+    private sealed class CountingHandler : AuthorizationHandler<FakeRequirement>
+    {
+        public int InvocationCount { get; private set; }
+
+        protected override Task<bool> IsSatisfiedAsync(FakeRequirement requirement, CancellationToken cancellationToken)
+        {
+            InvocationCount++;
+            return Task.FromResult(true);
+        }
+    }
+
     private sealed record GuardedRequest : IRequest<string>, IAuthorizationGuarded<string>
     {
         public IReadOnlyList<IAuthorizationRequirement> Requirements => [new FakeRequirement()];
@@ -56,10 +67,12 @@ public class AuthorizationBehaviorTests
     [Fact]
     public async Task Handle_RequestNotGuarded_CallsNextWithoutRunningHandlers()
     {
-        var behavior = new AuthorizationBehavior<PlainRequest, string>([new FakeHandler(succeeds: false)]);
+        var counter = new CountingHandler();
+        var behavior = new AuthorizationBehavior<PlainRequest, string>([counter]);
 
         string result = await behavior.Handle(new PlainRequest(), _ => Task.FromResult("handled"), CancellationToken.None);
 
         Assert.Equal("handled", result);
+        Assert.Equal(0, counter.InvocationCount);
     }
 }

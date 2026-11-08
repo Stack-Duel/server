@@ -3,6 +3,8 @@ using StackDuel.Api.Requests.User;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Authorization.Rbac.Enums;
+using StackDuel.Domain.ExecutionPipelines;
+using StackDuel.Domain.Submissions.Enums;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -45,6 +47,48 @@ public sealed class GetStudioProblemByIdApiTests(IntegrationTestEnvironment envi
         Assert.Equal(0, details.AttemptCount);
         Assert.Equal(0, details.SolveRatePercent);
         Assert.Equal(0, details.ReactionCount);
+    }
+
+    [Fact]
+    public async Task GetById_WithSubmissions_ReturnsAttemptCountAndSolveRateAcrossSetups()
+    {
+        const string ownerSub = "sub-studio-problem-stats-owner";
+        const string submitterSub = "sub-studio-problem-stats-submitter";
+        await CreateAccountAsync(ownerSub, "studiostatsowner");
+        await CreateAccountAsync(submitterSub, "studiostatssubmitter");
+        await GrantCreateProblemsPermissionAsync(ownerSub);
+        Guid trackId = await Seeder.CreateTrackAsync("track-studio-stats", "Studio Stats Track");
+
+        Guid problemId = await CreateProblemAsync(ownerSub, trackId, "Studio Stats Problem");
+        Guid setup1Id = await AddSetupAsync(ownerSub, problemId, "python");
+        Guid setup2Id = await AddSetupAsync(ownerSub, problemId, "javascript");
+
+        Guid otherProblemId = await CreateProblemAsync(ownerSub, trackId, "Unrelated Problem");
+        Guid otherSetupId = await AddSetupAsync(ownerSub, otherProblemId, "java");
+
+        Guid submitterId = await Seeder.GetUserIdBySubAsync(submitterSub);
+
+        await Seeder.CreateSubmissionAsync(submitterId, setup1Id, SubmissionStatus.Accepted);
+        await Seeder.CreateSubmissionAsync(submitterId, setup2Id, SubmissionStatus.Accepted);
+        await Seeder.CreateSubmissionAsync(submitterId, setup1Id, SubmissionStatus.WrongAnswer);
+        await Seeder.CreateSubmissionAsync(submitterId, setup1Id, SubmissionStatus.Accepted, SubmissionType.Run);
+        await Seeder.CreateSubmissionAsync(submitterId, otherSetupId, SubmissionStatus.Accepted);
+
+        HttpRequestMessage request = AuthenticatedRequest(
+            HttpMethod.Get,
+            $"/api/v1/studio/problems/{problemId}",
+            ownerSub
+        );
+        HttpResponseMessage response = await Client.SendAsync(request);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        StudioProblemDetailsDto? details = await response.Content.ReadFromJsonAsync<StudioProblemDetailsDto>(
+            JsonOptions
+        );
+
+        Assert.NotNull(details);
+        Assert.Equal(3, details.AttemptCount);
+        Assert.Equal(66.7, details.SolveRatePercent);
     }
 
     [Fact]
@@ -108,6 +152,24 @@ public sealed class GetStudioProblemByIdApiTests(IntegrationTestEnvironment envi
     {
         HttpRequestMessage request = AuthenticatedRequest(HttpMethod.Post, "/api/v1/problem", sub);
         request.Content = JsonContent.Create(ValidRequest(trackId, title));
+
+        HttpResponseMessage response = await Client.SendAsync(request);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+
+        return await response.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private async Task<Guid> AddSetupAsync(string sub, Guid problemId, string languageSlug)
+    {
+        await Seeder.EnsureExecutionPipelineAsync(WellKnownExecutionPipelines.DefaultName);
+        Guid languageVersionId = await Seeder.CreateLanguageVersionAsync(languageSlug, judge0Id: 71);
+
+        HttpRequestMessage request = AuthenticatedRequest(
+            HttpMethod.Post,
+            $"/api/v1/problem/admin/{problemId}/setups",
+            sub
+        );
+        request.Content = JsonContent.Create(new AddProblemSetupRequest(languageVersionId));
 
         HttpResponseMessage response = await Client.SendAsync(request);
         Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());

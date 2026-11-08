@@ -31,7 +31,7 @@ public class GetStudioProblemByIdHandlerTests
             problemId,
             "two-sum",
             "Two Sum",
-            DifficultyValue: 2,
+            DifficultyValue: 501,
             ProblemStatus.Published,
             TimeLimitMs: 2000,
             MemoryLimitMb: 256,
@@ -72,7 +72,7 @@ public class GetStudioProblemByIdHandlerTests
         Assert.Equal(10, result.Value.ReactionCount);
         Assert.Equal(40, result.Value.AttemptCount);
         Assert.Equal(62.5, result.Value.SolveRatePercent);
-        Assert.Equal(DifficultyTier.Beginner, result.Value.DifficultyTier);
+        Assert.Equal(DifficultyTier.Intermediate, result.Value.DifficultyTier);
     }
 
     [Fact]
