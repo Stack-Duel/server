@@ -1,8 +1,8 @@
+using Ardalis.Result;
 using StackDuel.Application.Authorization;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Problems.Entities;
-using Ardalis.Result;
 
 namespace StackDuel.Application.Tests.Queries.StudioProblems.GetStudioProblemById;
 
