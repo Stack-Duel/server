@@ -33,7 +33,8 @@ public class StudioProblemServiceTests
                 TimeLimitMs: 2000,
                 MemoryLimitMb: 256,
                 SetupCount: 3,
-                CreatedAt: DateTime.UtcNow
+                CreatedAt: DateTime.UtcNow,
+                Question: "Given an array of integers, return two indices."
             )
         );
 

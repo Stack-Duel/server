@@ -12,6 +12,7 @@ public sealed record StudioProblemDetailsDto(
     int MemoryLimitMb,
     int SetupCount,
     DateTime CreatedAt,
+    string Question,
     int ReactionCount = 0,
     int AttemptCount = 0,
     double SolveRatePercent = 0,

@@ -1,6 +1,8 @@
 using StackDuel.Application.Authorization;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
+using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Problems.Entities;
+using Ardalis.Result;
 
 namespace StackDuel.Application.Tests.Queries.StudioProblems.GetStudioProblemById;
 
@@ -25,6 +27,8 @@ public class GetStudioProblemByIdQueryTests
     {
         var query = new GetStudioProblemByIdQuery(Guid.NewGuid(), Guid.NewGuid());
 
-        Assert.Equal(Ardalis.Result.ResultStatus.NotFound, query.Unauthorized.Status);
+        IAuthorizationGuarded<Result<StudioProblemDetailsDto>> guarded = query;
+
+        Assert.Equal(ResultStatus.NotFound, guarded.Unauthorized.Status);
     }
 }

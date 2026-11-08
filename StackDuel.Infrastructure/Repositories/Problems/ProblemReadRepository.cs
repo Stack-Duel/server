@@ -167,7 +167,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
                 p.Setups.Count,
-                p.CreatedAt
+                p.CreatedAt,
+                p.Question
             ))
             .FirstOrDefaultAsync(cancellationToken);
 
