@@ -4,7 +4,7 @@
   "classifications": ["StackDuel", "CQRS", "Feature Slice"],
   "identity": "StackDuel.Templates.FeatureSlice",
   "name": "StackDuel CQRS Feature Slice (Repository + Command + Query + Service)",
-  "shortName": "stackduel-feature-slice",
+  "shortName": ["sd-feature-slice", "stackduel-feature-slice"],
   "tags": { "language": "C#", "type": "item" },
   "sourceName": "Sample",
   "symbols": {

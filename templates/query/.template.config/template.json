@@ -4,7 +4,7 @@
   "classifications": ["StackDuel", "CQRS", "Query"],
   "identity": "StackDuel.Templates.Query",
   "name": "StackDuel CQRS Query",
-  "shortName": "stackduel-query",
+  "shortName": ["sd-query", "stackduel-query"],
   "tags": { "language": "C#", "type": "item" },
   "sourceName": "Sample",
   "symbols": {

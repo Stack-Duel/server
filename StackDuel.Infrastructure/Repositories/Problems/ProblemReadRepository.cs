@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
+using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -149,6 +150,28 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => p.Id == id)
+            .Select(p => new StudioProblemDetailsDto(
+                p.Id,
+                p.Slug.Value,
+                p.Title.Value,
+                p.Difficulty.Value,
+                p.Status,
+                p.TimeLimit.Milliseconds,
+                p.MemoryLimit.Megabytes,
+                p.Setups.Count,
+                p.CreatedAt,
+                p.Question
+            ))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
         string? search,
         CancellationToken cancellationToken = default
@@ -200,6 +223,14 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             Size = pagination.Size,
         };
     }
+
+    public async Task<Guid?> GetCreatedByIdAsync(Guid problemId, CancellationToken cancellationToken = default) =>
+        await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => p.Id == problemId)
+            .Select(p => p.CreatedById)
+            .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<Guid?> GetIdBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
         await context

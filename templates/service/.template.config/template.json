@@ -4,7 +4,7 @@
   "classifications": ["StackDuel", "CQRS", "Service"],
   "identity": "StackDuel.Templates.Service",
   "name": "StackDuel Application Service",
-  "shortName": "stackduel-service",
+  "shortName": ["sd-service", "stackduel-service"],
   "tags": { "language": "C#", "type": "item" },
   "sourceName": "Sample",
   "symbols": {
@@ -13,7 +13,30 @@
       "datatype": "string",
       "replaces": "__NAMESPACE__",
       "defaultValue": "StackDuel.Application",
-      "description": "Namespace for the generated service interface/implementation."
+      "description": "Namespace for the generated service interface and implementation."
+    },
+    "testNamespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "__TEST_NAMESPACE__",
+      "defaultValue": "StackDuel.Application.Tests.Services",
+      "description": "Namespace for the generated test file."
+    },
+    "skipTests": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "false",
+      "description": "Skip generating the test file."
     }
-  }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(skipTests)",
+          "exclude": ["StackDuel.Application.Tests/**"]
+        }
+      ]
+    }
+  ]
 }
