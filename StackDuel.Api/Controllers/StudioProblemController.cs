@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
 using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
+using StackDuel.Api.Requests.Problem;
 using StackDuel.Application;
+using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
 
 namespace StackDuel.Api.Controllers;
@@ -52,6 +54,34 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     {
         return this.ToActionResult(
             await studioProblemService.GetStudioProblemDetailSetupsAsync(id, userContext.User!.Id, cancellationToken)
+        );
+    }
+
+    [HttpPost]
+    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [EnableRateLimiting(WellKnownPolicies.ProblemCreation)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<Guid>> CreateAsync(
+        [FromBody] CreateDraftProblemRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        return this.ToActionResult(
+            await studioProblemService.CreateStudioProblemAsync(
+                new CreateDraftProblemInput(
+                    request.Title,
+                    request.Question,
+                    request.Tags,
+                    request.Difficulty,
+                    request.TimeLimitMs,
+                    request.MemoryLimitMb,
+                    request.TrackId
+                ),
+                cancellationToken
+            )
         );
     }
 }
