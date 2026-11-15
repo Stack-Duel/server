@@ -87,8 +87,8 @@ public sealed class GetStudioProblemSetupsApiTests(IntegrationTestEnvironment en
         const string otherSub = "sub-studio-setups-other3";
         await CreateAccountAsync(ownerSub, "studiosetupsowner3");
         await CreateAccountAsync(otherSub, "studiosetupsother3");
-        Guid readStudioPermissionId = await GrantCreateProblemsPermissionAsync(ownerSub);
-        await GrantReadStudioProblemsPermissionAsync(otherSub, readStudioPermissionId);
+        Guid readPermissionId = await GrantCreateProblemsPermissionAsync(ownerSub);
+        await GrantReadStudioProblemsPermissionAsync(otherSub, readPermissionId);
         Guid trackId = await Seeder.CreateTrackAsync("track-studio-setups-3", "Studio Setups Track 3");
 
         Guid problemId = await CreateProblemAsync(ownerSub, trackId, "Not Yours Setups Problem");
@@ -149,8 +149,7 @@ public sealed class GetStudioProblemSetupsApiTests(IntegrationTestEnvironment en
     private async Task GrantReadStudioProblemsPermissionAsync(string sub, Guid? existingPermissionId = null)
     {
         Guid userId = await Seeder.GetUserIdBySubAsync(sub);
-        Guid permissionId =
-            existingPermissionId
+        Guid permissionId = existingPermissionId
             ?? await Seeder.CreatePermissionAsync(WellKnownAuthorization.ReadStudioProblemsPermission);
         Guid roleId = await Seeder.CreateRoleAsync($"role-{sub}");
         await Seeder.GrantRolePermissionAsync(roleId, permissionId, DecisionEffect.Allow);

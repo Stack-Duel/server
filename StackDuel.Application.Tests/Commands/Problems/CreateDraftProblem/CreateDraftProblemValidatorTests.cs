@@ -1,5 +1,6 @@
 using FluentValidation.Results;
 using StackDuel.Application.Problems.Dtos;
+using StackDuel.Domain.Problems.ValueObjects;
 using CreateDraftProblemCommand = StackDuel.Application.Commands.Problems.CreateDraftProblem.CreateDraftProblemCommand;
 using CreateDraftProblemValidator = StackDuel.Application.Commands.Problems.CreateDraftProblem.CreateDraftProblemValidator;
 
@@ -58,9 +59,19 @@ public class CreateDraftProblemValidatorTests
     [Fact]
     public async Task Validate_DifficultyAboveMaximum_Fails()
     {
-        ValidationResult result = await _validator.ValidateAsync(ValidCommand(difficulty: 4001));
+        ValidationResult result = await _validator.ValidateAsync(ValidCommand(difficulty: Difficulty.MaxValue + 1));
 
-        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == "Input.Difficulty");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(4000)]
+    public async Task Validate_DifficultyAtBoundary_Passes(int difficulty)
+    {
+        ValidationResult result = await _validator.ValidateAsync(ValidCommand(difficulty: difficulty));
+
+        Assert.True(result.IsValid);
     }
 
     [Fact]

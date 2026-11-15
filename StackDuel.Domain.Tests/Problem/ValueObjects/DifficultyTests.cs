@@ -31,7 +31,9 @@ public class DifficultyTests
     [Fact]
     public void Constructor_AboveMaxValue_ThrowsInvalidDifficultyException()
     {
-        Assert.Throws<InvalidDifficultyException>(() => new Difficulty(Difficulty.MaxValue + 1));
+        var exception = Assert.Throws<InvalidDifficultyException>(() => new Difficulty(Difficulty.MaxValue + 1));
+
+        Assert.Equal($"Difficulty is invalid: Difficulty cannot exceed {Difficulty.MaxValue}.", exception.Message);
     }
 
     [Fact]
