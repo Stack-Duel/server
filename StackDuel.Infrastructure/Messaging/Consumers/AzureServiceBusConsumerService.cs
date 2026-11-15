@@ -30,67 +30,94 @@ internal sealed partial class AzureServiceBusConsumerService(
             AutoCompleteMessages = false,
         };
 
-        var createdProcessor = client.CreateProcessor(QueueNames.ForType<SubmissionCreatedMessage>(), processorOptions);
-        var continuationProcessor = client.CreateProcessor(
-            QueueNames.ForType<SubmissionJobContinuationMessage>(),
-            processorOptions
-        );
-        var problemValidationProcessor = client.CreateProcessor(
-            QueueNames.ForType<ProblemValidationJobContinuationMessage>(),
-            processorOptions
-        );
-        var testCaseGenerationContinuationProcessor = client.CreateProcessor(
-            QueueNames.ForType<TestCaseGenerationJobContinuationMessage>(),
-            processorOptions
-        );
-        var testCaseGenerationCompletedProcessor = client.CreateProcessor(
-            QueueNames.ForType<TestCaseGenerationJobCompletedMessage>(),
-            processorOptions
-        );
-        var gameExpiryProcessor = client.CreateProcessor(
-            QueueNames.ForType<GameTimeExpiredMessage>(),
-            processorOptions
-        );
+        var createdProcessors = new List<ServiceBusProcessor>();
+        ServiceBusProcessor createdProcessor;
+        ServiceBusProcessor continuationProcessor;
+        ServiceBusProcessor problemValidationProcessor;
+        ServiceBusProcessor testCaseGenerationContinuationProcessor;
+        ServiceBusProcessor testCaseGenerationCompletedProcessor;
+        ServiceBusProcessor gameExpiryProcessor;
 
-        WireUp<SubmissionCreatedMessage>(
-            createdProcessor,
-            (sp, m, ct) =>
-                sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct)
-        );
+        try
+        {
+            createdProcessor = client.CreateProcessor(QueueNames.ForType<SubmissionCreatedMessage>(), processorOptions);
+            createdProcessors.Add(createdProcessor);
+            continuationProcessor = client.CreateProcessor(
+                QueueNames.ForType<SubmissionJobContinuationMessage>(),
+                processorOptions
+            );
+            createdProcessors.Add(continuationProcessor);
+            problemValidationProcessor = client.CreateProcessor(
+                QueueNames.ForType<ProblemValidationJobContinuationMessage>(),
+                processorOptions
+            );
+            createdProcessors.Add(problemValidationProcessor);
+            testCaseGenerationContinuationProcessor = client.CreateProcessor(
+                QueueNames.ForType<TestCaseGenerationJobContinuationMessage>(),
+                processorOptions
+            );
+            createdProcessors.Add(testCaseGenerationContinuationProcessor);
+            testCaseGenerationCompletedProcessor = client.CreateProcessor(
+                QueueNames.ForType<TestCaseGenerationJobCompletedMessage>(),
+                processorOptions
+            );
+            createdProcessors.Add(testCaseGenerationCompletedProcessor);
+            gameExpiryProcessor = client.CreateProcessor(
+                QueueNames.ForType<GameTimeExpiredMessage>(),
+                processorOptions
+            );
+            createdProcessors.Add(gameExpiryProcessor);
 
-        WireUp<SubmissionJobContinuationMessage>(
-            continuationProcessor,
-            (sp, m, ct) =>
-                sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct)
-        );
+            WireUp<SubmissionCreatedMessage>(
+                createdProcessor,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct)
+            );
 
-        WireUp<ProblemValidationJobContinuationMessage>(
-            problemValidationProcessor,
-            (sp, m, ct) =>
-                sp.GetRequiredService<ProblemValidationJobProcessorService>().RunPendingForJobAsync(m.JobId, ct)
-        );
+            WireUp<SubmissionJobContinuationMessage>(
+                continuationProcessor,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct)
+            );
 
-        WireUp<TestCaseGenerationJobContinuationMessage>(
-            testCaseGenerationContinuationProcessor,
-            (sp, m, ct) => sp.GetRequiredService<TestCaseGenerationJobProcessorService>().RunForJobAsync(m.JobId, ct)
-        );
+            WireUp<ProblemValidationJobContinuationMessage>(
+                problemValidationProcessor,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<ProblemValidationJobProcessorService>().RunPendingForJobAsync(m.JobId, ct)
+            );
 
-        WireUp<TestCaseGenerationJobCompletedMessage>(
-            testCaseGenerationCompletedProcessor,
-            (sp, _, ct) =>
-                sp.GetRequiredService<ProblemValidationJobProcessorService>().RunAwaitingGenerationPassAsync(ct)
-        );
+            WireUp<TestCaseGenerationJobContinuationMessage>(
+                testCaseGenerationContinuationProcessor,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<TestCaseGenerationJobProcessorService>().RunForJobAsync(m.JobId, ct)
+            );
 
-        WireUpGameExpiry(gameExpiryProcessor);
+            WireUp<TestCaseGenerationJobCompletedMessage>(
+                testCaseGenerationCompletedProcessor,
+                (sp, _, ct) =>
+                    sp.GetRequiredService<ProblemValidationJobProcessorService>().RunAwaitingGenerationPassAsync(ct)
+            );
 
-        await Task.WhenAll(
-            createdProcessor.StartProcessingAsync(stoppingToken),
-            continuationProcessor.StartProcessingAsync(stoppingToken),
-            problemValidationProcessor.StartProcessingAsync(stoppingToken),
-            testCaseGenerationContinuationProcessor.StartProcessingAsync(stoppingToken),
-            testCaseGenerationCompletedProcessor.StartProcessingAsync(stoppingToken),
-            gameExpiryProcessor.StartProcessingAsync(stoppingToken)
-        );
+            WireUpGameExpiry(gameExpiryProcessor);
+
+            await Task.WhenAll(
+                createdProcessor.StartProcessingAsync(stoppingToken),
+                continuationProcessor.StartProcessingAsync(stoppingToken),
+                problemValidationProcessor.StartProcessingAsync(stoppingToken),
+                testCaseGenerationContinuationProcessor.StartProcessingAsync(stoppingToken),
+                testCaseGenerationCompletedProcessor.StartProcessingAsync(stoppingToken),
+                gameExpiryProcessor.StartProcessingAsync(stoppingToken)
+            );
+        }
+        catch (Exception ex)
+        {
+            LogStartupFailed(ex);
+            foreach (var processor in createdProcessors)
+            {
+                await processor.DisposeAsync();
+            }
+            return;
+        }
 
         try
         {
@@ -260,4 +287,7 @@ internal sealed partial class AzureServiceBusConsumerService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error processing message from Azure Service Bus")]
     private partial void LogProcessingError(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Failed to start Azure Service Bus consumers")]
+    private partial void LogStartupFailed(Exception ex);
 }

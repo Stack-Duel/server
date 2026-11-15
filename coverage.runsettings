@@ -10,13 +10,14 @@
           <Exclude>[StackDuel.Seeder]*</Exclude>
 
           <!--
-            File-level exclusions: generated/data-only sources, plus *ReadRepository.cs, whose
+            File-level exclusions: generated/data-only sources; BackgroundService broker hosts
+            (Messaging/Consumers/**) requiring live broker access; plus *ReadRepository.cs, whose
             thin IQueryable composition EF recommends covering via integration tests against a
             real provider rather than unit tests against a mocked DbContext. Mirrored by
             COVERAGE_EXCLUSIONS in .github/workflows/sonarqube.yml, which is the list SonarCloud
             actually reads.
           -->
-          <ExcludeByFile>**/Migrations/*.cs,**/Persistence/Seeders/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Repositories/**/*ReadRepository.cs</ExcludeByFile>
+          <ExcludeByFile>**/Migrations/*.cs,**/Persistence/Seeders/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Messaging/Consumers/**/*.cs,**/Repositories/**/*ReadRepository.cs</ExcludeByFile>
 
           <!--
             Honour [ExcludeFromCodeCoverage]. Do NOT add GeneratedCodeAttribute here: it makes

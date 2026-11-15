@@ -6,7 +6,7 @@ on:
       dotnet-version:
         required: false
         type: string
-        default: "10.0.x"
+        default: "11.0.x"
       verify:
         required: false
         type: boolean

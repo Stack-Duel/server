@@ -10,7 +10,7 @@ internal sealed class CreateDraftProblemValidator : AbstractValidator<CreateDraf
     {
         RuleFor(x => x.Input.Title).NotEmpty().Length(Title.MinLength, Title.MaxLength);
         RuleFor(x => x.Input.Question).NotEmpty().Length(Question.MinLength, Question.MaxLength);
-        RuleFor(x => x.Input.Difficulty).GreaterThanOrEqualTo(Difficulty.MinValue);
+        RuleFor(x => x.Input.Difficulty).InclusiveBetween(Difficulty.MinValue, Difficulty.MaxValue);
         RuleFor(x => x.Input.TimeLimitMs).InclusiveBetween(TimeLimit.MinMilliseconds, TimeLimit.MaxMilliseconds);
         RuleFor(x => x.Input.MemoryLimitMb).InclusiveBetween(MemoryLimit.MinMegabytes, MemoryLimit.MaxMegabytes);
         RuleFor(x => x.Input.Tags)

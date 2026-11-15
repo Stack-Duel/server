@@ -21,6 +21,22 @@ public class DifficultyTests
     }
 
     [Fact]
+    public void Constructor_AtMaxValue_Succeeds()
+    {
+        var difficulty = new Difficulty(Difficulty.MaxValue);
+
+        Assert.Equal(Difficulty.MaxValue, difficulty.Value);
+    }
+
+    [Fact]
+    public void Constructor_AboveMaxValue_ThrowsInvalidDifficultyException()
+    {
+        var exception = Assert.Throws<InvalidDifficultyException>(() => new Difficulty(Difficulty.MaxValue + 1));
+
+        Assert.Equal($"Difficulty is invalid: Difficulty cannot exceed {Difficulty.MaxValue}.", exception.Message);
+    }
+
+    [Fact]
     public void Equality_DifferentValues_AreNotEqual()
     {
         var a = new Difficulty(100);

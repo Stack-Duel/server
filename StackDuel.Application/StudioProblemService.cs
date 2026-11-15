@@ -1,5 +1,8 @@
 using Ardalis.Result;
 using MediatR;
+using StackDuel.Application.Commands.Problems.CreateDraftProblem;
+using StackDuel.Application.Problems.Dtos;
+using StackDuel.Application.Queries.StudioProblems.GetInitialStudioProblemSetups;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemSetups;
 using StackDuel.Application.StudioProblems.Dtos;
@@ -8,6 +11,8 @@ namespace StackDuel.Application;
 
 public interface IStudioProblemService
 {
+    Task<Result<InitialStudioProblemSetupDto>> GetInitialStudioProblemSetupAsync(CancellationToken cancellationToken);
+
     Task<Result<StudioProblemDetailsDto>> GetStudioProblemByIdAsync(
         Guid id,
         Guid userId,
@@ -19,10 +24,16 @@ public interface IStudioProblemService
         Guid userId,
         CancellationToken cancellationToken
     );
+
+    Task<Result<Guid>> CreateStudioProblemAsync(CreateDraftProblemInput input, CancellationToken cancellationToken);
 }
 
 internal sealed class StudioProblemService(IMediator mediator) : IStudioProblemService
 {
+    public async Task<Result<InitialStudioProblemSetupDto>> GetInitialStudioProblemSetupAsync(
+        CancellationToken cancellationToken
+    ) => await mediator.Send(new GetInitialStudioProblemSetupsQuery(), cancellationToken);
+
     public async Task<Result<StudioProblemDetailsDto>> GetStudioProblemByIdAsync(
         Guid id,
         Guid userId,
@@ -34,4 +45,9 @@ internal sealed class StudioProblemService(IMediator mediator) : IStudioProblemS
         Guid userId,
         CancellationToken cancellationToken
     ) => await mediator.Send(new GetStudioProblemSetupsQuery(id, userId), cancellationToken);
+
+    public async Task<Result<Guid>> CreateStudioProblemAsync(
+        CreateDraftProblemInput input,
+        CancellationToken cancellationToken
+    ) => await mediator.Send(new CreateDraftProblemCommand(input), cancellationToken);
 }
