@@ -2,8 +2,10 @@ using Ardalis.Result;
 using MediatR;
 using Moq;
 using StackDuel.Application;
+using StackDuel.Application.Queries.StudioProblems.GetInitialStudioProblemSetups;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
 using StackDuel.Application.StudioProblems.Dtos;
+using StackDuel.Application.Tracks.Dtos;
 using StackDuel.Domain.Problems.Enums;
 
 namespace StackDuel.Application.Tests.Services.StudioProblem;
@@ -52,6 +54,24 @@ public class StudioProblemServiceTests
         Result<StudioProblemDetailsDto> result = await _service.GetStudioProblemByIdAsync(
             problemId,
             userId,
+            CancellationToken.None
+        );
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task GetInitialStudioProblemSetupAsync_SendsQuery()
+    {
+        var expected = Result<InitialStudioProblemSetupDto>.Success(
+            new InitialStudioProblemSetupDto([new TrackDto(Guid.NewGuid(), "sql", "SQL", true, [])])
+        );
+
+        _mediator
+            .Setup(x => x.Send(It.IsAny<GetInitialStudioProblemSetupsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        Result<InitialStudioProblemSetupDto> result = await _service.GetInitialStudioProblemSetupAsync(
             CancellationToken.None
         );
 

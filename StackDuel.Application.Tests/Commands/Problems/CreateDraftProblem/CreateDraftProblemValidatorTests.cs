@@ -56,6 +56,14 @@ public class CreateDraftProblemValidatorTests
     }
 
     [Fact]
+    public async Task Validate_DifficultyAboveMaximum_Fails()
+    {
+        ValidationResult result = await _validator.ValidateAsync(ValidCommand(difficulty: 4001));
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
     public async Task Validate_TimeLimitOutOfRange_Fails()
     {
         ValidationResult result = await _validator.ValidateAsync(ValidCommand(timeLimitMs: 1));
