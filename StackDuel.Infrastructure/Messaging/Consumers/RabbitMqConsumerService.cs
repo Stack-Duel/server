@@ -29,61 +29,73 @@ internal sealed partial class RabbitMqConsumerService(
         int consumerConcurrency = Math.Max(1, options.RabbitMQ.ConsumerConcurrency);
         var channels = new List<IModel>();
 
-        Subscribe<SubmissionCreatedMessage>(
-            channels,
-            (sp, m, ct) =>
-                sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct),
-            consumerConcurrency,
-            stoppingToken
-        );
-
-        Subscribe<SubmissionJobContinuationMessage>(
-            channels,
-            (sp, m, ct) =>
-                sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct),
-            consumerConcurrency,
-            stoppingToken
-        );
-
-        Subscribe<ProblemValidationJobContinuationMessage>(
-            channels,
-            (sp, m, ct) =>
-                sp.GetRequiredService<ProblemValidationJobProcessorService>().RunPendingForJobAsync(m.JobId, ct),
-            consumerConcurrency,
-            stoppingToken
-        );
-
-        Subscribe<TestCaseGenerationJobContinuationMessage>(
-            channels,
-            (sp, m, ct) => sp.GetRequiredService<TestCaseGenerationJobProcessorService>().RunForJobAsync(m.JobId, ct),
-            consumerConcurrency,
-            stoppingToken
-        );
-
-        Subscribe<TestCaseGenerationJobCompletedMessage>(
-            channels,
-            (sp, _, ct) =>
-                sp.GetRequiredService<ProblemValidationJobProcessorService>().RunAwaitingGenerationPassAsync(ct),
-            consumerConcurrency,
-            stoppingToken
-        );
-
-        SubscribeGameExpiryMessages(channels, consumerConcurrency, stoppingToken);
-
-        stoppingToken.Register(() =>
+        try
         {
-            foreach (var channel in channels)
-            {
-                try
-                {
-                    channel.Close();
-                }
-                catch { }
-                channel.Dispose();
-            }
-        });
+            Subscribe<SubmissionCreatedMessage>(
+                channels,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct),
+                consumerConcurrency,
+                stoppingToken
+            );
+
+            Subscribe<SubmissionJobContinuationMessage>(
+                channels,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<SubmissionJobProcessorService>().RunForSubmissionAsync(m.SubmissionId, ct),
+                consumerConcurrency,
+                stoppingToken
+            );
+
+            Subscribe<ProblemValidationJobContinuationMessage>(
+                channels,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<ProblemValidationJobProcessorService>().RunPendingForJobAsync(m.JobId, ct),
+                consumerConcurrency,
+                stoppingToken
+            );
+
+            Subscribe<TestCaseGenerationJobContinuationMessage>(
+                channels,
+                (sp, m, ct) =>
+                    sp.GetRequiredService<TestCaseGenerationJobProcessorService>().RunForJobAsync(m.JobId, ct),
+                consumerConcurrency,
+                stoppingToken
+            );
+
+            Subscribe<TestCaseGenerationJobCompletedMessage>(
+                channels,
+                (sp, _, ct) =>
+                    sp.GetRequiredService<ProblemValidationJobProcessorService>().RunAwaitingGenerationPassAsync(ct),
+                consumerConcurrency,
+                stoppingToken
+            );
+
+            SubscribeGameExpiryMessages(channels, consumerConcurrency, stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            LogStartupFailed(ex);
+            CloseChannels(channels);
+            return Task.CompletedTask;
+        }
+
+        stoppingToken.Register(() => CloseChannels(channels));
 
         return Task.CompletedTask;
+    }
+
+    private static void CloseChannels(IEnumerable<IModel> channels)
+    {
+        foreach (var channel in channels)
+        {
+            try
+            {
+                channel.Close();
+            }
+            catch { }
+            channel.Dispose();
+        }
     }
 
     private const int MaxProcessingRetries = 5;
@@ -302,6 +314,9 @@ internal sealed partial class RabbitMqConsumerService(
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error processing message from RabbitMQ")]
     private partial void LogProcessingError(Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Failed to start RabbitMQ consumers")]
+    private partial void LogStartupFailed(Exception ex);
 
     [LoggerMessage(
         Level = LogLevel.Warning,
