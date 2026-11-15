@@ -25,6 +25,7 @@ public static class WellKnownPermissions
     public const string ReadAdminAuditLog = WellKnownAuthorization.ReadAdminAuditLogPermission;
     public const string CreateAdminProblems = WellKnownAuthorization.CreateAdminProblemsPermission;
     public const string SubmitAdminProblems = WellKnownAuthorization.SubmitAdminProblemsPermission;
+    public const string ReadStudioProblems = WellKnownAuthorization.ReadStudioProblemsPermission;
     public const string ManageRequiredProblemLanguages =
         WellKnownAuthorization.ManageRequiredProblemLanguagesPermission;
 }

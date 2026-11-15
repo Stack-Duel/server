@@ -10,6 +10,9 @@ public sealed record Difficulty
         if (value < MinValue)
             throw new InvalidDifficultyException($"Difficulty cannot be less than {MinValue}.");
 
+        if (value > MaxValue)
+            throw new InvalidDifficultyException($"Difficulty cannot be less than {MinValue}.");
+
         Value = value;
     }
 
@@ -25,6 +28,8 @@ public sealed record Difficulty
     public static readonly int AdvancedMax = 2000;
     public static readonly int ExpertMin = 2001;
     public static readonly int MinValue = 0;
+
+    public static readonly int MaxValue = 4000;
 
     public DifficultyTier Tier =>
         Value switch

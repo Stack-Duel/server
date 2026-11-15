@@ -99,6 +99,7 @@ public sealed class GetStudioProblemByIdApiTests(IntegrationTestEnvironment envi
         await CreateAccountAsync(ownerSub, "studioowner2");
         await CreateAccountAsync(otherSub, "studioother2");
         await GrantCreateProblemsPermissionAsync(ownerSub);
+        await GrantReadStudioProblemsPermissionAsync(otherSub);
         Guid trackId = await Seeder.CreateTrackAsync("track-studio-2", "Studio Track 2");
 
         Guid problemId = await CreateProblemAsync(ownerSub, trackId, "Not Yours Problem");
@@ -126,6 +127,7 @@ public sealed class GetStudioProblemByIdApiTests(IntegrationTestEnvironment envi
     {
         const string sub = "sub-studio-problem-missing";
         await CreateAccountAsync(sub, "studiomissing1");
+        await GrantReadStudioProblemsPermissionAsync(sub);
 
         HttpRequestMessage request = AuthenticatedRequest(
             HttpMethod.Get,
@@ -140,7 +142,24 @@ public sealed class GetStudioProblemByIdApiTests(IntegrationTestEnvironment envi
     private async Task GrantCreateProblemsPermissionAsync(string sub)
     {
         Guid userId = await Seeder.GetUserIdBySubAsync(sub);
-        Guid permissionId = await Seeder.CreatePermissionAsync(WellKnownAuthorization.CreateAdminProblemsPermission);
+        Guid createPermissionId = await Seeder.CreatePermissionAsync(
+            WellKnownAuthorization.CreateAdminProblemsPermission
+        );
+        Guid readStudioPermissionId = await Seeder.CreatePermissionAsync(
+            WellKnownAuthorization.ReadStudioProblemsPermission
+        );
+        Guid roleId = await Seeder.CreateRoleAsync($"role-{sub}");
+        await Seeder.GrantRolePermissionAsync(roleId, createPermissionId, DecisionEffect.Allow);
+        await Seeder.GrantRolePermissionAsync(roleId, readStudioPermissionId, DecisionEffect.Allow);
+        Guid groupId = await Seeder.CreateGroupAsync($"group-{sub}");
+        await Seeder.GrantGroupRoleAsync(groupId, roleId);
+        await Seeder.AddUserToGroupAsync(userId, groupId);
+    }
+
+    private async Task GrantReadStudioProblemsPermissionAsync(string sub)
+    {
+        Guid userId = await Seeder.GetUserIdBySubAsync(sub);
+        Guid permissionId = await Seeder.CreatePermissionAsync(WellKnownAuthorization.ReadStudioProblemsPermission);
         Guid roleId = await Seeder.CreateRoleAsync($"role-{sub}");
         await Seeder.GrantRolePermissionAsync(roleId, permissionId, DecisionEffect.Allow);
         Guid groupId = await Seeder.CreateGroupAsync($"group-{sub}");
