@@ -25,11 +25,13 @@ public static class ApiServiceRegistration
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
-        services.AddApiVersioning(options =>
-        {
-            options.DefaultApiVersion = new ApiVersion(1);
-            options.AssumeDefaultVersionWhenUnspecified = true;
-        });
+        services
+            .AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+            })
+            .AddMvc();
         services.AddOpenApi();
 
         var corsOptions =
