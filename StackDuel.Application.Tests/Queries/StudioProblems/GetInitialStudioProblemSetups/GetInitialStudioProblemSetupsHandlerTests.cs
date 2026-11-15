@@ -69,5 +69,14 @@ public class GetInitialStudioProblemSetupsHandlerTests
 
         Assert.Equivalent(new[] { "React", "Angular" }, frontendDto.Languages.Select(l => l.Name), strict: true);
         Assert.Equivalent(new[] { "SQLite" }, sqlDto.Languages.Select(l => l.Name), strict: true);
+
+        _languageReadRepository.Verify(x =>
+            x.GetActiveLanguagesByTrackIdsAsync(
+                It.Is<IEnumerable<Guid>>(trackIds =>
+                    trackIds.SequenceEqual(new[] { frontendTrack.Id, sqlTrack.Id })
+                ),
+                It.IsAny<CancellationToken>()
+            )
+        );
     }
 }
