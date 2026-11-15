@@ -11,7 +11,7 @@ public sealed record Difficulty
             throw new InvalidDifficultyException($"Difficulty cannot be less than {MinValue}.");
 
         if (value > MaxValue)
-            throw new InvalidDifficultyException($"Difficulty cannot be less than {MinValue}.");
+            throw new InvalidDifficultyException($"Difficulty cannot exceed {MaxValue}.");
 
         Value = value;
     }
