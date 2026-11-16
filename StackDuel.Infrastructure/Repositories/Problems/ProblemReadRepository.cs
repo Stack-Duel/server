@@ -6,6 +6,7 @@ using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
+using StackDuel.Domain.TestSuites.Enums;
 using StackDuel.Infrastructure.Persistence;
 
 namespace StackDuel.Infrastructure.Repositories.Problems;
@@ -169,6 +170,27 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.Setups.Count,
                 p.CreatedAt,
                 p.Question
+            ))
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<ProblemPublishReadinessProjection?> FindPublishReadinessAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(p => p.Id == id)
+            .Select(p => new ProblemPublishReadinessProjection(
+                p.Setups.Count,
+                p.Setups.Where(setup => setup.ReferenceSolutionCode == null || setup.ReferenceSolutionCode == "")
+                    .Select(setup => setup.LanguageVersionId)
+                    .ToList(),
+                p.Setups.SelectMany(setup => setup.TestSuites)
+                    .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
+                    .SelectMany(testSuite => testSuite.TestCases)
+                    .Count(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt == null),
+                p.GenerationSpec != null
             ))
             .FirstOrDefaultAsync(cancellationToken);
 

@@ -2,6 +2,7 @@ using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
+using StackDuel.Domain.TestSuites.Enums;
 using StackDuel.Domain.Users.Entities;
 
 namespace StackDuel.Domain.Problems.Entities;
@@ -172,6 +173,25 @@ public sealed class Problem : AggregateRoot
         Difficulty = null!;
         TimeLimit = null!;
         MemoryLimit = null!;
+    }
+
+    public IEnumerable<ProblemSetup> SetupsMissingReferenceSolution() =>
+        _setups.Where(setup => string.IsNullOrWhiteSpace(setup.ReferenceSolutionCode));
+
+    public ProblemPublishReadiness EvaluatePublishReadiness()
+    {
+        int sampleTestCaseCount = _setups
+            .SelectMany(setup => setup.TestSuites)
+            .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
+            .SelectMany(testSuite => testSuite.TestCases)
+            .Count(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt is null);
+
+        return new ProblemPublishReadiness(
+            _setups.Count,
+            SetupsMissingReferenceSolution().Count(),
+            sampleTestCaseCount,
+            GenerationSpec is not null
+        );
     }
 
     public IEnumerable<Guid> AvailableLanguageVersionIds() => _setups.Select(setup => setup.LanguageVersionId);

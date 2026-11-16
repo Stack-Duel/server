@@ -1,9 +1,13 @@
 using Ardalis.Result;
+using StackDuel.Application.Languages;
+using StackDuel.Application.ProblemValidation;
+using StackDuel.Application.ProblemValidation.Dtos;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
+using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 
 namespace StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
@@ -11,9 +15,17 @@ namespace StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
 internal sealed class GetStudioProblemByIdHandler(
     IProblemReadRepository problemReadRepository,
     IProblemReactionReadRepository problemReactionReadRepository,
-    ISubmissionReadRepository submissionReadRepository
+    ISubmissionReadRepository submissionReadRepository,
+    ILanguageReadRepository languageReadRepository,
+    IProblemValidationJobReadRepository problemValidationJobReadRepository
 ) : IQueryHandler<GetStudioProblemByIdQuery, StudioProblemDetailsDto>
 {
+    private static readonly IReadOnlySet<ProblemStatus> SubmittableStatuses = new HashSet<ProblemStatus>
+    {
+        ProblemStatus.Draft,
+        ProblemStatus.Failed,
+    };
+
     public async Task<Result<StudioProblemDetailsDto>> Handle(
         GetStudioProblemByIdQuery request,
         CancellationToken cancellationToken
@@ -38,6 +50,12 @@ internal sealed class GetStudioProblemByIdHandler(
             cancellationToken
         );
 
+        StudioProblemPublishReadinessDto? publishReadiness = await BuildPublishReadinessAsync(
+            request.ProblemId,
+            details.Status,
+            cancellationToken
+        );
+
         int reactionCount = reactionSummary.Counts.Sum(c => c.Count);
         double solveRatePercent =
             submissionStats.TotalSubmissions == 0
@@ -51,7 +69,79 @@ internal sealed class GetStudioProblemByIdHandler(
                 AttemptCount = submissionStats.TotalSubmissions,
                 SolveRatePercent = solveRatePercent,
                 DifficultyTier = new Difficulty(details.DifficultyValue).Tier,
+                PublishReadiness = publishReadiness,
             }
         );
+    }
+
+    private async Task<StudioProblemPublishReadinessDto?> BuildPublishReadinessAsync(
+        Guid problemId,
+        ProblemStatus status,
+        CancellationToken cancellationToken
+    )
+    {
+        ProblemPublishReadinessProjection? projection = await problemReadRepository.FindPublishReadinessAsync(
+            problemId,
+            cancellationToken
+        );
+
+        if (projection is null)
+            return null;
+
+        ProblemPublishReadiness readiness = new(
+            projection.SetupCount,
+            projection.LanguageVersionIdsMissingReferenceSolution.Count,
+            projection.SampleTestCaseCount,
+            projection.HasGenerationParameters
+        );
+
+        IReadOnlyList<string> languagesMissingReferenceSolution = await ResolveLanguageNamesAsync(
+            projection.LanguageVersionIdsMissingReferenceSolution,
+            cancellationToken
+        );
+
+        ProblemValidationAttemptSummaryDto attempts = await problemValidationJobReadRepository.GetAttemptSummaryAsync(
+            problemId,
+            cancellationToken
+        );
+
+        return new StudioProblemPublishReadinessDto(
+            SubmittableStatuses.Contains(status),
+            readiness.IsReady,
+            readiness.RequirementsMet,
+            ProblemPublishReadiness.RequirementCount,
+            readiness.SetupCount,
+            languagesMissingReferenceSolution,
+            readiness.SampleTestCaseCount,
+            readiness.HasGenerationParameters,
+            attempts.AttemptCount,
+            attempts.LastSubmittedAt,
+            attempts.LastCompletedAt,
+            attempts.LastStatus,
+            attempts.LastFailureReason
+        );
+    }
+
+    private async Task<IReadOnlyList<string>> ResolveLanguageNamesAsync(
+        IReadOnlyList<Guid> languageVersionIds,
+        CancellationToken cancellationToken
+    )
+    {
+        if (languageVersionIds.Count == 0)
+            return [];
+
+        var languages = await languageReadRepository.FindLanguagesByVersionId(languageVersionIds, cancellationToken);
+
+        Dictionary<Guid, string> namesByVersionId = languages
+            .SelectMany(language => language.Versions.Select(version => (version.Id, Name: (string)language.Name)))
+            .ToDictionary(entry => entry.Id, entry => entry.Name);
+
+        return
+        [
+            .. languageVersionIds
+                .Select(versionId => namesByVersionId.TryGetValue(versionId, out string? name) ? name : "Unknown")
+                .Distinct()
+                .Order(),
+        ];
     }
 }
