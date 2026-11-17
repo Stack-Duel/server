@@ -20,7 +20,7 @@ internal sealed class GetStudioProblemByIdHandler(
     IProblemValidationJobReadRepository problemValidationJobReadRepository
 ) : IQueryHandler<GetStudioProblemByIdQuery, StudioProblemDetailsDto>
 {
-    private static readonly IReadOnlySet<ProblemStatus> SubmittableStatuses = new HashSet<ProblemStatus>
+    private static readonly HashSet<ProblemStatus> SubmittableStatuses = new HashSet<ProblemStatus>
     {
         ProblemStatus.Draft,
         ProblemStatus.Failed,
