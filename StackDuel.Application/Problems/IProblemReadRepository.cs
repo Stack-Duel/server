@@ -33,6 +33,11 @@ public interface IProblemReadRepository
 
     Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<ProblemPublishReadinessProjection?> FindPublishReadinessAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<Guid>> GetAdminProblemIdsMatchingAsync(
         string? search,
         CancellationToken cancellationToken = default

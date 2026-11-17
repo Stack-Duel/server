@@ -16,5 +16,6 @@ public sealed record StudioProblemDetailsDto(
     int ReactionCount = 0,
     int AttemptCount = 0,
     double SolveRatePercent = 0,
-    DifficultyTier DifficultyTier = DifficultyTier.Beginner
+    DifficultyTier DifficultyTier = DifficultyTier.Beginner,
+    StudioProblemPublishReadinessDto? PublishReadiness = null
 );

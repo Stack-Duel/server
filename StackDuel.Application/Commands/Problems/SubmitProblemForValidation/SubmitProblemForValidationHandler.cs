@@ -5,9 +5,9 @@ using StackDuel.Application.Messaging.Messages;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
+using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.ProblemValidation;
 using StackDuel.Domain.ProblemValidation.Entities;
-using StackDuel.Domain.TestSuites.Enums;
 
 namespace StackDuel.Application.Commands.Problems.SubmitProblemForValidation;
 
@@ -33,24 +33,20 @@ internal sealed class SubmitProblemForValidationHandler(
                 new ValidationError("Status", $"Cannot submit a problem for validation from status {problem.Status}.")
             );
 
+        ProblemPublishReadiness readiness = problem.EvaluatePublishReadiness();
+
         List<string> errors = [];
 
-        if (problem.Setups.Count == 0)
+        if (!readiness.HasSetups)
             errors.Add("At least one language setup is required.");
 
-        foreach (ProblemSetup setup in problem.Setups.Where(s => string.IsNullOrWhiteSpace(s.ReferenceSolutionCode)))
+        foreach (ProblemSetup setup in problem.SetupsMissingReferenceSolution())
             errors.Add($"A reference solution is required for setup {setup.Id}.");
 
-        bool hasSampleTestCases = problem
-            .Setups.SelectMany(s => s.TestSuites)
-            .Where(ts => ts.Type == TestSuiteType.Sample)
-            .SelectMany(ts => ts.TestCases)
-            .Any(tc => tc.Source == TestCaseSource.Authored && tc.RetiredAt is null);
-
-        if (!hasSampleTestCases)
+        if (!readiness.HasSampleTestCases)
             errors.Add("At least one sample test case is required.");
 
-        if (problem.GenerationSpec is null)
+        if (!readiness.HasGenerationParameters)
             errors.Add("Generation parameters are required before submitting for validation.");
 
         if (errors.Count > 0)

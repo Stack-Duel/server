@@ -27,6 +27,7 @@ using StackDuel.Application.Leaderboards;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.RequiredLanguages;
+using StackDuel.Application.ProblemValidation;
 using StackDuel.Application.Services.Users;
 using StackDuel.Application.Settings;
 using StackDuel.Application.Submissions;
@@ -391,6 +392,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IRequiredProblemLanguageRepository, RequiredProblemLanguageRepository>();
         services.AddScoped<IRequiredProblemLanguageReadRepository, RequiredProblemLanguageReadRepository>();
         services.AddScoped<IProblemValidationJobRepository, ProblemValidationJobRepository>();
+        services.AddScoped<IProblemValidationJobReadRepository, ProblemValidationJobReadRepository>();
         services.AddScoped<IUserReadRepository, UserReadRepository>();
         services.AddScoped<IUserWriteRepository, UserWriteRepository>();
         services.AddScoped<IUserAvatarWriteRepository, UserAvatarWriteRepository>();
