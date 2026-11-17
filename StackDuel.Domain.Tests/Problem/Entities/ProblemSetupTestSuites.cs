@@ -1,5 +1,5 @@
-using System.Reflection;
 using StackDuel.Domain.TestSuites.Enums;
+using System.Reflection;
 using ProblemSetupEntity = StackDuel.Domain.Problems.Entities.ProblemSetup;
 using TestSuiteEntity = StackDuel.Domain.TestSuites.Entities.TestSuite;
 
