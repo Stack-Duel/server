@@ -258,4 +258,12 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
             )
         );
     }
+
+    [HttpPatch("{id:guid}/cancel-publishing")]
+    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task CancelPublishingAsync(Guid problemId, CancellationToken cancellationToken) { }
 }
