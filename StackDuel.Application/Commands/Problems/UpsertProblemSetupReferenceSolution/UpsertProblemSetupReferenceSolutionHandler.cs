@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Application.Problems;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
@@ -10,7 +11,8 @@ namespace StackDuel.Application.Commands.Problems.UpsertProblemSetupReferenceSol
 internal sealed class UpsertProblemSetupReferenceSolutionHandler(
     IValidator<UpsertProblemSetupReferenceSolutionCommand> validator,
     IProblemRepository problemRepository,
-    IExecutionPipelineRepository executionPipelineRepository
+    IExecutionPipelineRepository executionPipelineRepository,
+    IProblemTrackLanguagePolicy trackLanguagePolicy
 ) : AbstractCommandHandler<UpsertProblemSetupReferenceSolutionCommand, Guid>(validator)
 {
     protected override async Task<Result<Guid>> HandleValidated(
@@ -29,6 +31,19 @@ internal sealed class UpsertProblemSetupReferenceSolutionHandler(
             );
 
         ProblemSetup? setup = problem.FindSetupByLanguageVersionId(request.LanguageVersionId);
+
+        if (
+            setup is null
+            && request.RequestedByUserId.HasValue
+            && !await trackLanguagePolicy.AllowsLanguageVersionAsync(
+                problem,
+                request.LanguageVersionId,
+                cancellationToken
+            )
+        )
+            return Result.Invalid(
+                new ValidationError("LanguageVersionId", "This language is not available for the problem's track.")
+            );
 
         if (setup is null)
         {

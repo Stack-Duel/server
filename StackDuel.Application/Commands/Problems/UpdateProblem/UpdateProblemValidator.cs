@@ -13,7 +13,6 @@ internal sealed class UpdateProblemValidator : AbstractValidator<UpdateProblemCo
         RuleFor(x => x.Difficulty).GreaterThanOrEqualTo(Difficulty.MinValue);
         RuleFor(x => x.TimeLimitMs).InclusiveBetween(TimeLimit.MinMilliseconds, TimeLimit.MaxMilliseconds);
         RuleFor(x => x.MemoryLimitMb).InclusiveBetween(MemoryLimit.MinMegabytes, MemoryLimit.MaxMegabytes);
-        RuleFor(x => x.Tags).NotNull();
-        RuleForEach(x => x.Tags).NotEmpty().Length(Tag.MinLength, Tag.MaxLength);
+        RuleForEach(x => x.Tags).NotEmpty().Length(Tag.MinLength, Tag.MaxLength).When(x => x.Tags is not null);
     }
 }

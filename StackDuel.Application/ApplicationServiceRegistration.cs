@@ -88,6 +88,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IProblemService, ProblemService>();
         services.AddScoped<ISlugService, SlugService>();
         services.AddScoped<IProblemLimitService, ProblemLimitService>();
+        services.AddScoped<IProblemTrackLanguagePolicy, ProblemTrackLanguagePolicy>();
         services.AddScoped<IProblemPoolService, ProblemPoolService>();
         services.AddScoped<IRequiredProblemLanguageAdminService, RequiredProblemLanguageAdminService>();
         services.AddScoped<ICampaignService, CampaignService>();

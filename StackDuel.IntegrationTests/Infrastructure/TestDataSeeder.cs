@@ -122,6 +122,16 @@ public sealed class TestDataSeeder(string connectionString)
             cancellationToken: cancellationToken
         );
 
+        return await CreateLanguageVersionOnTrackAsync(trackId, languageSlug, judge0Id, cancellationToken);
+    }
+
+    public async Task<Guid> CreateLanguageVersionOnTrackAsync(
+        Guid trackId,
+        string languageSlug,
+        int judge0Id,
+        CancellationToken cancellationToken = default
+    )
+    {
         Guid languageId = Guid.NewGuid();
         await ExecuteAsync(
             """
@@ -241,6 +251,52 @@ public sealed class TestDataSeeder(string connectionString)
             command.Parameters.AddWithValue(name, value);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<Guid> EnsurePermissionAsync(
+        string code,
+        string description = "test permission",
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO permissions (id, code, description)
+            VALUES (@id, @code, @description)
+            ON CONFLICT (code) DO UPDATE SET code = permissions.code
+            RETURNING id
+            """;
+        command.Parameters.AddWithValue("id", Guid.NewGuid());
+        command.Parameters.AddWithValue("code", code);
+        command.Parameters.AddWithValue("description", description);
+
+        object? result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is Guid id ? id : throw new InvalidOperationException($"Could not ensure permission '{code}'.");
+    }
+
+    public async Task<IReadOnlyList<string>> GetProblemTagNamesAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT t.name
+            FROM problem_tags pt
+            JOIN tags t ON t.id = pt."TagsId"
+            WHERE pt."ProblemsId" = @problemId
+            ORDER BY t.name
+            """;
+        command.Parameters.AddWithValue("problemId", problemId);
+
+        List<string> names = [];
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            names.Add(reader.GetString(0));
+
+        return names;
     }
 
     private async Task<NpgsqlConnection> OpenConnectionAsync(CancellationToken cancellationToken)

@@ -253,4 +253,198 @@ public class StudioProblemControllerTests
 
         Assert.Equal(StatusCodes.Status400BadRequest, ControllerAssert.StatusCodeOf(result));
     }
+
+    private static UpdateStudioProblemMetadataRequest MetadataRequest() =>
+        new(
+            "Two Sum",
+            new string('q', 60),
+            Difficulty: 800,
+            TimeLimitMs: 2000,
+            MemoryLimitMb: 256,
+            Tags: ["arrays"]
+        );
+
+    [Fact]
+    public async Task UpdateMetadataAsync_PassesTheRouteIdAuthenticatedUserIdAndToken()
+    {
+        using CancellationTokenSource cts = new();
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        UpdateStudioProblemMetadataRequest request = MetadataRequest();
+        _service
+            .Setup(x =>
+                x.UpdateStudioProblemMetadataAsync(
+                    It.IsAny<UpdateStudioProblemMetadataInput>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.Success());
+
+        await ControllerFor(ControllerAssert.AuthenticatedContext(userId)).UpdateMetadataAsync(
+            problemId,
+            request,
+            cts.Token
+        );
+
+        _service.Verify(
+            x =>
+                x.UpdateStudioProblemMetadataAsync(
+                    It.Is<UpdateStudioProblemMetadataInput>(input =>
+                        input.ProblemId == problemId
+                        && input.Title == request.Title
+                        && input.Question == request.Question
+                        && input.Difficulty == request.Difficulty
+                        && input.TimeLimitMs == request.TimeLimitMs
+                        && input.MemoryLimitMb == request.MemoryLimitMb
+                    ),
+                    userId,
+                    cts.Token
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UpdateMetadataAsync_ServiceNotFound_IsSurfacedAsAnErrorStatus()
+    {
+        _service
+            .Setup(x =>
+                x.UpdateStudioProblemMetadataAsync(
+                    It.IsAny<UpdateStudioProblemMetadataInput>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.NotFound());
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext()).UpdateMetadataAsync(
+            Guid.NewGuid(),
+            MetadataRequest(),
+            CancellationToken.None
+        );
+
+        Assert.Equal(StatusCodes.Status404NotFound, ControllerAssert.StatusCodeOf(result));
+    }
+
+    [Fact]
+    public async Task AddSetupAsync_PassesTheRouteIdAuthenticatedUserIdAndToken()
+    {
+        using CancellationTokenSource cts = new();
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        Guid languageVersionId = Guid.NewGuid();
+        _service
+            .Setup(x =>
+                x.AddStudioProblemSetupAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result<Guid>.Success(Guid.NewGuid()));
+
+        await ControllerFor(ControllerAssert.AuthenticatedContext(userId)).AddSetupAsync(
+            problemId,
+            new AddProblemSetupRequest(languageVersionId),
+            cts.Token
+        );
+
+        _service.Verify(
+            x => x.AddStudioProblemSetupAsync(problemId, languageVersionId, userId, cts.Token),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UpsertSetupSolutionAsync_PassesTheRouteIdAuthenticatedUserIdAndToken()
+    {
+        using CancellationTokenSource cts = new();
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        var request = new UpsertStudioProblemSetupSolutionRequest(
+            Guid.NewGuid(),
+            StarterCode: "def solve():",
+            FunctionName: "solve",
+            ReferenceSolution: "def solve(): return 1"
+        );
+        _service
+            .Setup(x =>
+                x.UpsertStudioProblemSetupSolutionAsync(
+                    It.IsAny<UpsertStudioProblemSetupSolutionInput>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result<Guid>.Success(Guid.NewGuid()));
+
+        await ControllerFor(ControllerAssert.AuthenticatedContext(userId)).UpsertSetupSolutionAsync(
+            problemId,
+            request,
+            cts.Token
+        );
+
+        _service.Verify(
+            x =>
+                x.UpsertStudioProblemSetupSolutionAsync(
+                    It.Is<UpsertStudioProblemSetupSolutionInput>(input =>
+                        input.ProblemId == problemId
+                        && input.LanguageVersionId == request.LanguageVersionId
+                        && input.StarterCode == request.StarterCode
+                        && input.FunctionName == request.FunctionName
+                        && input.ReferenceSolution == request.ReferenceSolution
+                    ),
+                    userId,
+                    cts.Token
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task SetGenerationParametersAsync_MapsRequestItemsAndPassesTheAuthenticatedUserId()
+    {
+        using CancellationTokenSource cts = new();
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        var request = new SetProblemGenerationParametersRequest(
+            [new GenerationParameterRequestItem("nums", "integer_array", 0, 100, 1, 50, null)],
+            OutputValueType: "integer",
+            TargetCaseCount: 20,
+            Seed: 12345
+        );
+        _service
+            .Setup(x =>
+                x.SetStudioProblemGenerationParametersAsync(
+                    It.IsAny<SetStudioProblemGenerationParametersInput>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.Success());
+
+        await ControllerFor(ControllerAssert.AuthenticatedContext(userId)).SetGenerationParametersAsync(
+            problemId,
+            request,
+            cts.Token
+        );
+
+        _service.Verify(
+            x =>
+                x.SetStudioProblemGenerationParametersAsync(
+                    It.Is<SetStudioProblemGenerationParametersInput>(input =>
+                        input.ProblemId == problemId
+                        && input.OutputValueType == "integer"
+                        && input.TargetCaseCount == 20
+                        && input.Seed == 12345
+                        && input.Parameters.Count == 1
+                        && input.Parameters[0].Name == "nums"
+                    ),
+                    userId,
+                    cts.Token
+                ),
+            Times.Once
+        );
+    }
 }

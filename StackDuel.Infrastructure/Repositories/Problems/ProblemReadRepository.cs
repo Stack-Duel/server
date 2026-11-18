@@ -169,7 +169,18 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.MemoryLimit.Megabytes,
                 p.Setups.Count,
                 p.CreatedAt,
-                p.Question
+                p.Question,
+                0,
+                0,
+                0,
+                DifficultyTier.Beginner,
+                null,
+                p.TrackId,
+                p.Tags.Select(tag => tag.Name.Value).ToList(),
+                p.GenerationSpec == null ? null : p.GenerationSpec.Parameters,
+                p.GenerationSpec == null ? null : p.GenerationSpec.OutputValueType,
+                p.GenerationSpec == null ? null : p.GenerationSpec.TargetCaseCount,
+                p.GenerationSpec == null ? null : p.GenerationSpec.Seed
             ))
             .FirstOrDefaultAsync(cancellationToken);
 

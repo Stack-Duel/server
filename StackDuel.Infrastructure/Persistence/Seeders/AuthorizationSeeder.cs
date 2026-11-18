@@ -227,6 +227,15 @@ internal sealed class AuthorizationSeeder(StackDuelDbContext context) : IStaticS
         if (context.Entry(readStudioProblemsPermission).State == EntityState.Detached)
             await context.Permissions.AddAsync(readStudioProblemsPermission, cancellationToken);
 
+        PermissionCode updateStudioProblemsCode = new(WellKnownAuthorization.UpdateStudioProblemsPermission);
+
+        Permission updateStudioProblemsPermission =
+            await context.Permissions.FirstOrDefaultAsync(p => p.Code == updateStudioProblemsCode, cancellationToken)
+            ?? Permission.Create(updateStudioProblemsCode, "Allows editing your own studio problem drafts and setups");
+
+        if (context.Entry(updateStudioProblemsPermission).State == EntityState.Detached)
+            await context.Permissions.AddAsync(updateStudioProblemsPermission, cancellationToken);
+
         Role role =
             await context
                 .Roles.Include(r => r.Permissions)
@@ -275,6 +284,7 @@ internal sealed class AuthorizationSeeder(StackDuelDbContext context) : IStaticS
 
         adminRole.GrantPermission(readAdminProblemsPermission.Id);
         adminRole.GrantPermission(readStudioProblemsPermission.Id);
+        adminRole.GrantPermission(updateStudioProblemsPermission.Id);
         adminRole.GrantPermission(updateAdminProblemsPermission.Id);
         adminRole.GrantPermission(readAdminUsersPermission.Id);
         adminRole.GrantPermission(updateAdminUserGroupsPermission.Id);
