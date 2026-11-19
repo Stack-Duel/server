@@ -13,7 +13,16 @@ internal sealed class ProblemValidationJobReadRepository(StackDuelDbContext cont
         CancellationToken cancellationToken = default
     )
     {
-        var attempts = await context
+        // Counted in the database rather than by materialising every attempt: a problem that has
+        // been resubmitted many times should not pull all of its history back to find the latest.
+        int attemptCount = await context
+            .ProblemValidationJobs.AsNoTracking()
+            .CountAsync(job => job.ProblemId == problemId, cancellationToken);
+
+        if (attemptCount == 0)
+            return ProblemValidationAttemptSummaryDto.NeverSubmitted;
+
+        var latest = await context
             .ProblemValidationJobs.AsNoTracking()
             .Where(job => job.ProblemId == problemId)
             .OrderByDescending(job => job.CreatedAt)
@@ -23,20 +32,34 @@ internal sealed class ProblemValidationJobReadRepository(StackDuelDbContext cont
                 job.CompletedAt,
                 job.Status,
                 job.FailureReason,
+                Steps = job.Steps.OrderBy(step => step.Kind)
+                    .Select(step => new ProblemValidationStepDto(
+                        step.Kind,
+                        step.Status,
+                        step.StartedAt,
+                        step.CompletedAt,
+                        step.Detail,
+                        step.Items.Select(item => new ProblemValidationStepItemDto(
+                                item.Label,
+                                item.Status,
+                                item.Detail
+                            ))
+                            .ToList()
+                    ))
+                    .ToList(),
             })
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (attempts.Count == 0)
+        if (latest is null)
             return ProblemValidationAttemptSummaryDto.NeverSubmitted;
 
-        var latest = attempts[0];
-
         return new ProblemValidationAttemptSummaryDto(
-            attempts.Count,
+            attemptCount,
             latest.CreatedAt,
             latest.CompletedAt,
             latest.Status,
-            latest.FailureReason
+            latest.FailureReason,
+            latest.Steps
         );
     }
 }

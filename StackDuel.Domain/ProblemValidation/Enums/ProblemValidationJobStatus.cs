@@ -12,4 +12,7 @@ public enum ProblemValidationJobStatus
     Completed = 2,
 
     Failed = 3,
+
+    /// <summary>Stopped by the author before it finished; the problem returns to Draft.</summary>
+    Cancelled = 4,
 }

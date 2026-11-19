@@ -118,7 +118,8 @@ internal sealed class GetStudioProblemByIdHandler(
             attempts.LastSubmittedAt,
             attempts.LastCompletedAt,
             attempts.LastStatus,
-            attempts.LastFailureReason
+            attempts.LastFailureReason,
+            attempts.Steps
         );
     }
 

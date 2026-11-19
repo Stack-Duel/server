@@ -148,8 +148,23 @@ internal sealed partial class ProblemValidationJobProcessorService(
             return;
         }
 
+        job.SucceedStep(
+            ProblemValidationStepKind.AuthorChecks,
+            $"{problem.Setups.Count} setup(s) and generation parameters present."
+        );
+        job.BeginStep(ProblemValidationStepKind.ReferenceSolutions);
+
         var validationService = sp.GetRequiredService<IReferenceSolutionValidationService>();
         ReferenceSolutionValidationResult result = await validationService.ValidateAsync(job.ProblemId, ct);
+
+        IReadOnlyList<ProblemValidationStepItemSpec> referenceSolutionItems =
+        [
+            .. result.Outcomes.Select(outcome => new ProblemValidationStepItemSpec(
+                outcome.LanguageLabel,
+                outcome.Passed ? ProblemValidationStepStatus.Succeeded : ProblemValidationStepStatus.Failed,
+                outcome.Warnings.Count > 0 ? string.Join("; ", outcome.Warnings) : null
+            )),
+        ];
 
         var db = sp.GetRequiredService<StackDuelDbContext>();
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -161,6 +176,7 @@ internal sealed partial class ProblemValidationJobProcessorService(
             problem.FailValidation(summary);
             await problemRepository.UpdateAsync(problem, ct);
 
+            job.FailStep(ProblemValidationStepKind.ReferenceSolutions, summary, referenceSolutionItems);
             job.Fail(summary);
             await jobRepository.UpdateAsync(job, ct);
 
@@ -190,6 +206,13 @@ internal sealed partial class ProblemValidationJobProcessorService(
             await testCaseGenerationJobRepository.AddAsync(generationJob, ct);
             generationJobIds.Add(generationJob.Id);
         }
+
+        job.SucceedStep(
+            ProblemValidationStepKind.ReferenceSolutions,
+            $"{result.Outcomes.Count} of {result.Outcomes.Count} passed.",
+            referenceSolutionItems
+        );
+        job.BeginStep(ProblemValidationStepKind.TestCaseGeneration);
 
         job.MoveToAwaitingGeneration(generationJobIds);
         await jobRepository.UpdateAsync(job, ct);
@@ -250,6 +273,8 @@ internal sealed partial class ProblemValidationJobProcessorService(
             .. generationJobs.Where(g => g.Status == TestCaseGenerationJobStatus.Failed),
         ];
 
+        IReadOnlyList<ProblemValidationStepItemSpec> generationItems = BuildGenerationItems(generationJobs, problem);
+
         if (failedGenerationJobs.Count > 0)
         {
             string reason =
@@ -259,6 +284,7 @@ internal sealed partial class ProblemValidationJobProcessorService(
             problem.FailValidation(reason);
             await problemRepository.UpdateAsync(problem, ct);
 
+            job.FailStep(ProblemValidationStepKind.TestCaseGeneration, reason, generationItems);
             job.Fail(reason);
             await jobRepository.UpdateAsync(job, ct);
 
@@ -272,11 +298,43 @@ internal sealed partial class ProblemValidationJobProcessorService(
         problem.CompleteValidation();
         await problemRepository.UpdateAsync(problem, ct);
 
+        job.SucceedStep(ProblemValidationStepKind.TestCaseGeneration, summary, generationItems);
+        job.BeginStep(ProblemValidationStepKind.Publish);
         job.Complete(summary);
         await jobRepository.UpdateAsync(job, ct);
 
         await transaction.CommitAsync(ct);
         LogCompleted(jobId, summary);
+    }
+
+    /// <summary>
+    /// One line per setup for the generation step. Counts come from the finished generation jobs
+    /// rather than a live counter: generation runs as a single call per setup, so a running total
+    /// would mean extra writes mid-run for a number nobody can act on.
+    /// </summary>
+    private static IReadOnlyList<ProblemValidationStepItemSpec> BuildGenerationItems(
+        IReadOnlyList<TestCaseGenerationJob> generationJobs,
+        Problem problem
+    )
+    {
+        Dictionary<Guid, string> setupLabels = problem.Setups.ToDictionary(
+            setup => setup.Id,
+            setup => setup.FunctionName ?? setup.Id.ToString()
+        );
+
+        return
+        [
+            .. generationJobs.Select(generationJob => new ProblemValidationStepItemSpec(
+                setupLabels.TryGetValue(generationJob.ProblemSetupId, out string? label) ? label : "Setup",
+                generationJob.Status switch
+                {
+                    TestCaseGenerationJobStatus.Completed => ProblemValidationStepStatus.Succeeded,
+                    TestCaseGenerationJobStatus.Failed => ProblemValidationStepStatus.Failed,
+                    _ => ProblemValidationStepStatus.Running,
+                },
+                generationJob.FailureReason ?? generationJob.ResultSummary
+            )),
+        ];
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Found {Count} pending problem validation job(s)")]

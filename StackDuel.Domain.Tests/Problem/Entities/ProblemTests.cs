@@ -128,7 +128,7 @@ public class ProblemTests
             new Title("Four Sum"),
             new Question(new string('c', Question.MinLength)),
             new Difficulty(2500),
-            new TimeLimit(3000),
+            new TimeLimit(1500),
             new MemoryLimit(256)
         );
 

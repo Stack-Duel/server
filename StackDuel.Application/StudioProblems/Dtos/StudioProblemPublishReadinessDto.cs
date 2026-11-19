@@ -1,3 +1,4 @@
+using StackDuel.Application.ProblemValidation.Dtos;
 using StackDuel.Domain.ProblemValidation.Enums;
 
 namespace StackDuel.Application.StudioProblems.Dtos;
@@ -15,5 +16,6 @@ public sealed record StudioProblemPublishReadinessDto(
     DateTime? LastSubmittedAt,
     DateTime? LastCompletedAt,
     ProblemValidationJobStatus? LastAttemptStatus,
-    string? LastFailureReason
+    string? LastFailureReason,
+    IReadOnlyList<ProblemValidationStepDto>? Steps = null
 );
