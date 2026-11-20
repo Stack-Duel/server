@@ -16,14 +16,6 @@ using StackDuel.Infrastructure.ProblemValidation;
 
 namespace StackDuel.Infrastructure.Jobs.ProblemValidation;
 
-/// <summary>
-/// Drives a <see cref="ProblemValidationJob"/> through its two passes: validate every required
-/// language's reference solution (<see cref="IReferenceSolutionValidationService"/>), then, once
-/// all pass, enqueue a <see cref="TestCaseGenerationJob"/> per setup and wait for those to finish
-/// before publishing the problem. Same per-job-scope/claim/release structure as
-/// <see cref="TestCaseGeneration.TestCaseGenerationJobProcessorService"/>, chaining into that
-/// existing, unmodified pipeline for the actual generation work rather than reimplementing it.
-/// </summary>
 internal sealed partial class ProblemValidationJobProcessorService(
     IServiceScopeFactory scopeFactory,
     ILogger<ProblemValidationJobProcessorService> logger
@@ -32,6 +24,9 @@ internal sealed partial class ProblemValidationJobProcessorService(
     private const int BatchSize = 5;
     private const string ProblemNoLongerExistsMessage = "Problem no longer exists.";
     private static readonly TimeSpan LeaseDuration = TimeSpan.FromMinutes(5);
+    private const int MaxProcessingAttempts = 5;
+    private const int InitialBackoffSeconds = 30;
+    private const int MaxBackoffSeconds = 900;
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -83,12 +78,6 @@ internal sealed partial class ProblemValidationJobProcessorService(
             ct
         );
 
-    /// <summary>
-    /// Shared claim/load/status-check/release scaffolding for both passes. Creates a fresh DI
-    /// scope and DbContext per job, atomically claims the job's processing lock, loads it, verifies
-    /// it's still in the expected status (another worker may have already advanced it), then hands
-    /// off to the pass-specific handler.
-    /// </summary>
     private async Task ProcessInClaimedScopeAsync(
         Guid jobId,
         ProblemValidationJobStatus expectedStatus,
@@ -108,6 +97,8 @@ internal sealed partial class ProblemValidationJobProcessorService(
             return;
         }
 
+        bool releaseLock = true;
+
         try
         {
             ProblemValidationJob? job = await jobRepository.FindByIdAsync(jobId, ct);
@@ -125,11 +116,70 @@ internal sealed partial class ProblemValidationJobProcessorService(
 
             await handle(sp, job, ct);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            releaseLock = false;
+            await RecordAttemptFailureAsync(jobId, exception, CancellationToken.None);
+        }
         finally
         {
-            await jobRepository.ReleaseLockAsync(jobId, CancellationToken.None);
+            if (releaseLock)
+                await jobRepository.ReleaseLockAsync(jobId, CancellationToken.None);
         }
     }
+
+    private async Task RecordAttemptFailureAsync(Guid jobId, Exception exception, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        IServiceProvider sp = scope.ServiceProvider;
+
+        var jobRepository = sp.GetRequiredService<IProblemValidationJobRepository>();
+
+        ProblemValidationJob? job = await jobRepository.FindByIdAsync(jobId, ct);
+
+        if (job is null)
+            return;
+
+        job.RecordAttemptFailure(exception.Message, MaxProcessingAttempts);
+
+        if (job.Status == ProblemValidationJobStatus.Failed)
+        {
+            var problemRepository = sp.GetRequiredService<IProblemRepository>();
+            Problem? problem = await problemRepository.FindByIdAsync(job.ProblemId, ct);
+
+            if (problem is not null)
+            {
+                problem.FailValidation(job.FailureReason ?? exception.Message);
+                await problemRepository.UpdateAsync(problem, ct);
+            }
+
+            await jobRepository.UpdateAsync(job, ct);
+            await jobRepository.ReleaseLockAsync(jobId, ct);
+            LogGaveUp(jobId, job.ProcessingAttempts, exception.Message);
+            return;
+        }
+
+        await jobRepository.UpdateAsync(job, ct);
+        await jobRepository.SetRetryAfterAsync(jobId, BackoffFor(job.ProcessingAttempts), ct);
+        LogAttemptFailed(jobId, job.ProcessingAttempts, exception.Message);
+    }
+
+    private static async Task<bool> WasCancelledAsync(
+        IProblemValidationJobRepository jobRepository,
+        Guid jobId,
+        CancellationToken ct
+    )
+    {
+        ProblemValidationJob? latest = await jobRepository.FindByIdAsync(jobId, ct);
+        return latest is null || latest.IsCancelled;
+    }
+
+    private static TimeSpan BackoffFor(int attempts) =>
+        TimeSpan.FromSeconds(Math.Min(InitialBackoffSeconds * Math.Pow(2, attempts - 1), MaxBackoffSeconds));
 
     private async Task HandlePendingJobAsync(IServiceProvider sp, ProblemValidationJob job, CancellationToken ct)
     {
@@ -165,6 +215,12 @@ internal sealed partial class ProblemValidationJobProcessorService(
                 outcome.Warnings.Count > 0 ? string.Join("; ", outcome.Warnings) : null
             )),
         ];
+
+        if (await WasCancelledAsync(jobRepository, jobId, ct))
+        {
+            LogAbandonedAfterCancel(jobId);
+            return;
+        }
 
         var db = sp.GetRequiredService<StackDuelDbContext>();
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -265,6 +321,12 @@ internal sealed partial class ProblemValidationJobProcessorService(
             return;
         }
 
+        if (await WasCancelledAsync(jobRepository, jobId, ct))
+        {
+            LogAbandonedAfterCancel(jobId);
+            return;
+        }
+
         var db = sp.GetRequiredService<StackDuelDbContext>();
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
@@ -277,9 +339,7 @@ internal sealed partial class ProblemValidationJobProcessorService(
 
         if (failedGenerationJobs.Count > 0)
         {
-            string reason =
-                $"Test case generation failed for {failedGenerationJobs.Count} setup(s): "
-                + string.Join("; ", failedGenerationJobs.Select(g => g.FailureReason ?? "unknown error"));
+            string reason = BuildGenerationFailureReason(failedGenerationJobs);
 
             problem.FailValidation(reason);
             await problemRepository.UpdateAsync(problem, ct);
@@ -307,11 +367,27 @@ internal sealed partial class ProblemValidationJobProcessorService(
         LogCompleted(jobId, summary);
     }
 
-    /// <summary>
-    /// One line per setup for the generation step. Counts come from the finished generation jobs
-    /// rather than a live counter: generation runs as a single call per setup, so a running total
-    /// would mean extra writes mid-run for a number nobody can act on.
-    /// </summary>
+    private const int MaxGenerationFailuresReported = 3;
+    private const int MaxGenerationFailureDetailLength = 600;
+
+    private static string BuildGenerationFailureReason(IReadOnlyList<TestCaseGenerationJob> failedGenerationJobs)
+    {
+        string details = string.Join(
+            "; ",
+            failedGenerationJobs
+                .Take(MaxGenerationFailuresReported)
+                .Select(generationJob => Shorten(generationJob.FailureReason ?? "unknown error"))
+        );
+
+        if (failedGenerationJobs.Count > MaxGenerationFailuresReported)
+            details += $" (+{failedGenerationJobs.Count - MaxGenerationFailuresReported} more)";
+
+        return $"Test case generation failed for {failedGenerationJobs.Count} setup(s): {details}";
+    }
+
+    private static string Shorten(string value) =>
+        value.Length > MaxGenerationFailureDetailLength ? value[..MaxGenerationFailureDetailLength] + "..." : value;
+
     private static IReadOnlyList<ProblemValidationStepItemSpec> BuildGenerationItems(
         IReadOnlyList<TestCaseGenerationJob> generationJobs,
         Problem problem
@@ -336,6 +412,24 @@ internal sealed partial class ProblemValidationJobProcessorService(
             )),
         ];
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Problem validation job {JobId} was cancelled; abandoning this pass"
+    )]
+    private partial void LogAbandonedAfterCancel(Guid jobId);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Problem validation job {JobId} attempt {Attempts} failed, will retry: {Reason}"
+    )]
+    private partial void LogAttemptFailed(Guid jobId, int attempts, string reason);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Problem validation job {JobId} gave up after {Attempts} attempts: {Reason}"
+    )]
+    private partial void LogGaveUp(Guid jobId, int attempts, string reason);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Found {Count} pending problem validation job(s)")]
     private partial void LogFoundPending(int count);

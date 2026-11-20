@@ -28,7 +28,7 @@ internal sealed class SubmitProblemForValidationHandler(
         if (problem is null)
             return Result.NotFound();
 
-        if (problem.Status is not (ProblemStatus.Draft or ProblemStatus.Failed))
+        if (!problem.CanSubmitForValidation)
             return Result.Invalid(
                 new ValidationError("Status", $"Cannot submit a problem for validation from status {problem.Status}.")
             );

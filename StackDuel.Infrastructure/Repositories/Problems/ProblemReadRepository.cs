@@ -129,6 +129,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 .ThenInclude(setup => setup.TestSuites)
                     .ThenInclude(testSuite => testSuite.TestCases)
                         .ThenInclude(testCase => testCase.ExpectedOutputs)
+            .Include(problem => problem.Versions)
+                .ThenInclude(version => version.Setups)
             .Where(problem => problem.Slug.Value == slug)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -147,6 +149,35 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 setup => EF.Property<Guid>(setup, "problem_id"),
                 problem => problem.Id,
                 (setup, problem) => new ProblemDifficultyLookupDto(problem.Id, problem.Difficulty.Value)
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<Guid?> FindPublishedVersionIdAsync(Guid problemId, CancellationToken cancellationToken = default)
+    {
+        return await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(problem => problem.Id == problemId)
+            .Select(problem => problem.PublishedVersionId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<Guid?> FindPublishedVersionIdByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => setup.Id == problemSetupId)
+            .Join(
+                context.Problems.AsNoTracking().IgnoreQueryFilters(),
+                setup => EF.Property<Guid>(setup, "problem_id"),
+                problem => problem.Id,
+                (setup, problem) => problem.PublishedVersionId
             )
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -180,7 +211,9 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.GenerationSpec == null ? null : p.GenerationSpec.Parameters,
                 p.GenerationSpec == null ? null : p.GenerationSpec.OutputValueType,
                 p.GenerationSpec == null ? null : p.GenerationSpec.TargetCaseCount,
-                p.GenerationSpec == null ? null : p.GenerationSpec.Seed
+                p.GenerationSpec == null ? null : p.GenerationSpec.Seed,
+                p.HasUnpublishedChanges,
+                p.IsRevalidating
             ))
             .FirstOrDefaultAsync(cancellationToken);
 

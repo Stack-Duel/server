@@ -1,6 +1,7 @@
 using Ardalis.Result;
 using MediatR;
 using StackDuel.Application.Commands.Problems.AddProblemSetup;
+using StackDuel.Application.Commands.Problems.CancelProblemValidation;
 using StackDuel.Application.Commands.Problems.CreateDraftProblem;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
@@ -97,6 +98,12 @@ public interface IStudioProblemService
     );
 
     Task<Result> SubmitStudioProblemForValidationAsync(
+        Guid problemId,
+        Guid userId,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result> CancelStudioProblemValidationAsync(
         Guid problemId,
         Guid userId,
         CancellationToken cancellationToken
@@ -212,6 +219,16 @@ internal sealed class StudioProblemService(IMediator mediator) : IStudioProblemS
     ) =>
         await mediator.Send(
             new SubmitProblemForValidationCommand(problemId, RequestedByUserId: userId),
+            cancellationToken
+        );
+
+    public async Task<Result> CancelStudioProblemValidationAsync(
+        Guid problemId,
+        Guid userId,
+        CancellationToken cancellationToken
+    ) =>
+        await mediator.Send(
+            new CancelProblemValidationCommand(problemId, RequestedByUserId: userId),
             cancellationToken
         );
 }

@@ -16,6 +16,7 @@ using StackDuel.Application.Services.Games;
 using StackDuel.Application.Services.Groups;
 using StackDuel.Application.Services.Languages;
 using StackDuel.Application.Services.Leaderboards;
+using StackDuel.Application.ProblemValidation;
 using StackDuel.Application.Services.Problems;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Services.Users;
@@ -115,6 +116,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IGameExpiryCanceller, GameExpiryCanceller>();
         services.AddScoped<IGameProblemAdvancer, GameProblemAdvancer>();
         services.AddScoped<IGameConcurrencyGuard, GameConcurrencyGuard>();
+        services.AddScoped<IProblemValidationConcurrencyGuard, ProblemValidationConcurrencyGuard>();
         services.AddScoped<IGameJoiner, GameJoiner>();
         services.AddScoped<IGameProblemCompleter, GameProblemCompleter>();
         services.AddScoped<ISubmissionCreator, SubmissionCreator>();

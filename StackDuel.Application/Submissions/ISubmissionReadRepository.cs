@@ -75,4 +75,10 @@ public interface ISubmissionReadRepository
         Guid problemId,
         CancellationToken cancellationToken = default
     );
+
+    Task<SubmissionProblemSnapshotDto?> FindProblemSnapshotForSubmissionAsync(
+        Guid submissionId,
+        Guid? userId,
+        CancellationToken cancellationToken = default
+    );
 }

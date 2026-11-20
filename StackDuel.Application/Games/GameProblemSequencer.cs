@@ -1,9 +1,13 @@
 using StackDuel.Application.Languages;
+using StackDuel.Application.Problems;
 using StackDuel.Domain.Games.Entities;
 
 namespace StackDuel.Application.Games;
 
-internal sealed class GameProblemSequencer(ILanguageReadRepository languageReadRepository) : IGameProblemSequencer
+internal sealed class GameProblemSequencer(
+    ILanguageReadRepository languageReadRepository,
+    IProblemReadRepository problemReadRepository
+) : IGameProblemSequencer
 {
     public async Task<Guid?> GetOrGenerateProblemAsync(
         Game game,
@@ -35,7 +39,14 @@ internal sealed class GameProblemSequencer(ILanguageReadRepository languageReadR
 
         Guid? generatedProblemId = await strategy.SelectNextProblemIdAsync(context, cancellationToken);
         if (generatedProblemId is { } newProblemId)
-            game.AppendRound(newProblemId);
+        {
+            Guid? problemVersionId = await problemReadRepository.FindPublishedVersionIdAsync(
+                newProblemId,
+                cancellationToken
+            );
+
+            game.AppendRound(newProblemId, problemVersionId);
+        }
 
         return generatedProblemId;
     }

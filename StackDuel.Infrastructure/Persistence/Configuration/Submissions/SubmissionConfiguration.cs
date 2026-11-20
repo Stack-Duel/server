@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Games.Entities;
@@ -5,7 +6,6 @@ using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Submissions.Entities;
 using StackDuel.Domain.Submissions.ValueObjects;
 using StackDuel.Domain.Users.Entities;
-using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Submissions;
 
@@ -29,6 +29,15 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
             s.ProblemSetupId,
             s.UserId,
         });
+
+        builder.Property(s => s.ProblemVersionId).HasColumnName("problem_version_id").IsRequired(false);
+
+        builder
+            .HasOne<ProblemVersion>()
+            .WithMany()
+            .HasForeignKey(s => s.ProblemVersionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(s => s.GameId).HasColumnName("game_id").IsRequired(false);
 

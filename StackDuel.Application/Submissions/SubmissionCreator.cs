@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using StackDuel.Application.Events;
+using StackDuel.Application.Problems;
 using StackDuel.Domain.ExecutionPipelines;
 using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.SubmissionJobs;
@@ -14,6 +15,7 @@ namespace StackDuel.Application.Submissions;
 
 internal sealed class SubmissionCreator(
     IAggregateFactory<Submission, CreateSubmissionParams> submissionFactory,
+    IProblemReadRepository problemReadRepository,
     ISubmissionWriteRepository submissionRepository,
     ISubmissionJobRepository submissionJobRepository,
     IExecutionPipelineRepository pipelineRepository,
@@ -54,6 +56,11 @@ internal sealed class SubmissionCreator(
         if (firstStep is null)
             return Result<Guid>.Error("Submission pipeline is temporarily unavailable. Please try again later.");
 
+        Guid? problemVersionId = await problemReadRepository.FindPublishedVersionIdByProblemSetupIdAsync(
+            request.ProblemSetupId,
+            cancellationToken
+        );
+
         var submission = submissionFactory.Create(
             new CreateSubmissionParams(
                 request.CreatedById,
@@ -62,7 +69,8 @@ internal sealed class SubmissionCreator(
                 new SourceCode(request.Code),
                 testCaseIds,
                 request.AdditionalFiles?.Select(f => new SubmissionSourceFile(f.Path, f.Content)),
-                request.GameId
+                request.GameId,
+                problemVersionId
             )
         );
 

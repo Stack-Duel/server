@@ -1,13 +1,13 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Api.Requests.User;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Authorization.Rbac.Enums;
 using StackDuel.Domain.ExecutionPipelines;
-using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace StackDuel.IntegrationTests.Problems;
 
@@ -24,7 +24,7 @@ public sealed class EditStudioProblemApiTests(IntegrationTestEnvironment environ
     private static UpdateStudioProblemMetadataRequest MetadataRequest(
         string title = "Edited Title",
         int difficulty = 900,
-        int timeLimitMs = 3000,
+        int timeLimitMs = 1500,
         int memoryLimitMb = 128,
         IReadOnlyCollection<string>? tags = null
     ) => new(title, ValidQuestion, difficulty, timeLimitMs, memoryLimitMb, tags ?? ["arrays"]);
@@ -46,7 +46,7 @@ public sealed class EditStudioProblemApiTests(IntegrationTestEnvironment environ
 
         Assert.Equal("Edited Title", details.Title);
         Assert.Equal(900, details.DifficultyValue);
-        Assert.Equal(3000, details.TimeLimitMs);
+        Assert.Equal(1500, details.TimeLimitMs);
         Assert.Equal(128, details.MemoryLimitMb);
     }
 
@@ -429,11 +429,7 @@ public sealed class EditStudioProblemApiTests(IntegrationTestEnvironment environ
         UpdateStudioProblemMetadataRequest body
     )
     {
-        HttpRequestMessage request = AuthenticatedRequest(
-            HttpMethod.Put,
-            $"/api/v1/studio/problems/{problemId}",
-            sub
-        );
+        HttpRequestMessage request = AuthenticatedRequest(HttpMethod.Put, $"/api/v1/studio/problems/{problemId}", sub);
         request.Content = JsonContent.Create(body);
 
         return await Client.SendAsync(request);

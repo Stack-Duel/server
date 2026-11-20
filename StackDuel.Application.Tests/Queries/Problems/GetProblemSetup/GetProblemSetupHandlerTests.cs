@@ -82,4 +82,49 @@ public class GetProblemSetupHandlerTests
         Assert.Equal("def solve(): pass", result.Value.InitialCode);
         Assert.Empty(result.Value.TestCases);
     }
+
+    [Fact]
+    public async Task Handle_PublishedProblem_ServesThePinnedStarterCode()
+    {
+        Problem problem = CreateProblem();
+        Guid languageVersionId = Guid.NewGuid();
+        ProblemSetup setup = problem.AddSetup(languageVersionId, "starter as published", "solve", Guid.NewGuid());
+        problem.CompleteValidation();
+
+        problem.UpdateSetupInitialCode(setup.Id, "starter edited after publish");
+        problem.UpdateSetupFunctionName(setup.Id, "renamed");
+
+        _problemReadRepository
+            .Setup(x => x.FindBySlugAsync("two-sum", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problem);
+
+        Result<ProblemSetupDto> result = await _handler.Handle(
+            new GetProblemSetupQuery("two-sum", languageVersionId),
+            CancellationToken.None
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("starter as published", result.Value.InitialCode);
+        Assert.Equal("solve", result.Value.FunctionName);
+    }
+
+    [Fact]
+    public async Task Handle_UnpublishedProblem_ServesTheLiveStarterCode()
+    {
+        Problem problem = CreateProblem();
+        Guid languageVersionId = Guid.NewGuid();
+        problem.AddSetup(languageVersionId, "draft starter", "solve", Guid.NewGuid());
+
+        _problemReadRepository
+            .Setup(x => x.FindBySlugAsync("two-sum", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problem);
+
+        Result<ProblemSetupDto> result = await _handler.Handle(
+            new GetProblemSetupQuery("two-sum", languageVersionId),
+            CancellationToken.None
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("draft starter", result.Value.InitialCode);
+    }
 }

@@ -1,6 +1,7 @@
 using Moq;
 using StackDuel.Application.Games;
 using StackDuel.Application.Languages;
+using StackDuel.Application.Problems;
 using StackDuel.Domain.Games.Entities;
 
 namespace StackDuel.Application.Tests.Games;
@@ -8,12 +9,14 @@ namespace StackDuel.Application.Tests.Games;
 public class GameProblemSequencerTests
 {
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
+    private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private Mock<IProblemSelectionStrategy> _strategy = null!;
     private GameProblemSequencer _sequencer = null!;
 
     public GameProblemSequencerTests()
     {
         _languageReadRepository = new Mock<ILanguageReadRepository>();
+        _problemReadRepository = new Mock<IProblemReadRepository>();
         _strategy = new Mock<IProblemSelectionStrategy>();
 
         _languageReadRepository
@@ -22,7 +25,7 @@ public class GameProblemSequencerTests
             )
             .ReturnsAsync([]);
 
-        _sequencer = new GameProblemSequencer(_languageReadRepository.Object);
+        _sequencer = new GameProblemSequencer(_languageReadRepository.Object, _problemReadRepository.Object);
     }
 
     private static Game CreateGame(
@@ -162,5 +165,42 @@ public class GameProblemSequencerTests
 
         Assert.NotNull(capturedContext);
         Assert.Equivalent(new[] { versionId }, capturedContext!.AllowedLanguageVersionIds, strict: true);
+    }
+
+    [Fact]
+    public async Task GetOrGenerateProblemAsync_PinsThePublishedVersionOnTheRound()
+    {
+        var game = CreateGame();
+        var generatedProblemId = Guid.NewGuid();
+        var problemVersionId = Guid.NewGuid();
+        _strategy
+            .Setup(x => x.SelectNextProblemIdAsync(It.IsAny<ProblemSelectionContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(generatedProblemId);
+        _problemReadRepository
+            .Setup(x => x.FindPublishedVersionIdAsync(generatedProblemId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problemVersionId);
+
+        await _sequencer.GetOrGenerateProblemAsync(game, 0, "solo_rush", _strategy.Object, CancellationToken.None);
+
+        GameRound round = Assert.Single(game.Rounds);
+
+        Assert.Equal(problemVersionId, round.ProblemVersionId);
+    }
+
+    [Fact]
+    public async Task GetOrGenerateProblemAsync_UnpublishedProblem_LeavesTheRoundUnpinned()
+    {
+        var game = CreateGame();
+        var generatedProblemId = Guid.NewGuid();
+        _strategy
+            .Setup(x => x.SelectNextProblemIdAsync(It.IsAny<ProblemSelectionContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(generatedProblemId);
+        _problemReadRepository
+            .Setup(x => x.FindPublishedVersionIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid?)null);
+
+        await _sequencer.GetOrGenerateProblemAsync(game, 0, "solo_rush", _strategy.Object, CancellationToken.None);
+
+        Assert.Null(Assert.Single(game.Rounds).ProblemVersionId);
     }
 }

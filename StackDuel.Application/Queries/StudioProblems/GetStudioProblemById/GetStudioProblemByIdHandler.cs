@@ -53,6 +53,8 @@ internal sealed class GetStudioProblemByIdHandler(
         StudioProblemPublishReadinessDto? publishReadiness = await BuildPublishReadinessAsync(
             request.ProblemId,
             details.Status,
+            details.HasUnpublishedChanges,
+            details.IsRevalidating,
             cancellationToken
         );
 
@@ -77,6 +79,8 @@ internal sealed class GetStudioProblemByIdHandler(
     private async Task<StudioProblemPublishReadinessDto?> BuildPublishReadinessAsync(
         Guid problemId,
         ProblemStatus status,
+        bool hasUnpublishedChanges,
+        bool isRevalidating,
         CancellationToken cancellationToken
     )
     {
@@ -106,7 +110,8 @@ internal sealed class GetStudioProblemByIdHandler(
         );
 
         return new StudioProblemPublishReadinessDto(
-            SubmittableStatuses.Contains(status),
+            SubmittableStatuses.Contains(status)
+                || (status == ProblemStatus.Published && hasUnpublishedChanges && !isRevalidating),
             readiness.IsReady,
             readiness.RequirementsMet,
             ProblemPublishReadiness.RequirementCount,
@@ -119,7 +124,11 @@ internal sealed class GetStudioProblemByIdHandler(
             attempts.LastCompletedAt,
             attempts.LastStatus,
             attempts.LastFailureReason,
-            attempts.Steps
+            attempts.Steps,
+            attempts.ProcessingAttempts,
+            attempts.LastError,
+            hasUnpublishedChanges,
+            isRevalidating
         );
     }
 

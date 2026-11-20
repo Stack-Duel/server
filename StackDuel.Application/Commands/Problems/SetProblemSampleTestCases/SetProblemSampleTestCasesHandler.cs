@@ -24,7 +24,7 @@ internal sealed class SetProblemSampleTestCasesHandler(
         if (problem is null)
             return Result.NotFound();
 
-        if (problem.Status == ProblemStatus.Pending)
+        if (problem.IsEditLocked)
             return Result.Invalid(
                 new ValidationError("Status", "Cannot edit a problem while validation is in progress.")
             );
@@ -49,6 +49,9 @@ internal sealed class SetProblemSampleTestCasesHandler(
         string suiteName = $"{problem.Slug.Value} - Sample Cases";
 
         await testSuiteWriteRepository.ReplaceSampleTestCasesAsync(setupIds, suiteName, specs, cancellationToken);
+
+        problem.MarkSampleTestCasesChanged();
+        await problemRepository.UpdateAsync(problem, cancellationToken);
 
         return Result.Success();
     }

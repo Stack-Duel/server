@@ -12,7 +12,8 @@ public sealed record CreateSubmissionParams(
     SourceCode SourceCode,
     IEnumerable<Guid> TestCaseIds,
     IEnumerable<SubmissionSourceFile>? AdditionalFiles = null,
-    Guid? GameId = null
+    Guid? GameId = null,
+    Guid? ProblemVersionId = null
 );
 
 public sealed class SubmissionFactory : IAggregateFactory<Submission, CreateSubmissionParams>
@@ -26,7 +27,8 @@ public sealed class SubmissionFactory : IAggregateFactory<Submission, CreateSubm
             parameters.SourceCode,
             parameters.TestCaseIds,
             parameters.AdditionalFiles,
-            parameters.GameId
+            parameters.GameId,
+            parameters.ProblemVersionId
         );
     }
 }

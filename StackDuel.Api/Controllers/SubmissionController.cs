@@ -1,3 +1,4 @@
+using System.Linq;
 using Ardalis.Result;
 using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,6 @@ using StackDuel.Application;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Submissions.Dtos;
-using System.Linq;
 
 namespace StackDuel.Api.Controllers;
 
@@ -134,6 +134,28 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
         return this.ToActionResult(
             await submissionService.GetSubmissionStatusAsync(submissionId, userContext.User.Id, cancellationToken)
+        );
+    }
+
+    [HttpGet("{submissionId:guid}/problem-snapshot")]
+    [RequireUser]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SubmissionProblemSnapshotDto>> GetSubmissionProblemSnapshot(
+        Guid submissionId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (userContext.User is null)
+            return this.ToActionResult(Result<SubmissionProblemSnapshotDto>.Unauthorized());
+
+        return this.ToActionResult(
+            await submissionService.GetSubmissionProblemSnapshotAsync(
+                submissionId,
+                userContext.User.Id,
+                cancellationToken
+            )
         );
     }
 }

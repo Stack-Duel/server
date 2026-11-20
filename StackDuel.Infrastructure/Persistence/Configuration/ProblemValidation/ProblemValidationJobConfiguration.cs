@@ -39,11 +39,14 @@ internal sealed class ProblemValidationJobConfiguration : IEntityTypeConfigurati
 
         builder.Property(j => j.CompletedAt).HasColumnName("completed_at").IsRequired(false);
 
+        builder.Property(j => j.ProcessingAttempts).HasColumnName("processing_attempts").IsRequired();
+
+        builder.Property(j => j.LastError).HasColumnName("last_error").HasMaxLength(2000).IsRequired(false);
+
         builder.Property(j => j.LockedUntil).HasColumnName("locked_until").IsRequired(false);
 
         builder.HasIndex(j => new { j.Status, j.LockedUntil });
 
-        // Attempt lookups always ask for a problem's runs newest first.
         builder.HasIndex(j => new { j.ProblemId, j.CreatedAt });
 
         builder

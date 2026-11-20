@@ -24,5 +24,7 @@ public sealed record StudioProblemDetailsDto(
     IReadOnlyList<GenerationParameterSpec>? GenerationParameters = null,
     string? GenerationOutputValueType = null,
     int? GenerationTargetCaseCount = null,
-    int? GenerationSeed = null
+    int? GenerationSeed = null,
+    bool HasUnpublishedChanges = false,
+    bool IsRevalidating = false
 );

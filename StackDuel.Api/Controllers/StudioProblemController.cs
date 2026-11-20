@@ -231,6 +231,24 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
         );
     }
 
+    [HttpPost("{id:guid}/cancel-validation")]
+    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> CancelValidationAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return this.ToActionResult(
+            await studioProblemService.CancelStudioProblemValidationAsync(
+                id,
+                userContext.User!.Id,
+                cancellationToken
+            )
+        );
+    }
+
     [HttpPost]
     [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
     [EnableRateLimiting(WellKnownPolicies.ProblemCreation)]

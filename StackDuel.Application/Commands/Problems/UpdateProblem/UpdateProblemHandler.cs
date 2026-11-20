@@ -27,7 +27,7 @@ internal sealed class UpdateProblemHandler(
         if (problem is null)
             return Result.NotFound();
 
-        if (problem.Status == ProblemStatus.Pending)
+        if (problem.IsEditLocked)
             return Result.Invalid(
                 new ValidationError("Status", "Cannot edit a problem while validation is in progress.")
             );

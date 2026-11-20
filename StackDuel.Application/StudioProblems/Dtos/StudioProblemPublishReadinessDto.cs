@@ -17,5 +17,9 @@ public sealed record StudioProblemPublishReadinessDto(
     DateTime? LastCompletedAt,
     ProblemValidationJobStatus? LastAttemptStatus,
     string? LastFailureReason,
-    IReadOnlyList<ProblemValidationStepDto>? Steps = null
+    IReadOnlyList<ProblemValidationStepDto>? Steps = null,
+    int ProcessingAttempts = 0,
+    string? LastError = null,
+    bool HasUnpublishedChanges = false,
+    bool IsRevalidating = false
 );

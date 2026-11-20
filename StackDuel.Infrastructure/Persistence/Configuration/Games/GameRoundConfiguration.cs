@@ -21,6 +21,15 @@ internal sealed class GameRoundConfiguration : IEntityTypeConfiguration<GameRoun
 
         builder.Property(round => round.ProblemId).HasColumnName("problem_id").IsRequired();
 
+        builder.Property(round => round.ProblemVersionId).HasColumnName("problem_version_id").IsRequired(false);
+
+        builder
+            .HasOne<ProblemVersion>()
+            .WithMany()
+            .HasForeignKey(round => round.ProblemVersionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(round => round.Position).HasColumnName("position").IsRequired();
 
         builder
@@ -103,9 +112,8 @@ internal sealed class GameRoundSolutionConfiguration : IEntityTypeConfiguration<
 {
     public void Configure(EntityTypeBuilder<GameRoundSolution> builder)
     {
-        builder.ToTable(
-            "game_round_solutions",
-            table => table.HasCheckConstraint("ck_game_round_solutions_outcome", "outcome = 0")
+        builder.ToTable("game_round_solutions", table =>
+            table.HasCheckConstraint("ck_game_round_solutions_outcome", "outcome = 0")
         );
 
         builder.HasKey(solution => solution.Id);

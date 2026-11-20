@@ -305,4 +305,85 @@ public sealed class TestDataSeeder(string connectionString)
         await connection.OpenAsync(cancellationToken);
         return connection;
     }
+
+    public async Task<Guid> PublishProblemVersionAsync(
+        Guid problemId,
+        string title,
+        string question,
+        int versionNumber = 1,
+        int difficulty = 100,
+        int timeLimitMs = 1000,
+        int memoryLimitMb = 256,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid versionId = Guid.NewGuid();
+
+        await ExecuteAsync(
+            """
+            INSERT INTO problem_versions (
+                id, problem_id, version_number, state, title, question,
+                difficulty, time_limit, memory_limit, published_at
+            )
+            VALUES (@id, @problemId, @versionNumber, 1, @title, @question,
+                    @difficulty, @timeLimit, @memoryLimit, now())
+            """,
+            cancellationToken,
+            ("id", versionId),
+            ("problemId", problemId),
+            ("versionNumber", versionNumber),
+            ("title", title),
+            ("question", question),
+            ("difficulty", difficulty),
+            ("timeLimit", timeLimitMs),
+            ("memoryLimit", memoryLimitMb)
+        );
+
+        await ExecuteAsync(
+            """
+            INSERT INTO problem_version_setups (
+                id, problem_version_id, problem_setup_id, language_version_id, initial_code, function_name
+            )
+            SELECT gen_random_uuid(), @versionId, s.id, s.language_version_id, s.initial_code, s.function_name
+            FROM problem_setups s
+            WHERE s.problem_id = @problemId
+            """,
+            cancellationToken,
+            ("versionId", versionId),
+            ("problemId", problemId)
+        );
+
+        await ExecuteAsync(
+            "UPDATE problems SET published_version_id = @versionId WHERE id = @problemId",
+            cancellationToken,
+            ("versionId", versionId),
+            ("problemId", problemId)
+        );
+
+        return versionId;
+    }
+
+    public async Task PinSubmissionToVersionAsync(
+        Guid submissionId,
+        Guid problemVersionId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await ExecuteAsync(
+            "UPDATE submissions SET problem_version_id = @versionId WHERE id = @submissionId",
+            cancellationToken,
+            ("submissionId", submissionId),
+            ("versionId", problemVersionId)
+        );
+
+    public async Task<Guid> GetFirstProblemSetupIdAsync(Guid problemId, CancellationToken cancellationToken = default)
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT id FROM problem_setups WHERE problem_id = @problemId LIMIT 1";
+        command.Parameters.AddWithValue("problemId", problemId);
+
+        object? result = await command.ExecuteScalarAsync(cancellationToken);
+
+        return result is Guid id ? id : throw new InvalidOperationException("Problem has no setups.");
+    }
 }

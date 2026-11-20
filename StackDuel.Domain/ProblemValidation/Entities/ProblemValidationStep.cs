@@ -3,11 +3,6 @@ using StackDuel.Domain.SeedWork;
 
 namespace StackDuel.Domain.ProblemValidation.Entities;
 
-/// <summary>
-/// One stage of a <see cref="ProblemValidationJob"/>, recorded so an author can see where a run
-/// got to rather than only its final verdict. Created up front in <see cref="ProblemValidationStepKind"/>
-/// order and then advanced in place, so a job never accumulates more than one row per kind.
-/// </summary>
 public sealed class ProblemValidationStep : Entity
 {
     internal ProblemValidationStep(ProblemValidationStepKind kind)
@@ -71,7 +66,6 @@ public sealed class ProblemValidationStep : Entity
         if (items is null)
             return;
 
-        // A pass can be retried after a lease expires, so the lines are replaced rather than appended.
         _items.Clear();
         _items.AddRange(
             items.Select(item => new ProblemValidationStepItem(item.Label, item.Status, Truncate(item.Detail)))
@@ -84,7 +78,6 @@ public sealed class ProblemValidationStep : Entity
         detail is not null && detail.Length > MaxDetailLength ? detail[..MaxDetailLength] : detail;
 }
 
-/// <summary>What a caller hands in to record a step's lines, before they become entities.</summary>
 public sealed record ProblemValidationStepItemSpec(
     string Label,
     ProblemValidationStepStatus Status,

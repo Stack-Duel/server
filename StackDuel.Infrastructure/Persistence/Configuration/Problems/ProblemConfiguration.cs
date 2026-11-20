@@ -1,10 +1,10 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 using StackDuel.Domain.Tracks.Entities;
-using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Persistence.Configuration.Problems;
 
@@ -126,6 +126,25 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Setups).HasField("_setups").UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder
+            .HasMany(p => p.Versions)
+            .WithOne()
+            .HasForeignKey(v => v.ProblemId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.Versions).HasField("_versions").UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Property(p => p.PublishedVersionId).HasColumnName("published_version_id").IsRequired(false);
+
+        builder
+            .Property(p => p.HasUnpublishedChanges)
+            .HasColumnName("has_unpublished_changes")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(p => p.IsRevalidating).HasColumnName("is_revalidating").HasDefaultValue(false).IsRequired();
 
         builder.HasMany(p => p.Tags).WithMany(t => t.Problems).UsingEntity(j => j.ToTable("problem_tags"));
 

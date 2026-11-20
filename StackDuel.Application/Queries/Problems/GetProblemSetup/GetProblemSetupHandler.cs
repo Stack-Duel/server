@@ -1,6 +1,7 @@
 ﻿using Ardalis.Result;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Application.Queries.Problems.GetProblemSetup;
 
@@ -23,11 +24,15 @@ internal sealed class GetProblemSetupHandler(IProblemReadRepository problemReadR
             return Result.NotFound();
         }
 
+        ProblemVersionSetup? publishedSetup = problem.PublishedVersion?.FindSetupByLanguageVersionId(
+            request.LanguageVersionId
+        );
+
         return Result.Success(
             new ProblemSetupDto(
                 foundSetup.Id,
-                foundSetup.InitialCode,
-                foundSetup.FunctionName,
+                publishedSetup?.InitialCode ?? foundSetup.InitialCode,
+                publishedSetup?.FunctionName ?? foundSetup.FunctionName,
                 foundSetup
                     .PublicTestSuites()
                     .SelectMany(

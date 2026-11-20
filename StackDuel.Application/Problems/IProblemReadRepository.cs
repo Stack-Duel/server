@@ -31,7 +31,17 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Guid?> FindPublishedVersionIdAsync(Guid problemId, CancellationToken cancellationToken = default);
+
+    Task<Guid?> FindPublishedVersionIdByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
 
     Task<ProblemPublishReadinessProjection?> FindPublishReadinessAsync(
         Guid id,

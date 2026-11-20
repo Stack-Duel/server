@@ -13,8 +13,6 @@ internal sealed class ProblemValidationJobReadRepository(StackDuelDbContext cont
         CancellationToken cancellationToken = default
     )
     {
-        // Counted in the database rather than by materialising every attempt: a problem that has
-        // been resubmitted many times should not pull all of its history back to find the latest.
         int attemptCount = await context
             .ProblemValidationJobs.AsNoTracking()
             .CountAsync(job => job.ProblemId == problemId, cancellationToken);
@@ -32,7 +30,10 @@ internal sealed class ProblemValidationJobReadRepository(StackDuelDbContext cont
                 job.CompletedAt,
                 job.Status,
                 job.FailureReason,
-                Steps = job.Steps.OrderBy(step => step.Kind)
+                job.ProcessingAttempts,
+                job.LastError,
+                Steps = job
+                    .Steps.OrderBy(step => step.Kind)
                     .Select(step => new ProblemValidationStepDto(
                         step.Kind,
                         step.Status,
@@ -59,7 +60,9 @@ internal sealed class ProblemValidationJobReadRepository(StackDuelDbContext cont
             latest.CompletedAt,
             latest.Status,
             latest.FailureReason,
-            latest.Steps
+            latest.Steps,
+            latest.ProcessingAttempts,
+            latest.LastError
         );
     }
 }

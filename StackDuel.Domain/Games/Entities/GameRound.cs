@@ -4,7 +4,7 @@ namespace StackDuel.Domain.Games.Entities;
 
 public sealed class GameRound : Entity
 {
-    public GameRound(Guid gameId, int position, Guid problemId)
+    public GameRound(Guid gameId, int position, Guid problemId, Guid? problemVersionId = null)
     {
         if (gameId == Guid.Empty)
             throw new ArgumentException("Game id must not be empty.", nameof(gameId));
@@ -18,6 +18,7 @@ public sealed class GameRound : Entity
         GameId = gameId;
         Position = position;
         ProblemId = problemId;
+        ProblemVersionId = problemVersionId;
     }
 
     private GameRound() { }
@@ -27,4 +28,6 @@ public sealed class GameRound : Entity
     public int Position { get; private set; }
 
     public Guid ProblemId { get; private set; }
+
+    public Guid? ProblemVersionId { get; private set; }
 }
