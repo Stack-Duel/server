@@ -49,6 +49,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
     }
 
     [HttpPost("grade")]
+    [EnableRateLimiting(WellKnownPolicies.GradedSubmissions)]
     [RequireUser]
     [RequirePermission(WellKnownPermissions.CreateSubmission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -121,6 +122,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
     [HttpGet("{submissionId:guid}")]
     [RequireUser]
+    [EnableRateLimiting(WellKnownPolicies.General)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -139,6 +141,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
     [HttpGet("{submissionId:guid}/problem-snapshot")]
     [RequireUser]
+    [EnableRateLimiting(WellKnownPolicies.General)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

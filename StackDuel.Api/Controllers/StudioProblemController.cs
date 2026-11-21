@@ -6,6 +6,7 @@ using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Application;
+using StackDuel.Application.Commands.Problems.DeleteProblem;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
@@ -284,4 +285,27 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task CancelPublishingAsync(Guid problemId, CancellationToken cancellationToken) { }
+
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteStudioProblemAsync(
+        Guid id,
+        [FromBody] DeleteStudioProblemRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        return this.ToActionResult(
+            await studioProblemService.DeleteStudioProblemAsync(
+                id,
+                request.ConfirmationTitle,
+                userContext.User!.Id,
+                cancellationToken
+            )
+        );
+    }
 }

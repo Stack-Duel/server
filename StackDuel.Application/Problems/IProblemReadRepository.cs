@@ -106,4 +106,9 @@ public interface IProblemReadRepository
     );
 
     Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default);
+
+    Task<ProblemDeletionImpactDto> FindDeletionImpactAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    );
 }

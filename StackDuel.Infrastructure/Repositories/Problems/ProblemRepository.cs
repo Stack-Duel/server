@@ -56,7 +56,7 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
             .Include(p => p.Versions)
                 .ThenInclude(v => v.Setups)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(p => p.Slug.Value == slug.Value, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Slug.Value == slug.Value && p.DeletedAt == null, cancellationToken);
 
     public async Task<Problem?> FindBySetupIdAsync(Guid setupId, CancellationToken cancellationToken = default) =>
         await context
@@ -94,5 +94,11 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
         );
 
         return await context.Tags.Where(t => tagList.Contains(t.Name)).ToListAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Problem problem, CancellationToken cancellationToken = default)
+    {
+        context.Problems.Remove(problem);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

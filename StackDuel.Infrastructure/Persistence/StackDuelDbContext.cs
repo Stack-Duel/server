@@ -145,7 +145,9 @@ internal sealed class StackDuelDbContext(DbContextOptions<StackDuelDbContext> op
 
         MarkDomainAssignedIdentifiersAsNotStoreGenerated(modelBuilder);
 
-        modelBuilder.Entity<Problem>().HasQueryFilter(problem => problem.Status == ProblemStatus.Published);
+        modelBuilder
+            .Entity<Problem>()
+            .HasQueryFilter(problem => problem.Status == ProblemStatus.Published && problem.DeletedAt == null);
         modelBuilder.Entity<Language>().HasQueryFilter(language => language.Status == LanguageStatus.Active);
         modelBuilder
             .Entity<LanguageVersionEntry>()

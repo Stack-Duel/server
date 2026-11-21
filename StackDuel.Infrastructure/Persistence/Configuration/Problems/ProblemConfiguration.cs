@@ -24,7 +24,7 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
             {
                 slug.Property(s => s.Value).HasColumnName("slug").HasMaxLength(Slug.MaxLength).IsRequired();
 
-                slug.HasIndex(s => s.Value).IsUnique();
+                slug.HasIndex(s => s.Value).IsUnique().HasFilter("deleted_at IS NULL");
             }
         );
 
@@ -108,6 +108,8 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
         );
 
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
+
+        builder.Property(p => p.DeletedAt).HasColumnName("deleted_at").IsRequired(false);
 
         builder
             .HasMany(p => p.History)

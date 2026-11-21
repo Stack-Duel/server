@@ -49,6 +49,8 @@ internal sealed class SubmitProblemForValidationHandler(
         if (!readiness.HasGenerationParameters)
             errors.Add("Generation parameters are required before submitting for validation.");
 
+        errors.AddRange(DescribeArityProblems(problem));
+
         if (errors.Count > 0)
         {
             List<ValidationError> validationErrors = [.. errors.Select(e => new ValidationError(e))];
@@ -64,5 +66,28 @@ internal sealed class SubmitProblemForValidationHandler(
         await messagePublisher.PublishAsync(new ProblemValidationJobContinuationMessage(job.Id), cancellationToken);
 
         return Result.Success();
+    }
+
+    private static IEnumerable<string> DescribeArityProblems(Problem problem)
+    {
+        IReadOnlyList<int> inputCounts = problem.SampleTestCaseInputCounts();
+
+        if (inputCounts.Count > 1)
+        {
+            yield return "Every sample test case must have the same number of inputs, but they have "
+                + $"{string.Join(" and ", inputCounts)}.";
+            yield break;
+        }
+
+        if (inputCounts.Count == 0 || problem.GenerationSpec is not { } generationSpec)
+            yield break;
+
+        int parameterCount = generationSpec.Parameters.Count;
+        int inputCount = inputCounts[0];
+
+        if (parameterCount != inputCount)
+            yield return $"There are {parameterCount} generation parameter(s) but each sample test case has "
+                + $"{inputCount} input(s). They have to match, because the generated inputs are passed to the "
+                + "reference solution in the same order.";
     }
 }

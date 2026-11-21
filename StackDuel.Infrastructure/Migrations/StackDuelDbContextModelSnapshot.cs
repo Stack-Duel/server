@@ -1652,6 +1652,10 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_id");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
                     b.Property<bool>("HasUnpublishedChanges")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")

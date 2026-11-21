@@ -3,6 +3,7 @@ using MediatR;
 using StackDuel.Application.Commands.Problems.AddProblemSetup;
 using StackDuel.Application.Commands.Problems.CancelProblemValidation;
 using StackDuel.Application.Commands.Problems.CreateDraftProblem;
+using StackDuel.Application.Commands.Problems.DeleteProblem;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
 using StackDuel.Application.Commands.Problems.SubmitProblemForValidation;
@@ -105,6 +106,13 @@ public interface IStudioProblemService
 
     Task<Result> CancelStudioProblemValidationAsync(
         Guid problemId,
+        Guid userId,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result> DeleteStudioProblemAsync(
+        Guid problemId,
+        string confirmationTitle,
         Guid userId,
         CancellationToken cancellationToken
     );
@@ -229,6 +237,17 @@ internal sealed class StudioProblemService(IMediator mediator) : IStudioProblemS
     ) =>
         await mediator.Send(
             new CancelProblemValidationCommand(problemId, RequestedByUserId: userId),
+            cancellationToken
+        );
+
+    public async Task<Result> DeleteStudioProblemAsync(
+        Guid problemId,
+        string confirmationTitle,
+        Guid userId,
+        CancellationToken cancellationToken
+    ) =>
+        await mediator.Send(
+            new DeleteProblemCommand(problemId, confirmationTitle, RequestedByUserId: userId),
             cancellationToken
         );
 }

@@ -3,6 +3,7 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
+using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -53,6 +54,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     public async Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(problem => problem.Status == ProblemStatus.Published)
             .AsSplitQuery()
             .Include(problem => problem.CreatedBy)
             .Include(problem => problem.Tags)
@@ -549,5 +552,67 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .ToListAsync(cancellationToken);
 
     public async Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default) =>
-        await context.Problems.IgnoreQueryFilters().AnyAsync(problem => problem.Slug == slug, cancellationToken);
+        await context
+            .Problems.IgnoreQueryFilters()
+            .AnyAsync(problem => problem.Slug == slug && problem.DeletedAt == null, cancellationToken);
+
+    public async Task<ProblemDeletionImpactDto> FindDeletionImpactAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        List<Guid> setupIds = await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => EF.Property<Guid>(setup, "problem_id") == problemId)
+            .Select(setup => setup.Id)
+            .ToListAsync(cancellationToken);
+
+        int submissionCount = setupIds.Count == 0
+            ? 0
+            : await context
+                .Submissions.AsNoTracking()
+                .CountAsync(submission => setupIds.Contains(submission.ProblemSetupId), cancellationToken);
+
+        int gameRoundCount = await context
+            .Games.AsNoTracking()
+            .IgnoreQueryFilters()
+            .SelectMany(game => game.Rounds)
+            .CountAsync(round => round.ProblemId == problemId, cancellationToken);
+
+        int unfinishedGameCount = await context
+            .Games.AsNoTracking()
+            .IgnoreQueryFilters()
+            .CountAsync(
+                game =>
+                    (game.Status == GameStatus.Pending || game.Status == GameStatus.Running)
+                    && game.Rounds.Any(round => round.ProblemId == problemId),
+                cancellationToken
+            );
+
+        int dailyChallengeCount = await context
+            .DailyChallenges.AsNoTracking()
+            .IgnoreQueryFilters()
+            .CountAsync(challenge => challenge.ProblemId == problemId, cancellationToken);
+
+        int campaignUnitCount = await context
+            .UnitProblems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .CountAsync(unitProblem => unitProblem.ProblemId == problemId, cancellationToken);
+
+        int poolCount = await context
+            .Set<ProblemPoolItem>()
+            .AsNoTracking()
+            .CountAsync(item => item.ProblemId == problemId, cancellationToken);
+
+        return new ProblemDeletionImpactDto(
+            submissionCount,
+            gameRoundCount,
+            unfinishedGameCount,
+            dailyChallengeCount,
+            campaignUnitCount,
+            poolCount
+        );
+    }
 }

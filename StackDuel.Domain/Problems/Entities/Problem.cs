@@ -33,6 +33,13 @@ public sealed class Problem : AggregateRoot
         Status = ProblemStatus.Archived;
     }
 
+    public void Delete()
+    {
+        DeletedAt ??= DateTime.UtcNow;
+    }
+
+    public bool IsDeleted => DeletedAt.HasValue;
+
     public void Publish()
     {
         Status = ProblemStatus.Published;
@@ -268,6 +275,18 @@ public sealed class Problem : AggregateRoot
     private int NextVersionNumber =>
         _versions.Count == 0 ? ProblemVersion.FirstVersionNumber : _versions.Max(version => version.VersionNumber) + 1;
 
+    public IReadOnlyList<int> SampleTestCaseInputCounts() =>
+        [
+            .. _setups
+                .SelectMany(setup => setup.TestSuites)
+                .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
+                .SelectMany(testSuite => testSuite.TestCases)
+                .Where(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt is null)
+                .Select(testCase => testCase.Inputs.Count)
+                .Distinct()
+                .Order(),
+        ];
+
     public IEnumerable<ProblemSetup> SetupsMissingReferenceSolution() =>
         _setups.Where(setup => string.IsNullOrWhiteSpace(setup.ReferenceSolutionCode));
 
@@ -319,6 +338,8 @@ public sealed class Problem : AggregateRoot
         ProblemStatus.Published,
         ProblemStatus.Archived,
     };
+
+    public DateTime? DeletedAt { get; private set; }
 
     public Guid? PublishedVersionId { get; private set; }
 
