@@ -17,6 +17,13 @@ public interface IProblemReadRepository
 
     Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<Problem?> FindByIdForGameParticipantAsync(
+        Guid problemId,
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<Problem?> FindByIdForAdminAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<AdminProblemListRowDto>> FindByIdsAsync(

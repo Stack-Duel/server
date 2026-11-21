@@ -27,6 +27,8 @@ public sealed record Slug
         Value = value;
     }
 
+    public bool IsDraftSlug => Guid.TryParse(Value, out _);
+
     public static Slug FromTitle(Title title)
     {
         string slug = title.Value.ToLowerInvariant();

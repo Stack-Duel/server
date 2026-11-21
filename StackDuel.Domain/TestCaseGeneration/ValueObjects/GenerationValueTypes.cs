@@ -25,9 +25,9 @@ public static class GenerationValueTypes
         !string.IsNullOrWhiteSpace(valueType) && Supported.Contains(valueType);
 
     public static bool SupportsRange(string valueType) =>
-        valueType is Integer or Double or IntegerArray;
+        valueType == Integer || valueType == Double || valueType == IntegerArray;
 
-    public static bool SupportsLength(string valueType) => valueType is String or IntegerArray;
+    public static bool SupportsLength(string valueType) => valueType == String || valueType == IntegerArray;
 
-    public static bool SupportsCharset(string valueType) => valueType is String;
+    public static bool SupportsCharset(string valueType) => valueType == String;
 }

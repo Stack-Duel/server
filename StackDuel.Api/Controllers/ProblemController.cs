@@ -40,9 +40,15 @@ public sealed class ProblemController(
     [HttpGet("by-id/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ProblemWithSetupsDto>> GetProblemById(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProblemWithSetupsDto>> GetProblemById(
+        Guid id,
+        [FromQuery] Guid? gameId,
+        CancellationToken cancellationToken
+    )
     {
-        return this.ToActionResult(await problemService.GetProblemWithSetupsById(id, cancellationToken));
+        return this.ToActionResult(
+            await problemService.GetProblemWithSetupsById(id, gameId, userContext.User?.Id, cancellationToken)
+        );
     }
 
     [HttpGet]

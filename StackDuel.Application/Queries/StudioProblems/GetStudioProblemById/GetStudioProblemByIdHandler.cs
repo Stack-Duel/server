@@ -7,6 +7,7 @@ using StackDuel.Application.ProblemValidation.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
+using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
 
@@ -20,12 +21,6 @@ internal sealed class GetStudioProblemByIdHandler(
     IProblemValidationJobReadRepository problemValidationJobReadRepository
 ) : IQueryHandler<GetStudioProblemByIdQuery, StudioProblemDetailsDto>
 {
-    private static readonly HashSet<ProblemStatus> SubmittableStatuses = new HashSet<ProblemStatus>
-    {
-        ProblemStatus.Draft,
-        ProblemStatus.Failed,
-    };
-
     public async Task<Result<StudioProblemDetailsDto>> Handle(
         GetStudioProblemByIdQuery request,
         CancellationToken cancellationToken
@@ -55,6 +50,7 @@ internal sealed class GetStudioProblemByIdHandler(
             details.Status,
             details.HasUnpublishedChanges,
             details.IsRevalidating,
+            details.HasPublishedVersion,
             cancellationToken
         );
 
@@ -81,6 +77,7 @@ internal sealed class GetStudioProblemByIdHandler(
         ProblemStatus status,
         bool hasUnpublishedChanges,
         bool isRevalidating,
+        bool hasPublishedVersion,
         CancellationToken cancellationToken
     )
     {
@@ -110,8 +107,7 @@ internal sealed class GetStudioProblemByIdHandler(
         );
 
         return new StudioProblemPublishReadinessDto(
-            SubmittableStatuses.Contains(status)
-                || (status == ProblemStatus.Published && hasUnpublishedChanges && !isRevalidating),
+            Problem.CanSubmit(status, hasPublishedVersion, hasUnpublishedChanges, isRevalidating),
             readiness.IsReady,
             readiness.RequirementsMet,
             ProblemPublishReadiness.RequirementCount,

@@ -6,8 +6,6 @@ namespace StackDuel.Domain.Problems;
 
 public interface IProblemRepository : IRepository<Problem>
 {
-    Task DeleteAsync(Problem problem, CancellationToken cancellationToken = default);
-
     Task<Problem?> FindBySetupIdAsync(Guid setupId, CancellationToken cancellationToken = default);
 
     Task<Problem?> FindBySlugAsync(Slug slug, CancellationToken cancellationToken = default);

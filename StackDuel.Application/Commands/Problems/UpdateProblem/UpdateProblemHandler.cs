@@ -27,6 +27,9 @@ internal sealed class UpdateProblemHandler(
         if (problem is null)
             return Result.NotFound();
 
+        if (problem.IsDeleted)
+            return Result.NotFound();
+
         if (problem.IsEditLocked)
             return Result.Invalid(
                 new ValidationError("Status", "Cannot edit a problem while validation is in progress.")
@@ -150,27 +153,12 @@ internal sealed class UpdateProblemHandler(
 
         if (status == ProblemStatus.Published)
         {
-            Slug slug = await ResolveUniqueSlugAsync(problem.Title, cancellationToken);
+            Slug slug = await slugService.ResolveUniqueSlugFromTitleAsync(problem.Title, cancellationToken);
             problem.UpdateSlug(slug);
             problem.Publish();
         }
         else if (status == ProblemStatus.Archived)
             problem.Archive();
-    }
-
-    private async Task<Slug> ResolveUniqueSlugAsync(Title title, CancellationToken cancellationToken)
-    {
-        Slug baseSlug = slugService.GenerateSlugFromTitle(title);
-        Slug slug = baseSlug;
-        int suffix = 2;
-
-        while (await problemReadRepository.SlugExistsAsync(slug, cancellationToken))
-        {
-            slug = new Slug($"{baseSlug.Value}-{suffix}");
-            suffix++;
-        }
-
-        return slug;
     }
 
     private sealed record ParsedContent(

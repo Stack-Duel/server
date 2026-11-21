@@ -162,10 +162,14 @@ internal sealed class TestCaseGenerationService(
             List<ExecutionEngineResult> results = await runner.SubmitAndPollAsync(submissions, cancellationToken);
 
             int successesBeforeRound = successfulCases.Count;
+            bool engineFailedInRound = false;
 
             for (int i = 0; i < roundCases.Count && successfulCases.Count < request.TargetCaseCount; i++)
             {
                 ExecutionEngineResult? result = results.Count > i ? results[i] : null;
+
+                if (result is null || result.Status == ExecutionEngineResultStatus.InternalError)
+                    engineFailedInRound = true;
 
                 if (result is null || result.Status != ExecutionEngineResultStatus.Accepted)
                 {
@@ -190,10 +194,7 @@ internal sealed class TestCaseGenerationService(
                 successfulCases.Add((roundCases[i].Index, actualOutput));
             }
 
-            // A round where nothing at all worked means the spec or the reference solution is
-            // broken, not that the random inputs were unlucky — every further round would burn
-            // another Judge0 batch to learn the same thing.
-            if (successfulCases.Count == successesBeforeRound)
+            if (successfulCases.Count == successesBeforeRound && !engineFailedInRound)
             {
                 warnings.Add(
                     $"Stopped after {attempted} attempt(s): no case in a full round of {roundSize} succeeded."

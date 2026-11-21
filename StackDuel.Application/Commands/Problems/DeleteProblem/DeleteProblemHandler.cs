@@ -33,9 +33,6 @@ internal sealed class DeleteProblemHandler(
                 new ValidationError("Status", "Wait for validation to finish before deleting this problem.")
             );
 
-        // Everything soft deletes. The problem leaves every listing immediately and frees its
-        // slug, an unfinished game keeps resolving it by id, and the retention sweep decides
-        // weeks later whether it can be erased outright or only stripped back to a tombstone.
         problem.Delete();
         await problemRepository.UpdateAsync(problem, cancellationToken);
 

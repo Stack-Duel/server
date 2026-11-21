@@ -156,4 +156,63 @@ public class SetProblemGenerationParametersValidatorTests
 
         Assert.False(result.IsValid);
     }
+
+    [Fact]
+    public void ARangeOnABooleanParameterIsRejected()
+    {
+        ValidationResult result = Validate(
+            Command(
+                Parameter(
+                    valueType: GenerationValueTypes.Boolean,
+                    min: 0,
+                    max: 1,
+                    lengthMin: null,
+                    lengthMax: null
+                )
+            )
+        );
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage.Contains("no minimum or maximum"));
+    }
+
+    [Fact]
+    public void ALengthOnAnIntegerParameterIsRejected()
+    {
+        ValidationResult result = Validate(
+            Command(
+                Parameter(valueType: GenerationValueTypes.Integer, min: 1, max: 10, lengthMin: 1, lengthMax: 5)
+            )
+        );
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage.Contains("no length"));
+    }
+
+    [Fact]
+    public void ACharsetOnAnIntegerArrayParameterIsRejected()
+    {
+        ValidationResult result = Validate(Command(Parameter(charset: "abc")));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage.Contains("no charset"));
+    }
+
+    [Fact]
+    public void ABooleanParameterWithNoConstraintsIsAccepted()
+    {
+        ValidationResult result = Validate(
+            Command(
+                Parameter(
+                    valueType: GenerationValueTypes.Boolean,
+                    min: null,
+                    max: null,
+                    lengthMin: null,
+                    lengthMax: null
+                )
+            )
+        );
+
+        Assert.True(result.IsValid, string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
+    }
 }

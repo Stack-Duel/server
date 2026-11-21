@@ -40,5 +40,36 @@ internal sealed class GenerationParameterSpecValidator : AbstractValidator<Gener
             .Must(charset => !string.IsNullOrEmpty(charset))
             .When(x => x.Charset is not null && GenerationValueTypes.SupportsCharset(x.ValueType))
             .WithMessage("Charset must not be blank when provided.");
+
+        RuleFor(x => x.Min)
+            .Must(min => min is null)
+            .When(x => GenerationValueTypes.IsSupported(x.ValueType) && !GenerationValueTypes.SupportsRange(x.ValueType))
+            .WithMessage(parameter => $"A {parameter.ValueType} parameter has no minimum or maximum.");
+
+        RuleFor(x => x.Max)
+            .Must(max => max is null)
+            .When(x => GenerationValueTypes.IsSupported(x.ValueType) && !GenerationValueTypes.SupportsRange(x.ValueType))
+            .WithMessage(parameter => $"A {parameter.ValueType} parameter has no minimum or maximum.");
+
+        RuleFor(x => x.LengthMin)
+            .Must(lengthMin => lengthMin is null)
+            .When(x =>
+                GenerationValueTypes.IsSupported(x.ValueType) && !GenerationValueTypes.SupportsLength(x.ValueType)
+            )
+            .WithMessage(parameter => $"A {parameter.ValueType} parameter has no length.");
+
+        RuleFor(x => x.LengthMax)
+            .Must(lengthMax => lengthMax is null)
+            .When(x =>
+                GenerationValueTypes.IsSupported(x.ValueType) && !GenerationValueTypes.SupportsLength(x.ValueType)
+            )
+            .WithMessage(parameter => $"A {parameter.ValueType} parameter has no length.");
+
+        RuleFor(x => x.Charset)
+            .Must(charset => charset is null)
+            .When(x =>
+                GenerationValueTypes.IsSupported(x.ValueType) && !GenerationValueTypes.SupportsCharset(x.ValueType)
+            )
+            .WithMessage(parameter => $"A {parameter.ValueType} parameter has no charset.");
     }
 }

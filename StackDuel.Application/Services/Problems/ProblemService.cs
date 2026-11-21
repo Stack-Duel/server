@@ -55,7 +55,12 @@ public interface IProblemService
 
     Task<Result<ProblemWithSetupsDto>> GetProblemWithSetupsBySlug(string slug, CancellationToken cancellationToken);
 
-    Task<Result<ProblemWithSetupsDto>> GetProblemWithSetupsById(Guid id, CancellationToken cancellationToken);
+    Task<Result<ProblemWithSetupsDto>> GetProblemWithSetupsById(
+        Guid id,
+        Guid? gameId,
+        Guid? requestedByUserId,
+        CancellationToken cancellationToken
+    );
 
     Task<Result<PageResult<AdminProblemListItemDto>>> GetAdminProblemsPageableAsync(
         PaginationRequest paginationRequest,
@@ -163,13 +168,10 @@ internal sealed class ProblemService(IMediator mediator) : IProblemService
 
     public async Task<Result<ProblemWithSetupsDto>> GetProblemWithSetupsById(
         Guid id,
+        Guid? gameId,
+        Guid? requestedByUserId,
         CancellationToken cancellationToken
-    )
-    {
-        var result = await mediator.Send(new GetProblemByIdQuery(id), cancellationToken);
-
-        return result;
-    }
+    ) => await mediator.Send(new GetProblemByIdQuery(id, gameId, requestedByUserId), cancellationToken);
 
     public async Task<Result<ProblemReactionSummaryDto>> GetProblemReactionSummaryAsync(
         Guid problemId,

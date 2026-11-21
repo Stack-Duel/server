@@ -28,6 +28,9 @@ internal sealed class SubmitProblemForValidationHandler(
         if (problem is null)
             return Result.NotFound();
 
+        if (problem.IsDeleted)
+            return Result.NotFound();
+
         if (!problem.CanSubmitForValidation)
             return Result.Invalid(
                 new ValidationError("Status", $"Cannot submit a problem for validation from status {problem.Status}.")
@@ -79,7 +82,9 @@ internal sealed class SubmitProblemForValidationHandler(
             yield break;
         }
 
-        if (inputCounts.Count == 0 || problem.GenerationSpec is not { } generationSpec)
+        ProblemGenerationSpec? generationSpec = problem.GenerationSpec;
+
+        if (inputCounts.Count == 0 || generationSpec is null)
             yield break;
 
         int parameterCount = generationSpec.Parameters.Count;

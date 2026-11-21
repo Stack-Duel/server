@@ -12,6 +12,7 @@ using StackDuel.Application.Commands.Problems.UpsertProblemSetupReferenceSolutio
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.Queries.StudioProblems.GetInitialStudioProblemSetups;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemById;
+using StackDuel.Application.Queries.StudioProblems.GetStudioProblemDeletionImpact;
 using StackDuel.Application.Queries.StudioProblems.GetStudioProblemSetups;
 using StackDuel.Application.StudioProblems.Dtos;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
@@ -105,6 +106,12 @@ public interface IStudioProblemService
     );
 
     Task<Result> CancelStudioProblemValidationAsync(
+        Guid problemId,
+        Guid userId,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result<ProblemDeletionImpactDto>> GetStudioProblemDeletionImpactAsync(
         Guid problemId,
         Guid userId,
         CancellationToken cancellationToken
@@ -237,6 +244,16 @@ internal sealed class StudioProblemService(IMediator mediator) : IStudioProblemS
     ) =>
         await mediator.Send(
             new CancelProblemValidationCommand(problemId, RequestedByUserId: userId),
+            cancellationToken
+        );
+
+    public async Task<Result<ProblemDeletionImpactDto>> GetStudioProblemDeletionImpactAsync(
+        Guid problemId,
+        Guid userId,
+        CancellationToken cancellationToken
+    ) =>
+        await mediator.Send(
+            new GetStudioProblemDeletionImpactQuery(problemId, userId),
             cancellationToken
         );
 

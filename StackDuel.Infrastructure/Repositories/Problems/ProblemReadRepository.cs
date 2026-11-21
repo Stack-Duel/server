@@ -56,8 +56,6 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     public async Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(problem => problem.Status == ProblemStatus.Published)
             .AsSplitQuery()
             .Include(problem => problem.CreatedBy)
             .Include(problem => problem.Tags)
@@ -221,7 +219,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.GenerationSpec == null ? null : p.GenerationSpec.TargetCaseCount,
                 p.GenerationSpec == null ? null : p.GenerationSpec.Seed,
                 p.HasUnpublishedChanges,
-                p.IsRevalidating
+                p.IsRevalidating,
+                p.PublishedVersionId != null
             ))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -589,6 +588,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             ? 0
             : await context
                 .Submissions.AsNoTracking()
+                .IgnoreQueryFilters()
                 .CountAsync(submission => setupIds.Contains(submission.ProblemSetupId), cancellationToken);
 
         int gameRoundCount = await context
@@ -620,6 +620,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         int poolCount = await context
             .Set<ProblemPoolItem>()
             .AsNoTracking()
+            .IgnoreQueryFilters()
             .CountAsync(item => item.ProblemId == problemId, cancellationToken);
 
         return new ProblemDeletionImpactDto(
@@ -630,5 +631,46 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             campaignUnitCount,
             poolCount
         );
+    }
+
+    public async Task<Problem?> FindByIdForGameParticipantAsync(
+        Guid problemId,
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        bool isTheirRound = await context
+            .Games.AsNoTracking()
+            .IgnoreQueryFilters()
+            .AnyAsync(
+                game =>
+                    game.Id == gameId
+                    && game.Participants.Any(participant => participant.UserId == userId)
+                    && game.Rounds.Any(round => round.ProblemId == problemId),
+                cancellationToken
+            );
+
+        if (!isTheirRound)
+            return null;
+
+        return await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(problem => problem.Id == problemId && problem.Status == ProblemStatus.Published)
+            .AsSplitQuery()
+            .Include(problem => problem.CreatedBy)
+            .Include(problem => problem.Tags)
+            .Include(problem => problem.Setups)
+                .ThenInclude(setup => setup.TestSuites)
+                    .ThenInclude(testSuite => testSuite.TestCases)
+                        .ThenInclude(testCase => testCase.Inputs.OrderBy(input => input.Position))
+            .Include(problem => problem.Setups)
+                .ThenInclude(setup => setup.TestSuites)
+                    .ThenInclude(testSuite => testSuite.TestCases)
+                        .ThenInclude(testCase => testCase.ExpectedOutputs)
+            .Include(problem => problem.Versions)
+                .ThenInclude(version => version.Setups)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

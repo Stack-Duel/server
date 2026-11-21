@@ -96,9 +96,4 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
         return await context.Tags.Where(t => tagList.Contains(t.Name)).ToListAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(Problem problem, CancellationToken cancellationToken = default)
-    {
-        context.Problems.Remove(problem);
-        await context.SaveChangesAsync(cancellationToken);
-    }
 }

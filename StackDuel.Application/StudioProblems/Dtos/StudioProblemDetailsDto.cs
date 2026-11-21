@@ -26,5 +26,6 @@ public sealed record StudioProblemDetailsDto(
     int? GenerationTargetCaseCount = null,
     int? GenerationSeed = null,
     bool HasUnpublishedChanges = false,
-    bool IsRevalidating = false
+    bool IsRevalidating = false,
+    bool HasPublishedVersion = false
 );

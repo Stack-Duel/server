@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Messaging;
 using StackDuel.Application.Messaging.Messages;
+using StackDuel.Application.Services.Problems;
 using StackDuel.Domain.Problems;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -193,6 +194,16 @@ internal sealed partial class ProblemValidationJobProcessorService(
         return isCancelled ?? true;
     }
 
+    private static async Task AssignPublishedSlugAsync(IServiceProvider sp, Problem problem, CancellationToken ct)
+    {
+        if (!problem.Slug.IsDraftSlug)
+            return;
+
+        var slugService = sp.GetRequiredService<ISlugService>();
+
+        problem.UpdateSlug(await slugService.ResolveUniqueSlugFromTitleAsync(problem.Title, ct));
+    }
+
     private static TimeSpan BackoffFor(int attempts) =>
         TimeSpan.FromSeconds(Math.Min(InitialBackoffSeconds * Math.Pow(2, attempts - 1), MaxBackoffSeconds));
 
@@ -369,6 +380,8 @@ internal sealed partial class ProblemValidationJobProcessorService(
         }
 
         string summary = $"Generated verified test cases for {generationJobs.Count} setup(s).";
+
+        await AssignPublishedSlugAsync(sp, problem, ct);
 
         problem.CompleteValidation();
         await problemRepository.UpdateAsync(problem, ct);

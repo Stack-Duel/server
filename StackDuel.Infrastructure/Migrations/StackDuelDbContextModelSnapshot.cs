@@ -3345,7 +3345,8 @@ namespace StackDuel.Infrastructure.Migrations
                             b1.HasKey("ProblemId");
 
                             b1.HasIndex("Value")
-                                .IsUnique();
+                                .IsUnique()
+                                .HasFilter("deleted_at IS NULL");
 
                             b1.ToTable("problems");
 

@@ -64,8 +64,20 @@ public sealed class Problem : AggregateRoot
     public bool IsEditLocked => Status == ProblemStatus.Pending || IsRevalidating;
 
     public bool CanSubmitForValidation =>
-        !IsEditLocked
-        && (Status is ProblemStatus.Draft or ProblemStatus.Failed || (IsPublished && HasUnpublishedChanges));
+        CanSubmit(Status, PublishedVersionId.HasValue, HasUnpublishedChanges, IsRevalidating);
+
+    public static bool CanSubmit(
+        ProblemStatus status,
+        bool hasPublishedVersion,
+        bool hasUnpublishedChanges,
+        bool isRevalidating
+    ) =>
+        status != ProblemStatus.Pending
+        && !isRevalidating
+        && (
+            status is ProblemStatus.Draft or ProblemStatus.Failed
+            || (status == ProblemStatus.Published && hasPublishedVersion && hasUnpublishedChanges)
+        );
 
     public void FailValidation(string reason)
     {
@@ -104,8 +116,6 @@ public sealed class Problem : AggregateRoot
 
     public void CompleteValidation()
     {
-        // A validation that is no longer in flight has been cancelled or already resolved;
-        // completing it anyway would publish a problem the author pulled back.
         if (Status != ProblemStatus.Pending && !IsRevalidating)
             return;
 

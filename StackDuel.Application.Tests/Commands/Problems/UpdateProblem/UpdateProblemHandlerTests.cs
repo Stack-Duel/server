@@ -34,6 +34,9 @@ public class UpdateProblemHandlerTests
         _slugService
             .Setup(x => x.GenerateSlugFromTitle(It.IsAny<Title>()))
             .Returns((Title title) => Slug.FromTitle(title));
+        _slugService
+            .Setup(x => x.ResolveUniqueSlugFromTitleAsync(It.IsAny<Title>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Title title, CancellationToken _) => Slug.FromTitle(title));
         _problemReadRepository
             .Setup(x => x.SlugExistsAsync(It.IsAny<Slug>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -114,21 +117,6 @@ public class UpdateProblemHandlerTests
         await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
 
         Assert.Equal("updated-title", problem.Slug.Value);
-    }
-
-    [Fact]
-    public async Task Handle_PublishingADraft_AppendsSuffixOnSlugCollision()
-    {
-        var problem = CreateProblem();
-        _problemRepository.Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>())).ReturnsAsync(problem);
-        _problemReadRepository
-            .SetupSequence(x => x.SlugExistsAsync(It.IsAny<Slug>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true)
-            .ReturnsAsync(false);
-
-        await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
-
-        Assert.Equal("updated-title-2", problem.Slug.Value);
     }
 
     [Fact]

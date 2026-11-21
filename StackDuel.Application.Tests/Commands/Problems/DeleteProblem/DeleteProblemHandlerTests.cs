@@ -135,10 +135,6 @@ public class DeleteProblemHandlerTests
         Assert.True(result.IsSuccess);
         Assert.True(problem.IsDeleted);
         Assert.Equal(ProblemStatus.Published, problem.Status);
-        _problemRepository.Verify(
-            repository => repository.DeleteAsync(It.IsAny<Problem>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
     }
 
     [Fact]

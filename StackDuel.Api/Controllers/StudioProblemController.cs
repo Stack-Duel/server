@@ -82,7 +82,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
                     request.Difficulty,
                     request.TimeLimitMs,
                     request.MemoryLimitMb,
-                    request.Tags ?? []
+                    request.Tags
                 ),
                 userContext.User!.Id,
                 cancellationToken
@@ -278,13 +278,25 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
         );
     }
 
-    [HttpPatch("{id:guid}/cancel-publishing")]
+    [HttpGet("{id:guid}/deletion-impact")]
     [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task CancelPublishingAsync(Guid problemId, CancellationToken cancellationToken) { }
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProblemDeletionImpactDto>> GetStudioProblemDeletionImpactAsync(
+        Guid id,
+        CancellationToken cancellationToken
+    )
+    {
+        return this.ToActionResult(
+            await studioProblemService.GetStudioProblemDeletionImpactAsync(
+                id,
+                userContext.User!.Id,
+                cancellationToken
+            )
+        );
+    }
 
     [HttpDelete("{id:guid}")]
     [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
