@@ -8,10 +8,10 @@ Backend for StackDuel, a competitive programming platform. Built with .NET.
 
 - .NET 10 SDK
 - docker
-- dotnet-ef CLI
+- [dbup-cli-2](https://github.com/drewburlingame/dbup-cli#installation)
 
 ```
-dotnet tool install --global dotnet-ef
+dotnet tool install --global dbup-cli-2
 ```
 
 ### Getting started
