@@ -37,6 +37,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     ) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .Where(problem => problem.CreatedById == creatorId)
             .Where(problem => !ResolvedStatuses.Contains(problem.Status))
@@ -48,6 +49,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     public async Task<bool> ExistsForAdminAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .AnyAsync(problem => problem.Id == id, cancellationToken);
 
@@ -73,6 +75,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     public async Task<Problem?> FindByIdForAdminAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .AsSplitQuery()
             .Include(problem => problem.CreatedBy)
@@ -98,6 +101,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
 
         return await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .Where(p => ids.Contains(p.Id))
             .OrderBy(p => p.Title.Value)
@@ -192,6 +196,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         await context
             .Problems.AsNoTracking()
             .IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .Where(p => p.Id == id)
             .Select(p => new StudioProblemDetailsDto(
                 p.Id,
@@ -227,6 +232,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         await context
             .Problems.AsNoTracking()
             .IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .Where(p => p.Id == id)
             .Select(p => new ProblemPublishReadinessProjection(
                 p.Setups.Count,
@@ -246,7 +252,10 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         CancellationToken cancellationToken = default
     )
     {
-        var query = ApplyAdminSearchFilter(context.Problems.IgnoreQueryFilters().AsNoTracking().AsQueryable(), search);
+        var query = ApplyAdminSearchFilter(
+            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.DeletedAt == null).AsQueryable(),
+            search
+        );
 
         return await query.Select(p => p.Id).ToListAsync(cancellationToken);
     }
@@ -259,7 +268,10 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     {
         int offset = (pagination.Page - 1) * pagination.Size;
 
-        var query = ApplyAdminSearchFilter(context.Problems.IgnoreQueryFilters().AsNoTracking().AsQueryable(), search);
+        var query = ApplyAdminSearchFilter(
+            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.DeletedAt == null).AsQueryable(),
+            search
+        );
 
         int total = await query.CountAsync(cancellationToken);
 
@@ -321,7 +333,10 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         List<ProblemStatus> statusList = [.. statuses];
 
         var query = ApplyAdminSearchFilter(
-            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.CreatedById == creatorId),
+            context
+                .Problems.IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(p => p.CreatedById == creatorId && p.DeletedAt == null),
             search
         );
 
@@ -445,7 +460,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
 
         var items = await poolItems
             .Join(
-                context.Problems.IgnoreQueryFilters().AsNoTracking(),
+                context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.DeletedAt == null),
                 item => item.ProblemId,
                 p => p.Id,
                 (item, p) => new { item.AddedAt, Problem = p }
@@ -545,6 +560,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     ) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .Where(p => p.CreatedById == creatorId)
             .GroupBy(p => p.Status)
