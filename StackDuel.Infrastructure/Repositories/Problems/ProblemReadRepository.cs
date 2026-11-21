@@ -384,30 +384,40 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     {
         int offset = (pagination.Page - 1) * pagination.Size;
 
-        var query = context.Problems.AsNoTracking().Where(p => p.Status == ProblemStatus.Published);
+        var query =
+            from problem in context.Problems.AsNoTracking()
+            join version in context.Set<ProblemVersion>().AsNoTracking()
+                on problem.PublishedVersionId equals (Guid?)version.Id
+                into publishedVersions
+            from publishedVersion in publishedVersions.DefaultIfEmpty()
+            where problem.Status == ProblemStatus.Published
+            select new { Problem = problem, PublishedVersion = publishedVersion };
 
         string? term = search?.Trim();
         if (!string.IsNullOrEmpty(term))
         {
             string pattern = $"%{term}%";
-            query = query.Where(p =>
-                EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
+            query = query.Where(row =>
+                EF.Functions.ILike(
+                    row.PublishedVersion != null ? row.PublishedVersion.Title.Value : row.Problem.Title.Value,
+                    pattern
+                ) || EF.Functions.ILike(row.Problem.Slug.Value, pattern)
             );
         }
 
         int total = await query.CountAsync(cancellationToken);
 
         var items = await query
-            .OrderBy(p => p.Id)
+            .OrderBy(row => row.Problem.Id)
             .Skip(offset)
             .Take(pagination.Size)
-            .Select(p => new ProblemListRowDto(
-                p.Id,
-                p.Slug.Value,
-                p.Title.Value,
-                p.Difficulty.Value,
-                p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
+            .Select(row => new ProblemListRowDto(
+                row.Problem.Id,
+                row.Problem.Slug.Value,
+                row.PublishedVersion != null ? row.PublishedVersion.Title.Value : row.Problem.Title.Value,
+                row.PublishedVersion != null ? row.PublishedVersion.Difficulty.Value : row.Problem.Difficulty.Value,
+                row.Problem.Tags.Select(t => t.Name.Value).ToList(),
+                row.Problem.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
             ))
             .ToListAsync(cancellationToken);
 

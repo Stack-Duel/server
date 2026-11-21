@@ -144,7 +144,9 @@ internal sealed partial class ProblemValidationJobProcessorService(
         if (job is null)
             return;
 
-        job.RecordAttemptFailure(exception.Message, MaxProcessingAttempts);
+        string reason = DescribeException(exception);
+
+        job.RecordAttemptFailure(reason, MaxProcessingAttempts);
 
         if (job.Status == ProblemValidationJobStatus.Failed)
         {
@@ -153,19 +155,31 @@ internal sealed partial class ProblemValidationJobProcessorService(
 
             if (problem is not null)
             {
-                problem.FailValidation(job.FailureReason ?? exception.Message);
+                problem.FailValidation(job.FailureReason ?? reason);
                 await problemRepository.UpdateAsync(problem, ct);
             }
 
             await jobRepository.UpdateAsync(job, ct);
             await jobRepository.ReleaseLockAsync(jobId, ct);
-            LogGaveUp(jobId, job.ProcessingAttempts, exception.Message);
+            LogGaveUp(jobId, job.ProcessingAttempts, reason);
             return;
         }
 
         await jobRepository.UpdateAsync(job, ct);
         await jobRepository.SetRetryAfterAsync(jobId, BackoffFor(job.ProcessingAttempts), ct);
-        LogAttemptFailed(jobId, job.ProcessingAttempts, exception.Message);
+        LogAttemptFailed(jobId, job.ProcessingAttempts, reason);
+    }
+
+    private static string DescribeException(Exception exception)
+    {
+        Exception innermost = exception;
+
+        while (innermost.InnerException is not null)
+            innermost = innermost.InnerException;
+
+        return ReferenceEquals(innermost, exception)
+            ? exception.Message
+            : $"{exception.Message} -> {innermost.Message}";
     }
 
     private static async Task<bool> WasCancelledAsync(

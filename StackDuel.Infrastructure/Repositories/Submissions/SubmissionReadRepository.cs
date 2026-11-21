@@ -195,7 +195,12 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
                     new ProfileSubmissionDto(
                         x.submission.Id,
                         x.submission.Status,
-                        x.problem.Title.Value,
+                        context
+                            .Set<ProblemVersion>()
+                            .Where(version => version.Id == x.submission.ProblemVersionId)
+                            .Select(version => version.Title.Value)
+                            .FirstOrDefault()
+                            ?? x.problem.Title.Value,
                         x.problem.Slug.Value,
                         new SubmissionLanguageDto(lv.language.Id, lv.language.Name.Value, lv.version.Version.Value),
                         x.submission.CreatedAt

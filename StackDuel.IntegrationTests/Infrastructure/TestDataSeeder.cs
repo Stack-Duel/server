@@ -386,4 +386,11 @@ public sealed class TestDataSeeder(string connectionString)
 
         return result is Guid id ? id : throw new InvalidOperationException("Problem has no setups.");
     }
+
+    public async Task MarkProblemPublishedAsync(Guid problemId, CancellationToken cancellationToken = default) =>
+        await ExecuteAsync(
+            "UPDATE problems SET status = 2 WHERE id = @problemId",
+            cancellationToken,
+            ("problemId", problemId)
+        );
 }

@@ -1,6 +1,6 @@
-using System.Text.Json;
 using StackDuel.Application.ExecutionEngine;
 using StackDuel.Domain.TestSuites.Entities;
+using System.Text.Json;
 
 namespace StackDuel.Infrastructure.ExecutionEngine;
 

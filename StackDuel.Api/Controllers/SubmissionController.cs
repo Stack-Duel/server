@@ -1,4 +1,3 @@
-using System.Linq;
 using Ardalis.Result;
 using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +10,7 @@ using StackDuel.Application;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Submissions.Dtos;
+using System.Linq;
 
 namespace StackDuel.Api.Controllers;
 
