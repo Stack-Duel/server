@@ -14,14 +14,18 @@ public interface IProblemValidationJobRepository : IRepository<ProblemValidation
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>
-    /// Atomically claims the job for exclusive processing by extending its lock lease, but
-    /// only if it isn't already locked by another worker. Works against a job in either
-    /// <see cref="StackDuel.Domain.ProblemValidation.Enums.ProblemValidationJobStatus.Pending"/> or
-    /// <see cref="StackDuel.Domain.ProblemValidation.Enums.ProblemValidationJobStatus.AwaitingGeneration"/>.
-    /// </summary>
     Task<bool> TryClaimAsync(Guid jobId, TimeSpan leaseDuration, CancellationToken cancellationToken = default);
 
-    /// <summary>Releases the processing lock so the job can be picked up again if still unfinished.</summary>
+    /// Reads the job's cancellation state straight from the database, bypassing anything the
+    /// caller's DbContext is already tracking.
+    Task<bool?> IsCancelledAsync(Guid jobId, CancellationToken cancellationToken = default);
+
     Task ReleaseLockAsync(Guid jobId, CancellationToken cancellationToken = default);
+
+    Task SetRetryAfterAsync(Guid jobId, TimeSpan delay, CancellationToken cancellationToken = default);
+
+    Task<ProblemValidationJob?> FindActiveForProblemAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    );
 }

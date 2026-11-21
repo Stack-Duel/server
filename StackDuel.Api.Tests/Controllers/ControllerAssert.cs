@@ -18,6 +18,14 @@ internal static class ControllerAssert
             _ => -1,
         };
 
+    internal static int StatusCodeOf(ActionResult result) =>
+        result switch
+        {
+            ObjectResult objectResult => objectResult.StatusCode ?? StatusCodes.Status200OK,
+            StatusCodeResult statusCodeResult => statusCodeResult.StatusCode,
+            _ => -1,
+        };
+
     internal static TValue ValueOf<TValue>(ActionResult<TValue> result) =>
         result.Result is ObjectResult objectResult ? (TValue)objectResult.Value! : result.Value!;
 

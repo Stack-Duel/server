@@ -1,4 +1,5 @@
 using StackDuel.Application.Audit;
+using StackDuel.Application.Authorization;
 using StackDuel.Application.Commands;
 
 namespace StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
@@ -12,12 +13,17 @@ public sealed record SampleTestCaseDto(
     string ExpectedOutputValueType
 );
 
-internal sealed record SetProblemSampleTestCasesCommand(Guid ProblemId, IReadOnlyList<SampleTestCaseDto> TestCases)
-    : ICommand,
-        IAuditableCommand
+internal sealed record SetProblemSampleTestCasesCommand(
+    Guid ProblemId,
+    IReadOnlyList<SampleTestCaseDto> TestCases,
+    Guid? RequestedByUserId = null
+) : ICommand, IAuditableCommand, INotFoundWhenUnauthorizedCommand
 {
     public string AuditAction => "problem.sample-test-cases-set";
     public string? AuditTargetType => "problem";
     public string? AuditTargetId => ProblemId.ToString();
     public object? AuditDetails => new { TestCaseCount = TestCases.Count };
+
+    public IReadOnlyList<IAuthorizationRequirement> Requirements =>
+        ProblemCommandAuthorization.OwnershipRequirements(ProblemId, RequestedByUserId);
 }

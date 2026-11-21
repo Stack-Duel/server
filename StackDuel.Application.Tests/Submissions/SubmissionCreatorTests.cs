@@ -1,6 +1,7 @@
 using Ardalis.Result;
 using Moq;
 using StackDuel.Application.Events;
+using StackDuel.Application.Problems;
 using StackDuel.Application.Submissions;
 using StackDuel.Application.Submissions.Dtos;
 using StackDuel.Domain.ExecutionPipelines;
@@ -19,6 +20,7 @@ public class SubmissionCreatorTests
 {
     private const int OfficialGradingCaseCount = 20;
 
+    private Mock<IProblemReadRepository> _problemReadRepository = null!;
     private Mock<ISubmissionWriteRepository> _submissionRepository = null!;
     private Mock<ISubmissionJobRepository> _submissionJobRepository = null!;
     private Mock<IExecutionPipelineRepository> _pipelineRepository = null!;
@@ -28,6 +30,7 @@ public class SubmissionCreatorTests
 
     public SubmissionCreatorTests()
     {
+        _problemReadRepository = new Mock<IProblemReadRepository>();
         _submissionRepository = new Mock<ISubmissionWriteRepository>();
         _submissionJobRepository = new Mock<ISubmissionJobRepository>();
         _pipelineRepository = new Mock<IExecutionPipelineRepository>();
@@ -36,6 +39,7 @@ public class SubmissionCreatorTests
 
         _creator = new SubmissionCreator(
             new SubmissionFactory(),
+            _problemReadRepository.Object,
             _submissionRepository.Object,
             _submissionJobRepository.Object,
             _pipelineRepository.Object,
@@ -251,6 +255,45 @@ public class SubmissionCreatorTests
         _submissionRepository.Verify(
             x => x.AddAsync(It.IsAny<Submission>(), It.IsAny<CancellationToken>()),
             Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_PinsThePublishedProblemVersion()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        SetUpPipeline(Guid.NewGuid(), CreatePipelineWithStep());
+        var problemVersionId = Guid.NewGuid();
+        _problemReadRepository
+            .Setup(x => x.FindPublishedVersionIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problemVersionId);
+
+        await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        _submissionRepository.Verify(
+            x =>
+                x.AddAsync(
+                    It.Is<Submission>(s => s.ProblemVersionId == problemVersionId),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task CreateAsync_UnpublishedProblem_LeavesTheVersionUnpinned()
+    {
+        SetUpRunTypeTestCases(Guid.NewGuid());
+        SetUpPipeline(Guid.NewGuid(), CreatePipelineWithStep());
+        _problemReadRepository
+            .Setup(x => x.FindPublishedVersionIdByProblemSetupIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid?)null);
+
+        await _creator.CreateAsync(ValidRequest(), CancellationToken.None);
+
+        _submissionRepository.Verify(
+            x => x.AddAsync(It.Is<Submission>(s => s.ProblemVersionId == null), It.IsAny<CancellationToken>()),
+            Times.Once
         );
     }
 }

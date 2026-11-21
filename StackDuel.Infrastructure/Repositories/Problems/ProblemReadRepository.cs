@@ -3,6 +3,7 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
+using StackDuel.Domain.Games.Enums;
 using StackDuel.Domain.Problems.Entities;
 using StackDuel.Domain.Problems.Enums;
 using StackDuel.Domain.Problems.ValueObjects;
@@ -36,6 +37,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     ) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .Where(problem => problem.CreatedById == creatorId)
             .Where(problem => !ResolvedStatuses.Contains(problem.Status))
@@ -47,12 +49,15 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     public async Task<bool> ExistsForAdminAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .AnyAsync(problem => problem.Id == id, cancellationToken);
 
     public async Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(problem => problem.Status == ProblemStatus.Published)
             .AsSplitQuery()
             .Include(problem => problem.CreatedBy)
             .Include(problem => problem.Tags)
@@ -70,6 +75,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     public async Task<Problem?> FindByIdForAdminAsync(Guid id, CancellationToken cancellationToken = default) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .AsSplitQuery()
             .Include(problem => problem.CreatedBy)
@@ -95,6 +101,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
 
         return await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .Where(p => ids.Contains(p.Id))
             .OrderBy(p => p.Title.Value)
@@ -129,6 +136,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 .ThenInclude(setup => setup.TestSuites)
                     .ThenInclude(testSuite => testSuite.TestCases)
                         .ThenInclude(testCase => testCase.ExpectedOutputs)
+            .Include(problem => problem.Versions)
+                .ThenInclude(version => version.Setups)
             .Where(problem => problem.Slug.Value == slug)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -151,6 +160,35 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<Guid?> FindPublishedVersionIdAsync(Guid problemId, CancellationToken cancellationToken = default)
+    {
+        return await context
+            .Problems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(problem => problem.Id == problemId)
+            .Select(problem => problem.PublishedVersionId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<Guid?> FindPublishedVersionIdByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => setup.Id == problemSetupId)
+            .Join(
+                context.Problems.AsNoTracking().IgnoreQueryFilters(),
+                setup => EF.Property<Guid>(setup, "problem_id"),
+                problem => problem.Id,
+                (setup, problem) => problem.PublishedVersionId
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(
         Guid id,
         CancellationToken cancellationToken = default
@@ -158,6 +196,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         await context
             .Problems.AsNoTracking()
             .IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .Where(p => p.Id == id)
             .Select(p => new StudioProblemDetailsDto(
                 p.Id,
@@ -169,7 +208,20 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.MemoryLimit.Megabytes,
                 p.Setups.Count,
                 p.CreatedAt,
-                p.Question
+                p.Question,
+                0,
+                0,
+                0,
+                DifficultyTier.Beginner,
+                null,
+                p.TrackId,
+                p.Tags.Select(tag => tag.Name.Value).ToList(),
+                p.GenerationSpec == null ? null : p.GenerationSpec.Parameters,
+                p.GenerationSpec == null ? null : p.GenerationSpec.OutputValueType,
+                p.GenerationSpec == null ? null : p.GenerationSpec.TargetCaseCount,
+                p.GenerationSpec == null ? null : p.GenerationSpec.Seed,
+                p.HasUnpublishedChanges,
+                p.IsRevalidating
             ))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -180,6 +232,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         await context
             .Problems.AsNoTracking()
             .IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .Where(p => p.Id == id)
             .Select(p => new ProblemPublishReadinessProjection(
                 p.Setups.Count,
@@ -199,7 +252,10 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         CancellationToken cancellationToken = default
     )
     {
-        var query = ApplyAdminSearchFilter(context.Problems.IgnoreQueryFilters().AsNoTracking().AsQueryable(), search);
+        var query = ApplyAdminSearchFilter(
+            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.DeletedAt == null).AsQueryable(),
+            search
+        );
 
         return await query.Select(p => p.Id).ToListAsync(cancellationToken);
     }
@@ -212,7 +268,10 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     {
         int offset = (pagination.Page - 1) * pagination.Size;
 
-        var query = ApplyAdminSearchFilter(context.Problems.IgnoreQueryFilters().AsNoTracking().AsQueryable(), search);
+        var query = ApplyAdminSearchFilter(
+            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.DeletedAt == null).AsQueryable(),
+            search
+        );
 
         int total = await query.CountAsync(cancellationToken);
 
@@ -274,7 +333,10 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
         List<ProblemStatus> statusList = [.. statuses];
 
         var query = ApplyAdminSearchFilter(
-            context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.CreatedById == creatorId),
+            context
+                .Problems.IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(p => p.CreatedById == creatorId && p.DeletedAt == null),
             search
         );
 
@@ -340,30 +402,40 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     {
         int offset = (pagination.Page - 1) * pagination.Size;
 
-        var query = context.Problems.AsNoTracking().Where(p => p.Status == ProblemStatus.Published);
+        var query =
+            from problem in context.Problems.AsNoTracking()
+            join version in context.Set<ProblemVersion>().AsNoTracking()
+                on problem.PublishedVersionId equals (Guid?)version.Id
+                into publishedVersions
+            from publishedVersion in publishedVersions.DefaultIfEmpty()
+            where problem.Status == ProblemStatus.Published
+            select new { Problem = problem, PublishedVersion = publishedVersion };
 
         string? term = search?.Trim();
         if (!string.IsNullOrEmpty(term))
         {
             string pattern = $"%{term}%";
-            query = query.Where(p =>
-                EF.Functions.ILike(p.Title.Value, pattern) || EF.Functions.ILike(p.Slug.Value, pattern)
+            query = query.Where(row =>
+                EF.Functions.ILike(
+                    row.PublishedVersion != null ? row.PublishedVersion.Title.Value : row.Problem.Title.Value,
+                    pattern
+                ) || EF.Functions.ILike(row.Problem.Slug.Value, pattern)
             );
         }
 
         int total = await query.CountAsync(cancellationToken);
 
         var items = await query
-            .OrderBy(p => p.Id)
+            .OrderBy(row => row.Problem.Id)
             .Skip(offset)
             .Take(pagination.Size)
-            .Select(p => new ProblemListRowDto(
-                p.Id,
-                p.Slug.Value,
-                p.Title.Value,
-                p.Difficulty.Value,
-                p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
+            .Select(row => new ProblemListRowDto(
+                row.Problem.Id,
+                row.Problem.Slug.Value,
+                row.PublishedVersion != null ? row.PublishedVersion.Title.Value : row.Problem.Title.Value,
+                row.PublishedVersion != null ? row.PublishedVersion.Difficulty.Value : row.Problem.Difficulty.Value,
+                row.Problem.Tags.Select(t => t.Name.Value).ToList(),
+                row.Problem.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
             ))
             .ToListAsync(cancellationToken);
 
@@ -388,7 +460,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
 
         var items = await poolItems
             .Join(
-                context.Problems.IgnoreQueryFilters().AsNoTracking(),
+                context.Problems.IgnoreQueryFilters().AsNoTracking().Where(p => p.DeletedAt == null),
                 item => item.ProblemId,
                 p => p.Id,
                 (item, p) => new { item.AddedAt, Problem = p }
@@ -488,6 +560,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
     ) =>
         await context
             .Problems.IgnoreQueryFilters()
+            .Where(problem => problem.DeletedAt == null)
             .AsNoTracking()
             .Where(p => p.CreatedById == creatorId)
             .GroupBy(p => p.Status)
@@ -495,5 +568,67 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .ToListAsync(cancellationToken);
 
     public async Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default) =>
-        await context.Problems.IgnoreQueryFilters().AnyAsync(problem => problem.Slug == slug, cancellationToken);
+        await context
+            .Problems.IgnoreQueryFilters()
+            .AnyAsync(problem => problem.Slug == slug && problem.DeletedAt == null, cancellationToken);
+
+    public async Task<ProblemDeletionImpactDto> FindDeletionImpactAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        List<Guid> setupIds = await context
+            .Set<ProblemSetup>()
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(setup => EF.Property<Guid>(setup, "problem_id") == problemId)
+            .Select(setup => setup.Id)
+            .ToListAsync(cancellationToken);
+
+        int submissionCount = setupIds.Count == 0
+            ? 0
+            : await context
+                .Submissions.AsNoTracking()
+                .CountAsync(submission => setupIds.Contains(submission.ProblemSetupId), cancellationToken);
+
+        int gameRoundCount = await context
+            .Games.AsNoTracking()
+            .IgnoreQueryFilters()
+            .SelectMany(game => game.Rounds)
+            .CountAsync(round => round.ProblemId == problemId, cancellationToken);
+
+        int unfinishedGameCount = await context
+            .Games.AsNoTracking()
+            .IgnoreQueryFilters()
+            .CountAsync(
+                game =>
+                    (game.Status == GameStatus.Pending || game.Status == GameStatus.Running)
+                    && game.Rounds.Any(round => round.ProblemId == problemId),
+                cancellationToken
+            );
+
+        int dailyChallengeCount = await context
+            .DailyChallenges.AsNoTracking()
+            .IgnoreQueryFilters()
+            .CountAsync(challenge => challenge.ProblemId == problemId, cancellationToken);
+
+        int campaignUnitCount = await context
+            .UnitProblems.AsNoTracking()
+            .IgnoreQueryFilters()
+            .CountAsync(unitProblem => unitProblem.ProblemId == problemId, cancellationToken);
+
+        int poolCount = await context
+            .Set<ProblemPoolItem>()
+            .AsNoTracking()
+            .CountAsync(item => item.ProblemId == problemId, cancellationToken);
+
+        return new ProblemDeletionImpactDto(
+            submissionCount,
+            gameRoundCount,
+            unfinishedGameCount,
+            dailyChallengeCount,
+            campaignUnitCount,
+            poolCount
+        );
+    }
 }

@@ -49,6 +49,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
     }
 
     [HttpPost("grade")]
+    [EnableRateLimiting(WellKnownPolicies.GradedSubmissions)]
     [RequireUser]
     [RequirePermission(WellKnownPermissions.CreateSubmission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -121,6 +122,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
     [HttpGet("{submissionId:guid}")]
     [RequireUser]
+    [EnableRateLimiting(WellKnownPolicies.General)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -134,6 +136,29 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
         return this.ToActionResult(
             await submissionService.GetSubmissionStatusAsync(submissionId, userContext.User.Id, cancellationToken)
+        );
+    }
+
+    [HttpGet("{submissionId:guid}/problem-snapshot")]
+    [RequireUser]
+    [EnableRateLimiting(WellKnownPolicies.General)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SubmissionProblemSnapshotDto>> GetSubmissionProblemSnapshot(
+        Guid submissionId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (userContext.User is null)
+            return this.ToActionResult(Result<SubmissionProblemSnapshotDto>.Unauthorized());
+
+        return this.ToActionResult(
+            await submissionService.GetSubmissionProblemSnapshotAsync(
+                submissionId,
+                userContext.User.Id,
+                cancellationToken
+            )
         );
     }
 }

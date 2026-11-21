@@ -21,24 +21,24 @@ internal sealed class BogusTestCaseGeneratorService : ITestCaseGeneratorService
     {
         return parameter.ValueType switch
         {
-            "integer" => new GeneratedValue(
+            GenerationValueTypes.Integer => new GeneratedValue(
                 random.Int((int)(parameter.Min ?? -1000), (int)(parameter.Max ?? 1000)).ToString(),
                 parameter.ValueType
             ),
 
-            "double" => new GeneratedValue(
+            GenerationValueTypes.Double => new GeneratedValue(
                 random.Double(parameter.Min ?? 0, parameter.Max ?? 1000).ToString("R"),
                 parameter.ValueType
             ),
 
-            "boolean" => new GeneratedValue(random.Bool() ? "true" : "false", parameter.ValueType),
+            GenerationValueTypes.Boolean => new GeneratedValue(random.Bool() ? "true" : "false", parameter.ValueType),
 
-            "string" => new GeneratedValue(
+            GenerationValueTypes.String => new GeneratedValue(
                 JsonSerializer.Serialize(GenerateString(parameter, random)),
                 parameter.ValueType
             ),
 
-            "integer_array" => new GeneratedValue(
+            GenerationValueTypes.IntegerArray => new GeneratedValue(
                 JsonSerializer.Serialize(GenerateIntArray(parameter, random)),
                 parameter.ValueType
             ),

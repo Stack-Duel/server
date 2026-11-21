@@ -79,10 +79,10 @@ public class UpdateProblemValidatorTests
     }
 
     [Fact]
-    public void Validate_NullTags_IsInvalid()
+    public void Validate_NullTags_IsValidAndLeavesTagsUnchanged()
     {
-        var command = ValidCommand() with { Tags = null! };
-        Assert.False(_validator.Validate(command).IsValid);
+        var command = ValidCommand() with { Tags = null };
+        Assert.True(_validator.Validate(command).IsValid);
     }
 
     [Fact]
