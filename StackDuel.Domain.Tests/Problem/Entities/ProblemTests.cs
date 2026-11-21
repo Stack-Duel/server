@@ -250,6 +250,7 @@ public class ProblemTests
         ProblemEntity problem = CreateProblem();
         problem.FailValidation("reference solution timed out");
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.Equal(ProblemStatus.Published, problem.Status);

@@ -91,4 +91,52 @@ public class ProblemCancelValidationTests
 
         Assert.Throws<ArgumentException>(() => problem.FailValidation("   "));
     }
+
+    [Fact]
+    public void CompleteValidation_AfterCancel_DoesNotPublishTheProblem()
+    {
+        ProblemEntity problem = CreateProblem();
+        problem.SubmitForValidation();
+        problem.CancelValidation();
+
+        problem.CompleteValidation();
+
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
+        Assert.Empty(problem.Versions);
+    }
+
+    [Fact]
+    public void CompleteValidation_WithoutSubmitting_DoesNothing()
+    {
+        ProblemEntity problem = CreateProblem();
+
+        problem.CompleteValidation();
+
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
+        Assert.Empty(problem.Versions);
+    }
+
+    [Fact]
+    public void CompleteValidation_AfterCancellingARevalidation_KeepsTheOldVersionLive()
+    {
+        ProblemEntity problem = CreateProblem();
+        problem.SubmitForValidation();
+        problem.CompleteValidation();
+
+        problem.UpdateContent(
+            new Title("Two Sum Revised"),
+            problem.Question,
+            problem.Difficulty,
+            problem.TimeLimit,
+            problem.MemoryLimit
+        );
+        problem.SubmitForValidation();
+        problem.CancelValidation();
+
+        problem.CompleteValidation();
+
+        Assert.Single(problem.Versions);
+        Assert.Equal("Two Sum", problem.PublishedVersion!.Title.Value);
+        Assert.True(problem.HasUnpublishedChanges);
+    }
 }

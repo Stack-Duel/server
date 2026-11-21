@@ -62,6 +62,9 @@ public sealed class ProblemValidationJob : AggregateRoot
 
     public void Complete(string summary)
     {
+        if (IsCancelled)
+            return;
+
         Status = ProblemValidationJobStatus.Completed;
         ResultSummary = summary;
         CompletedAt = DateTime.UtcNow;
@@ -100,6 +103,9 @@ public sealed class ProblemValidationJob : AggregateRoot
 
     public void Fail(string reason)
     {
+        if (IsCancelled)
+            return;
+
         Status = ProblemValidationJobStatus.Failed;
         FailureReason = Truncate(reason, MaxFailureReasonLength);
         CompletedAt = DateTime.UtcNow;

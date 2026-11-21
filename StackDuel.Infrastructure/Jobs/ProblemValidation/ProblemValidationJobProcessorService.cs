@@ -188,8 +188,9 @@ internal sealed partial class ProblemValidationJobProcessorService(
         CancellationToken ct
     )
     {
-        ProblemValidationJob? latest = await jobRepository.FindByIdAsync(jobId, ct);
-        return latest is null || latest.IsCancelled;
+        bool? isCancelled = await jobRepository.IsCancelledAsync(jobId, ct);
+
+        return isCancelled ?? true;
     }
 
     private static TimeSpan BackoffFor(int attempts) =>

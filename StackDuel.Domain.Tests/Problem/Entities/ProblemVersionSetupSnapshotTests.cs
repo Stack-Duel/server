@@ -23,6 +23,7 @@ public class ProblemVersionSetupSnapshotTests
         Guid languageVersionId = Guid.NewGuid();
         ProblemSetup setup = problem.AddSetup(languageVersionId, "def solve(): pass", "solve", Guid.NewGuid());
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         ProblemVersionSetup pinned = Assert.Single(problem.PublishedVersion!.Setups);
@@ -38,6 +39,7 @@ public class ProblemVersionSetupSnapshotTests
     {
         ProblemEntity problem = CreateProblem();
         ProblemSetup setup = problem.AddSetup(Guid.NewGuid(), "def solve():", "solve", Guid.NewGuid());
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         problem.UpdateSetupInitialCode(setup.Id, "def solve(): return 42");
@@ -55,9 +57,11 @@ public class ProblemVersionSetupSnapshotTests
     {
         ProblemEntity problem = CreateProblem();
         ProblemSetup setup = problem.AddSetup(Guid.NewGuid(), "def solve():", "solve", Guid.NewGuid());
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         problem.UpdateSetupInitialCode(setup.Id, "def solve(): return 42");
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.Equal("def solve(): return 42", Assert.Single(problem.PublishedVersion!.Setups).InitialCode);
@@ -69,6 +73,7 @@ public class ProblemVersionSetupSnapshotTests
         ProblemEntity problem = CreateProblem();
         Guid languageVersionId = Guid.NewGuid();
         problem.AddSetup(languageVersionId, "starter", "solve", Guid.NewGuid());
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.NotNull(problem.PublishedVersion!.FindSetupByLanguageVersionId(languageVersionId));
@@ -82,6 +87,7 @@ public class ProblemVersionSetupSnapshotTests
         problem.AddSetup(Guid.NewGuid(), "starter one", "solve", Guid.NewGuid());
         problem.AddSetup(Guid.NewGuid(), "starter two", "solve", Guid.NewGuid());
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.Equal(2, problem.PublishedVersion!.Setups.Count);

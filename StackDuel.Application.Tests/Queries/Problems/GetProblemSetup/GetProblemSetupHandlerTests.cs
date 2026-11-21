@@ -89,6 +89,7 @@ public class GetProblemSetupHandlerTests
         Problem problem = CreateProblem();
         Guid languageVersionId = Guid.NewGuid();
         ProblemSetup setup = problem.AddSetup(languageVersionId, "starter as published", "solve", Guid.NewGuid());
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         problem.UpdateSetupInitialCode(setup.Id, "starter edited after publish");

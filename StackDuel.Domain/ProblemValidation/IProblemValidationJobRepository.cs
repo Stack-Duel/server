@@ -16,6 +16,10 @@ public interface IProblemValidationJobRepository : IRepository<ProblemValidation
 
     Task<bool> TryClaimAsync(Guid jobId, TimeSpan leaseDuration, CancellationToken cancellationToken = default);
 
+    /// Reads the job's cancellation state straight from the database, bypassing anything the
+    /// caller's DbContext is already tracking.
+    Task<bool?> IsCancelledAsync(Guid jobId, CancellationToken cancellationToken = default);
+
     Task ReleaseLockAsync(Guid jobId, CancellationToken cancellationToken = default);
 
     Task SetRetryAfterAsync(Guid jobId, TimeSpan delay, CancellationToken cancellationToken = default);

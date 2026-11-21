@@ -141,4 +141,28 @@ public class ProblemValidationJobTests
 
         Assert.Equal(ProblemValidationJob.MaxLastErrorLength, job.LastError!.Length);
     }
+
+    [Fact]
+    public void Complete_AfterCancel_LeavesTheJobCancelled()
+    {
+        ProblemValidationJob job = CreateJob();
+        job.Cancel();
+
+        job.Complete("Published");
+
+        Assert.Equal(ProblemValidationJobStatus.Cancelled, job.Status);
+        Assert.Null(job.ResultSummary);
+    }
+
+    [Fact]
+    public void Fail_AfterCancel_LeavesTheJobCancelled()
+    {
+        ProblemValidationJob job = CreateJob();
+        job.Cancel();
+
+        job.Fail("Reference solution failed");
+
+        Assert.Equal(ProblemValidationJobStatus.Cancelled, job.Status);
+        Assert.Null(job.FailureReason);
+    }
 }

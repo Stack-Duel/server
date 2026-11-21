@@ -26,6 +26,20 @@ internal sealed class ProblemValidationJobRepository(StackDuelDbContext context)
                 .ThenInclude(step => step.Items)
             .FirstOrDefaultAsync(j => j.Id == id, cancellationToken);
 
+    public async Task<bool?> IsCancelledAsync(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        // Projected to a scalar on purpose: materializing the entity would hand back the
+        // instance this scope is already tracking, with its pre-pass values, so a cancel
+        // committed by the API in another scope would be invisible here.
+        ProblemValidationJobStatus? status = await context
+            .ProblemValidationJobs.AsNoTracking()
+            .Where(job => job.Id == jobId)
+            .Select(job => (ProblemValidationJobStatus?)job.Status)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return status is null ? null : status == ProblemValidationJobStatus.Cancelled;
+    }
+
     public async Task<IReadOnlyList<ProblemValidationJob>> FindPendingAsync(
         int batchSize,
         CancellationToken cancellationToken = default

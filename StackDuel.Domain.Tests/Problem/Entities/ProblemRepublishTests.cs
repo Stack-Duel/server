@@ -22,6 +22,7 @@ public class ProblemRepublishTests
     {
         ProblemEntity problem = CreateProblem();
         problem.AddSetup(Guid.NewGuid(), "starter", "countVowels", Guid.NewGuid());
+        problem.SubmitForValidation();
         problem.CompleteValidation();
         return problem;
     }
@@ -107,6 +108,7 @@ public class ProblemRepublishTests
         Retitle(problem, "Count Vowels 2");
         problem.SubmitForValidation();
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.Equal(ProblemStatus.Published, problem.Status);

@@ -126,6 +126,7 @@ public class DeleteProblemHandlerTests
     public async Task APublishedProblem_KeepsItsRowAndStatusSoAnUnfinishedGameSurvives()
     {
         Problem published = CreateProblem();
+        published.SubmitForValidation();
         published.CompleteValidation();
         Problem problem = SetUpProblem(published);
 

@@ -104,6 +104,11 @@ public sealed class Problem : AggregateRoot
 
     public void CompleteValidation()
     {
+        // A validation that is no longer in flight has been cancelled or already resolved;
+        // completing it anyway would publish a problem the author pulled back.
+        if (Status != ProblemStatus.Pending && !IsRevalidating)
+            return;
+
         Status = ProblemStatus.Published;
         ValidationFailureReason = null;
         IsRevalidating = false;

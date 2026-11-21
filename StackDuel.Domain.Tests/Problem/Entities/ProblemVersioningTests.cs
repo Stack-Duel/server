@@ -45,6 +45,7 @@ public class ProblemVersioningTests
         ProblemEntity problem = CreateProblem();
         ProblemSetup setup = AddSetup(problem);
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         ProblemVersion version = Assert.Single(problem.Versions);
@@ -61,6 +62,7 @@ public class ProblemVersioningTests
     public void FrozenVersion_KeepsTheStatementItWasPublishedWith()
     {
         ProblemEntity problem = CreateProblem();
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         UpdateTitle(problem, "Two Sum Revised");
@@ -73,10 +75,12 @@ public class ProblemVersioningTests
     public void PublishingAgain_SupersedesThePreviousVersion()
     {
         ProblemEntity problem = CreateProblem();
+        problem.SubmitForValidation();
         problem.CompleteValidation();
         ProblemVersion first = problem.PublishedVersion!;
 
         UpdateTitle(problem, "Two Sum Revised");
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         ProblemVersion second = problem.PublishedVersion!;
@@ -96,6 +100,7 @@ public class ProblemVersioningTests
         ProblemEntity problem = CreateProblem();
         ProblemSetup first = AddSetup(problem);
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         ProblemSetup added = AddSetup(problem);
@@ -103,6 +108,7 @@ public class ProblemVersioningTests
         Assert.True(problem.PublishedVersion!.ReferencesSetup(first.Id));
         Assert.False(problem.PublishedVersion!.ReferencesSetup(added.Id));
 
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.True(problem.PublishedVersion!.ReferencesSetup(added.Id));
@@ -123,10 +129,12 @@ public class ProblemVersioningTests
     public void FindVersion_ReturnsASupersededVersionSoOldSubmissionsStayReadable()
     {
         ProblemEntity problem = CreateProblem();
+        problem.SubmitForValidation();
         problem.CompleteValidation();
         Guid firstVersionId = problem.PublishedVersionId!.Value;
 
         UpdateTitle(problem, "Two Sum Revised");
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         ProblemVersion? pinned = problem.FindVersion(firstVersionId);
@@ -139,6 +147,7 @@ public class ProblemVersioningTests
     public void FindVersion_ReturnsNullForAnUnknownVersion()
     {
         ProblemEntity problem = CreateProblem();
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         Assert.Null(problem.FindVersion(Guid.NewGuid()));

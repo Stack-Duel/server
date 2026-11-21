@@ -92,6 +92,7 @@ public class GetProblemBySlugHandlerTests
     public async Task Handle_PublishedProblem_ServesTheStatementAsPublished()
     {
         Problem problem = CreateProblem();
+        problem.SubmitForValidation();
         problem.CompleteValidation();
 
         problem.UpdateContent(
