@@ -1,0 +1,37 @@
+name: Deploy Scrum (Container)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-tests:
+        description: "Run the full build and test suite before publishing"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      verify: ${{ inputs.run-tests }}
+      upload-artifact: false
+
+  publish:
+    needs: build
+    uses: ./.github/workflows/publish-image.yml
+    permissions:
+      contents: read
+      packages: write
+
+  deploy:
+    needs: publish
+    uses: ./.github/workflows/deploy-container.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      image: ${{ needs.publish.outputs.image }}
+      environment: "Scrum"
+      container-app-name: "ca-sdapi-scrum-centralus-01"
+      resource-group: "rg-sd-scrum-centralus-01"
+    secrets: inherit

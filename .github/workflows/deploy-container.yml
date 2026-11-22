@@ -1,0 +1,80 @@
+name: Deploy Container
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      container-app-name:
+        required: true
+        type: string
+      resource-group:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Image reference to roll out, digest-pinned (ghcr.io/owner/stackduel-api@sha256:...)"
+        required: true
+        type: string
+      environment:
+        description: "Target GitHub environment holding the Azure credentials"
+        required: true
+        type: string
+        default: "Scrum"
+      container-app-name:
+        required: true
+        type: string
+        default: "ca-sdapi-scrum-centralus-01"
+      resource-group:
+        required: true
+        type: string
+        default: "rg-sd-scrum-centralus-01"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Roll out revision
+        run: |
+          az containerapp update \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ inputs.resource-group }}" \
+            --image "${{ inputs.image }}"
+
+      - name: Verify revision is running
+        run: |
+          fqdn="$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ inputs.resource-group }}" \
+            --query properties.configuration.ingress.fqdn -o tsv)"
+
+          revision="$(az containerapp revision list \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ inputs.resource-group }}" \
+            --query "[?properties.active].{name:name,state:properties.runningState,image:properties.template.containers[0].image}" \
+            -o json)"
+
+          echo "$revision"
+          echo "https://${fqdn}" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "$revision" | grep -q '"${{ inputs.image }}"' \
+            || { echo "active revision is not serving the requested image" >&2; exit 1; }
