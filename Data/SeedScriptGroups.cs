@@ -1,5 +1,5 @@
-using System.Reflection;
 using StackDuel.Infrastructure.Persistence.Migrations;
+using System.Reflection;
 
 namespace Data;
 

@@ -1,8 +1,8 @@
-using System.CommandLine;
 using Data.Infrastructure;
 using Npgsql;
 using Spectre.Console;
 using StackDuel.Domain.Authorization.Rbac;
+using System.CommandLine;
 
 namespace Data.Commands;
 

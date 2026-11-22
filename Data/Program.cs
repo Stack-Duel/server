@@ -1,5 +1,5 @@
-using System.CommandLine;
 using Data.Commands;
+using System.CommandLine;
 
 RootCommand root = new("StackDuel database migration and seeding tool.")
 {

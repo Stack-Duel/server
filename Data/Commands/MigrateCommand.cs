@@ -1,6 +1,6 @@
-using System.CommandLine;
 using Data.Infrastructure;
 using StackDuel.Infrastructure.Persistence.Migrations;
+using System.CommandLine;
 
 namespace Data.Commands;
 

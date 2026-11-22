@@ -1,7 +1,7 @@
-using System.Reflection;
-using System.Text;
 using DbUp.Engine;
 using DbUp.Support;
+using System.Reflection;
+using System.Text;
 
 namespace StackDuel.Infrastructure.Persistence.Migrations;
 

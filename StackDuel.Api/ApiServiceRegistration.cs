@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Scalar.AspNetCore;
 using StackDuel.Api.Authorization;
@@ -11,6 +10,7 @@ using StackDuel.Api.Settings;
 using StackDuel.Application.Notifications;
 using StackDuel.Infrastructure;
 using StackDuel.Infrastructure.Persistence.Migrations;
+using System.Text.Json.Serialization;
 
 namespace StackDuel.Api;
 
