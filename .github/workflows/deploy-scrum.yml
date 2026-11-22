@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 env:
-  AZURE_CONTAINER_APP: "ca-sdapi-scrum-centralus-01"
-  AZURE_RESOURCE_GROUP: "rg-sd-scrum-centralus-01"
+  AZURE_CONTAINER_APP: "ca-awapi-scrum-01"
+  AZURE_RESOURCE_GROUP: "rg-aw-scrum-01"
   DOTNET_VERSION: "11.0.x"
 
 concurrency:
