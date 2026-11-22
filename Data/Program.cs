@@ -1,21 +1,14 @@
-﻿using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Spectre.Console;
+using System.CommandLine;
+using Data.Commands;
 
-var builder = Host.CreateDefaultBuilder(args)
-    .ConfigureAppConfiguration(cfg =>
-    {
-        cfg.AddJsonFile("appsettings.json", optional: true);
-        cfg.AddEnvironmentVariables(prefix: "TODO_");
-    })
-    .ConfigureLogging(l => l.AddConsole())
-    .ConfigureServices((ctx, services) => { });
+RootCommand root = new("StackDuel database migration and seeding tool.")
+{
+    MigrateCommand.Create(),
+    SeedCommand.Create(),
+    StatusCommand.Create(),
+    BaselineCommand.Create(),
+    ResetCommand.Create(),
+    GrantAdminCommand.Create(),
+};
 
-using var host = builder.Build();
-
-var root = new RootCommand("StackDuel Database Migration/Seeding Tool") { };
+return await root.Parse(args).InvokeAsync();

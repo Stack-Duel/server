@@ -1,0 +1,1 @@
+INSERT INTO public.problem_pools (id, key, name, description, created_at) VALUES ('44444444-4444-4444-4444-444444444444', 'all-problems', 'All Problems', 'Every published problem. Used as the default pool for built-in game modes.', '2026-11-21 20:30:36.489306+00') ON CONFLICT DO NOTHING;

@@ -7,7 +7,7 @@
           <Format>opencover</Format>
 
           <!-- Assemblies with no hand-written logic to cover. Format: [AssemblyFilter]TypeFilter -->
-          <Exclude>[StackDuel.Seeder]*</Exclude>
+          <Exclude>[stackduel-data]*</Exclude>
 
           <!--
             File-level exclusions: generated/data-only sources; BackgroundService broker hosts
@@ -17,7 +17,7 @@
             COVERAGE_EXCLUSIONS in .github/workflows/sonarqube.yml, which is the list SonarCloud
             actually reads.
           -->
-          <ExcludeByFile>**/Migrations/*.cs,**/Persistence/Seeders/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Messaging/Consumers/**/*.cs,**/Repositories/**/*ReadRepository.cs</ExcludeByFile>
+          <ExcludeByFile>**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Messaging/Consumers/**/*.cs,**/Repositories/**/*ReadRepository.cs</ExcludeByFile>
 
           <!--
             Honour [ExcludeFromCodeCoverage]. Do NOT add GeneratedCodeAttribute here: it makes

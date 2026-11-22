@@ -63,9 +63,6 @@ using StackDuel.Infrastructure.Messaging;
 using StackDuel.Infrastructure.Messaging.Consumers;
 using StackDuel.Infrastructure.Persistence;
 using StackDuel.Infrastructure.Persistence.Read;
-using StackDuel.Infrastructure.Persistence.Seeders;
-using StackDuel.Infrastructure.Persistence.Seeders.Campaigns;
-using StackDuel.Infrastructure.Persistence.Seeders.Problems;
 using StackDuel.Infrastructure.ProblemValidation;
 using StackDuel.Infrastructure.Repositories.AuditLog;
 using StackDuel.Infrastructure.Repositories.Authorization;
@@ -109,35 +106,13 @@ public static class InfrastructureServiceRegistration
         services.AddMessageBus(configuration);
         services.AddJobs(configuration);
 
-        services.AddSeeder();
-
-        return services;
-    }
-
-    /// <summary>
-    /// Registration for the Seeder CLI — persistence and repositories only. Seeders don't run
-    /// test case generation directly anymore; they enqueue a TestCaseGenerationJob row (via
-    /// ITestCaseGenerationJobRepository, from AddRepositories) and the API's background
-    /// processor picks it up later. That means the Seeder needs no Judge0/execution-engine
-    /// dependency at all, and no message bus or Quartz jobs since it's a one-shot CLI, not a host.
-    /// </summary>
-    public static IServiceCollection AddInfrastructureForSeeder(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
-    {
-        services.AddOption<ConnectionStringOptions>(configuration);
-        services.AddPersistence();
-        services.AddRepositories();
-        services.AddSeeder();
-
         return services;
     }
 
     private static IServiceCollection AddMessageBus(this IServiceCollection services, IConfiguration configuration)
     {
-        var opts =
-            configuration.GetSection(MessageBusOptions.SectionName).Get<MessageBusOptions>() ?? new MessageBusOptions();
+        var opts = configuration.GetSection(MessageBusOptions.SectionName).Get<MessageBusOptions>()
+            ?? new MessageBusOptions();
 
         if (opts.Transport.Equals("AzureServiceBus", StringComparison.OrdinalIgnoreCase))
         {
@@ -168,25 +143,21 @@ public static class InfrastructureServiceRegistration
 
     private static IServiceCollection AddExecutionEngine(this IServiceCollection services, IConfiguration configuration)
     {
-        var opts =
-            configuration.GetSection(ExecutionEngineOptions.SectionName).Get<ExecutionEngineOptions>()
+        var opts = configuration.GetSection(ExecutionEngineOptions.SectionName).Get<ExecutionEngineOptions>()
             ?? new ExecutionEngineOptions();
 
         if (opts.Judge0.Enabled)
         {
             var judge0Opts = opts.Judge0;
             services.AddSingleton(judge0Opts);
-            services.AddHttpClient(
-                nameof(Judge0ExecutionEngineStrategy),
-                client =>
-                {
-                    client.BaseAddress = new Uri(judge0Opts.BaseUrl.TrimEnd('/') + "/");
-                    if (!string.IsNullOrWhiteSpace(judge0Opts.ApiKey))
-                        client.DefaultRequestHeaders.Add("X-RapidAPI-Key", judge0Opts.ApiKey);
-                    if (!string.IsNullOrWhiteSpace(judge0Opts.Host))
-                        client.DefaultRequestHeaders.Add("X-RapidAPI-Host", judge0Opts.Host);
-                }
-            );
+            services.AddHttpClient(nameof(Judge0ExecutionEngineStrategy), client =>
+            {
+                client.BaseAddress = new Uri(judge0Opts.BaseUrl.TrimEnd('/') + "/");
+                if (!string.IsNullOrWhiteSpace(judge0Opts.ApiKey))
+                    client.DefaultRequestHeaders.Add("X-RapidAPI-Key", judge0Opts.ApiKey);
+                if (!string.IsNullOrWhiteSpace(judge0Opts.Host))
+                    client.DefaultRequestHeaders.Add("X-RapidAPI-Host", judge0Opts.Host);
+            });
             services.AddScoped<IExecutionEngineStrategy>(sp =>
             {
                 var httpFactory = sp.GetRequiredService<IHttpClientFactory>();
@@ -222,8 +193,7 @@ public static class InfrastructureServiceRegistration
 
     private static IServiceCollection AddLanguageServer(this IServiceCollection services, IConfiguration configuration)
     {
-        var opts =
-            configuration.GetSection(LanguageServerOptions.SectionName).Get<LanguageServerOptions>()
+        var opts = configuration.GetSection(LanguageServerOptions.SectionName).Get<LanguageServerOptions>()
             ?? new LanguageServerOptions();
 
         services.AddSingleton(opts);
@@ -241,8 +211,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IAvatarCleanupService, AvatarCleanupService>();
         services.AddScoped<IDailyChallengeAssignmentService, DailyChallengeAssignmentService>();
 
-        var opts =
-            configuration.GetSection(JobScheduleOptions.SectionName).Get<JobScheduleOptions>()
+        var opts = configuration.GetSection(JobScheduleOptions.SectionName).Get<JobScheduleOptions>()
             ?? new JobScheduleOptions();
 
         services.AddQuartz(q =>
@@ -320,8 +289,7 @@ public static class InfrastructureServiceRegistration
 
     private static IServiceCollection AddAvatarStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        var opts =
-            configuration.GetSection(AzureStorageOptions.SectionName).Get<AzureStorageOptions>()
+        var opts = configuration.GetSection(AzureStorageOptions.SectionName).Get<AzureStorageOptions>()
             ?? new AzureStorageOptions();
 
         services.AddSingleton(new BlobServiceClient(opts.ConnectionString));
@@ -417,75 +385,5 @@ public static class InfrastructureServiceRegistration
         services.AddSingleton<ProblemValidationJobProcessorService>();
 
         return services;
-    }
-
-    // Registration order is seeding order (the built-in container resolves IEnumerable<T>/GetServices<T>
-    // in registration order) — a seeder must be registered after everything it depends on
-    // (e.g. LanguageSeeder reads Tracks, so TrackSeeder has to run first).
-    private static IServiceCollection AddSeeder(this IServiceCollection services)
-    {
-        services.AddScoped<IStaticSeeder, AuthorizationSeeder>();
-        services.AddScoped<IStaticSeeder, FeatureFlagSeeder>();
-        services.AddScoped<IStaticSeeder, GameModeSeeder>();
-        services.AddScoped<IStaticSeeder, TrackSeeder>();
-        services.AddScoped<IStaticSeeder, ProblemReactionTypeSeeder>();
-
-        // Also consumed by concrete type (GetOrCreateAsync) by the problem seeders below,
-        // so it needs its own registration in addition to the IStaticSeeder one.
-        services.AddScoped<Judge0PipelineSeeder>();
-        services.AddScoped<IStaticSeeder>(sp => sp.GetRequiredService<Judge0PipelineSeeder>());
-
-        services.AddScoped<IStaticSeeder, LanguageSeeder>();
-        services.AddScoped<IStaticSeeder, RequiredProblemLanguageSeeder>();
-        services.AddScoped<AdditionalFileBundleSeeder>();
-        services.AddScoped<IStaticSeeder, TwoSumProblemSeeder>();
-        services.AddScoped<IStaticSeeder, HelloOrGoodbyeProblemSeeder>();
-        services.AddScoped<IStaticSeeder, AdditionalProblemsSeeder>();
-        services.AddScoped<IStaticSeeder, SumOfNumbersSqlProblemSeeder>();
-        services.AddScoped<IStaticSeeder, ChinookSqlProblemsSeeder>();
-        services.AddScoped<IStaticSeeder, ClickCounterProblemSeeder>();
-        services.AddScoped<IStaticSeeder, VanillaClickCounterProblemSeeder>();
-        services.AddScoped<IStaticSeeder, ArtistDiscographyProblemSeeder>();
-        services.AddScoped<IStaticSeeder, ProblemPoolSeeder>();
-        services.AddScoped<IStaticSeeder, CodeFoundationsCampaignSeeder>();
-
-        services.AddScoped<IDemoSeeder, DemoDataSeeder>();
-
-        return services;
-    }
-
-    public static async Task MigrateAsync(this IServiceProvider services)
-    {
-        using var scope = services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<StackDuelDbContext>();
-        await db.Database.MigrateAsync();
-    }
-
-    public static async Task SeedAsync(
-        this IServiceProvider services,
-        SeederOptions options,
-        CancellationToken cancellationToken = default
-    )
-    {
-        using var scope = services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<StackDuelDbContext>();
-
-        if (options.SeedStaticData)
-        {
-            foreach (IStaticSeeder seeder in scope.ServiceProvider.GetServices<IStaticSeeder>())
-            {
-                await seeder.SeedAsync(cancellationToken);
-                db.ChangeTracker.Clear();
-            }
-        }
-
-        if (options.SeedDemoData)
-        {
-            foreach (IDemoSeeder seeder in scope.ServiceProvider.GetServices<IDemoSeeder>())
-            {
-                await seeder.SeedAsync(cancellationToken);
-                db.ChangeTracker.Clear();
-            }
-        }
     }
 }

@@ -1,0 +1,2 @@
+INSERT INTO public.problem_reaction_types (id, key, name, emoji, sort_order, is_enabled, created_at) VALUES ('4fd4f937-cb91-47d6-a970-bdefda64f2a4', 'dislike', 'Dislike', '👎', 2, true, '2026-11-21 20:31:33.958517+00') ON CONFLICT DO NOTHING;
+INSERT INTO public.problem_reaction_types (id, key, name, emoji, sort_order, is_enabled, created_at) VALUES ('6b77ea19-67b3-41f5-ba28-0e7d01427a84', 'like', 'Like', '👍', 1, true, '2026-11-21 20:31:33.948145+00') ON CONFLICT DO NOTHING;

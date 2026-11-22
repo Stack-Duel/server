@@ -31,9 +31,7 @@ jobs:
           dotnet-version: 11.0.x
 
       - name: Restore solution dependencies
-        run: |
-          dotnet restore StackDuel.slnx
-          dotnet restore StackDuel.Seeder/StackDuel.Seeder.csproj
+        run: dotnet restore StackDuel.slnx
 
       - name: Audit solution dependencies
         shell: pwsh

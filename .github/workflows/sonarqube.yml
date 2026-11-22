@@ -12,7 +12,7 @@ jobs:
     env:
       # Sources with no hand-written logic to test, so a coverage requirement on them would
       # measure nothing:
-      #   Migrations, Seeders, obj/**, *.g.cs, *.Designer.cs -- generated or static data
+      #   Data/**, obj/**, *.g.cs, *.Designer.cs            -- the DbUp CLI shell and generated code
       #   Program.cs, *ServiceRegistration.cs, *Options.cs   -- composition root / config binding
       #   Messaging/Consumers/**                             -- BackgroundService broker-subscription
       #                                                         wiring; ExecuteAsync requires live broker
@@ -20,9 +20,9 @@ jobs:
       #   Repositories/**/*ReadRepository.cs                -- thin IQueryable composition; EF
       #                                                         recommends integration tests over
       #                                                         DbContext mocks for these
-      # Kept in sync with coverage.runsettings. Whole-file *analysis* exclusions (migrations,
-      # seeders) live in Directory.Build.props. Written on one line: Sonar splits on commas.
-      COVERAGE_EXCLUSIONS: "**/Migrations/**/*.cs,**/Persistence/Seeders/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Program.cs,**/*ServiceRegistration.cs,**/*Options.cs,**/Messaging/Consumers/**/*.cs,**/Dtos/**/*.cs,**/*DbContext.cs,**/Persistence/Configuration/**/*.cs,**/LoggingEventIds.cs,StackDuel.Seeder/**/*.cs,**/Repositories/**/*ReadRepository.cs"
+      # Kept in sync with coverage.runsettings. Whole-file *analysis* exclusions live in
+      # Directory.Build.props. Written on one line: Sonar splits on commas.
+      COVERAGE_EXCLUSIONS: "Data/**/*.cs,**/obj/**/*.cs,**/*.g.cs,**/*.generated.cs,**/*.Designer.cs,**/Program.cs,**/*ServiceRegistration.cs,**/*Options.cs,**/Messaging/Consumers/**/*.cs,**/Dtos/**/*.cs,**/*DbContext.cs,**/Persistence/Configuration/**/*.cs,**/LoggingEventIds.cs,**/Repositories/**/*ReadRepository.cs"
     steps:
       - name: Set up JDK 21
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0

@@ -21,6 +21,9 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="11.0.0" />
+    <!-- Database migrations / seeding (Data CLI) -->
+    <PackageVersion Include="dbup-core" Version="6.1.1" />
+    <PackageVersion Include="dbup-postgresql" Version="7.0.1" />
     <!-- Testing -->
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <!-- EF Core / Npgsql stay on 10.x: Npgsql.EntityFrameworkCore.PostgreSQL has no stable net11 release yet -->

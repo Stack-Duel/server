@@ -1,4 +1,3 @@
-using Npgsql;
 using StackDuel.IntegrationTests.Infrastructure;
 
 namespace StackDuel.IntegrationTests;
@@ -28,27 +27,7 @@ public abstract class ApiIntegrationTestBase(IntegrationTestEnvironment environm
         _client?.Dispose();
         _client = null;
 
-        await using NpgsqlConnection connection = new(environment.ConnectionString);
-        await connection.OpenAsync();
-        await using NpgsqlCommand command = connection.CreateCommand();
-        command.CommandText = """
-            TRUNCATE TABLE
-                user_language_preferences,
-                user_groups,
-                group_roles,
-                role_permissions,
-                security_restrictions,
-                users,
-                groups,
-                roles,
-                permissions,
-                problem_tags,
-                tags,
-                problems,
-                tracks
-            RESTART IDENTITY CASCADE
-            """;
-        await command.ExecuteNonQueryAsync();
+        await DatabaseReset.TruncateEverythingAsync(environment.ConnectionString);
     }
 
     protected static HttpRequestMessage AuthenticatedRequest(HttpMethod method, string requestUri, string sub)
