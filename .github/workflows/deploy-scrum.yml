@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   AZURE_WEBAPP_NAME: "app-awapi-scrum-centralus-03"
   DOTNET_VERSION: "11.0.x"

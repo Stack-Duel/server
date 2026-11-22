@@ -42,8 +42,10 @@ jobs:
     steps:
       - name: Validate container input
         if: ${{ !contains(fromJSON('["none", "build", "push"]'), inputs.container) }}
+        env:
+          CONTAINER: ${{ inputs.container }}
         run: |
-          echo "container must be one of none, build, push. Got '${{ inputs.container }}'."
+          echo "container must be one of none, build, push. Got '$CONTAINER'."
           exit 1
 
       - name: Checkout code
@@ -120,6 +122,7 @@ jobs:
         if: ${{ inputs.container != 'none' }}
         env:
           REPOSITORY: ${{ github.repository }}
+          CONTAINER: ${{ inputs.container }}
         run: |
           set -euo pipefail
 
@@ -133,7 +136,7 @@ jobs:
 
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
 
-          if [ "${{ inputs.container }}" = "push" ]; then
+          if [ "$CONTAINER" = "push" ]; then
             echo "pushed=$commit_tag" >> "$GITHUB_OUTPUT"
           fi
 
@@ -151,7 +154,7 @@ jobs:
 
       - name: Build container image
         if: ${{ inputs.container != 'none' }}
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: StackDuel.Api/Dockerfile
