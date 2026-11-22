@@ -15,7 +15,7 @@ tab_width = 4
 end_of_line = lf
 insert_final_newline = false
 
-# Line length (also used by CSharpier as printWidth)
+# Line length
 max_line_length = 120
 
 #### .NET Code Actions ####

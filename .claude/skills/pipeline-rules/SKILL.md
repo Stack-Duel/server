@@ -13,7 +13,7 @@ Before treating any task that touches files under `server/` (not `server/.claude
 1. **Format** — `dotnet format`
    Auto-fixes indentation, line length (120 cols), and other style rules from `.editorconfig`. Scope it to what you touched (e.g. `dotnet format --include <paths>`) rather than running it unscoped over the whole solution — an unscoped run reformats every file with pending changes anywhere in the repo, including other in-progress work that has nothing to do with your change. Use `dotnet format --verify-no-changes` instead if you only want to check without rewriting files.
 
-   Do not use `dotnet csharpier format`/`dotnet csharpier check` — this repo's CI enforces `dotnet format`/`.editorconfig`, not CSharpier.
+   Do not use `dotnet csharpier format`/`dotnet csharpier check` — this repo's CI enforces `dotnet format`/`.editorconfig`, not CSharpier, and the two disagree on final newlines and using order, so a CSharpier pass fails CI. It is deliberately absent from `.config/dotnet-tools.json`; do not add it back.
 
 2. **Build** — `dotnet build StackDuel.slnx`
    Must succeed with no new errors. Don't introduce new warnings either, unless they're pre-existing and unrelated to the change.
