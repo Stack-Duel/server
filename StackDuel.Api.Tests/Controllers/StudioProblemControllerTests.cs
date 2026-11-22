@@ -447,4 +447,277 @@ public class StudioProblemControllerTests
             Times.Once
         );
     }
+
+    [Fact]
+    public async Task SetSampleTestCasesAsync_MapsEveryRequestItemIntoTheServiceInput()
+    {
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        var request = new SetProblemSampleTestCasesRequest(
+            [
+                new SampleTestCaseRequestItem(
+                    "two positives",
+                    [
+                        new SampleTestCaseInputRequestItem("[1,2]", "integer_array"),
+                        new SampleTestCaseInputRequestItem("3", "integer"),
+                    ],
+                    ExpectedOutputValue: "3",
+                    ExpectedOutputValueType: "integer"
+                ),
+                new SampleTestCaseRequestItem(
+                    null,
+                    [new SampleTestCaseInputRequestItem("[]", "integer_array")],
+                    ExpectedOutputValue: "0",
+                    ExpectedOutputValueType: "integer"
+                ),
+            ]
+        );
+
+        SetStudioProblemSampleTestCasesInput? captured = null;
+        _service
+            .Setup(x =>
+                x.SetStudioProblemSampleTestCasesAsync(
+                    It.IsAny<SetStudioProblemSampleTestCasesInput>(),
+                    userId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback(
+                (SetStudioProblemSampleTestCasesInput input, Guid _, CancellationToken _) => captured = input
+            )
+            .ReturnsAsync(Result.Success());
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext(userId))
+            .SetSampleTestCasesAsync(problemId, request, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status200OK, ControllerAssert.StatusCodeOf(result));
+        Assert.NotNull(captured);
+        Assert.Equal(problemId, captured.ProblemId);
+        Assert.Equal(2, captured.TestCases.Count);
+        Assert.Equal("two positives", captured.TestCases[0].Name);
+        Assert.Equal(["[1,2]", "3"], captured.TestCases[0].Inputs.Select(input => input.Value));
+        Assert.Equal(["integer_array", "integer"], captured.TestCases[0].Inputs.Select(input => input.ValueType));
+        Assert.Equal("3", captured.TestCases[0].ExpectedOutputValue);
+        Assert.Equal("integer", captured.TestCases[0].ExpectedOutputValueType);
+        Assert.Null(captured.TestCases[1].Name);
+    }
+
+    [Fact]
+    public async Task SetSampleTestCasesAsync_SendsAnEmptyListWhenTheRequestCarriesNoCases()
+    {
+        SetStudioProblemSampleTestCasesInput? captured = null;
+        _service
+            .Setup(x =>
+                x.SetStudioProblemSampleTestCasesAsync(
+                    It.IsAny<SetStudioProblemSampleTestCasesInput>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Callback(
+                (SetStudioProblemSampleTestCasesInput input, Guid _, CancellationToken _) => captured = input
+            )
+            .ReturnsAsync(Result.Success());
+
+        await ControllerFor(ControllerAssert.AuthenticatedContext())
+            .SetSampleTestCasesAsync(
+                Guid.NewGuid(),
+                new SetProblemSampleTestCasesRequest([]),
+                CancellationToken.None
+            );
+
+        Assert.NotNull(captured);
+        Assert.Empty(captured.TestCases);
+    }
+
+    [Fact]
+    public async Task SetSampleTestCasesAsync_SurfacesAValidationFailure()
+    {
+        _service
+            .Setup(x =>
+                x.SetStudioProblemSampleTestCasesAsync(
+                    It.IsAny<SetStudioProblemSampleTestCasesInput>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.Invalid(new ValidationError("TestCases", "Add at least one language setup.")));
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext())
+            .SetSampleTestCasesAsync(
+                Guid.NewGuid(),
+                new SetProblemSampleTestCasesRequest([]),
+                CancellationToken.None
+            );
+
+        Assert.Equal(StatusCodes.Status400BadRequest, ControllerAssert.StatusCodeOf(result));
+    }
+
+    [Fact]
+    public async Task SubmitForValidationAsync_PassesTheProblemIdAndAuthenticatedUser()
+    {
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        _service
+            .Setup(x => x.SubmitStudioProblemForValidationAsync(problemId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext(userId))
+            .SubmitForValidationAsync(problemId, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status200OK, ControllerAssert.StatusCodeOf(result));
+        _service.Verify(
+            x => x.SubmitStudioProblemForValidationAsync(problemId, userId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task SubmitForValidationAsync_SurfacesARejectedSubmission()
+    {
+        _service
+            .Setup(x =>
+                x.SubmitStudioProblemForValidationAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.Invalid(new ValidationError("Status", "Already published.")));
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext())
+            .SubmitForValidationAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, ControllerAssert.StatusCodeOf(result));
+    }
+
+    [Fact]
+    public async Task CancelValidationAsync_PassesTheProblemIdAndAuthenticatedUser()
+    {
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        _service
+            .Setup(x => x.CancelStudioProblemValidationAsync(problemId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext(userId))
+            .CancelValidationAsync(problemId, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status200OK, ControllerAssert.StatusCodeOf(result));
+        _service.Verify(
+            x => x.CancelStudioProblemValidationAsync(problemId, userId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task CancelValidationAsync_SurfacesAProblemThatIsNotValidating()
+    {
+        _service
+            .Setup(x =>
+                x.CancelStudioProblemValidationAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.Invalid(new ValidationError("Status", "Nothing to cancel.")));
+
+        ActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext())
+            .CancelValidationAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, ControllerAssert.StatusCodeOf(result));
+    }
+
+    [Fact]
+    public async Task GetStudioProblemDeletionImpactAsync_ReturnsTheServicesImpact()
+    {
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        var impact = new ProblemDeletionImpactDto(
+            SubmissionCount: 7,
+            GameRoundCount: 3,
+            UnfinishedGameCount: 2,
+            DailyChallengeCount: 0,
+            CampaignUnitCount: 0,
+            PoolCount: 1
+        );
+        _service
+            .Setup(x => x.GetStudioProblemDeletionImpactAsync(problemId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ProblemDeletionImpactDto>.Success(impact));
+
+        ActionResult<ProblemDeletionImpactDto> result = await ControllerFor(
+            ControllerAssert.AuthenticatedContext(userId)
+        ).GetStudioProblemDeletionImpactAsync(problemId, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status200OK, ControllerAssert.StatusCodeOf(result));
+        Assert.Equal(impact, ControllerAssert.ValueOf(result));
+    }
+
+    [Fact]
+    public async Task GetStudioProblemDeletionImpactAsync_SurfacesAMissingProblem()
+    {
+        _service
+            .Setup(x =>
+                x.GetStudioProblemDeletionImpactAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result<ProblemDeletionImpactDto>.NotFound());
+
+        ActionResult<ProblemDeletionImpactDto> result = await ControllerFor(
+            ControllerAssert.AuthenticatedContext()
+        ).GetStudioProblemDeletionImpactAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, ControllerAssert.StatusCodeOf(result));
+    }
+
+    [Fact]
+    public async Task DeleteStudioProblemAsync_PassesTheTypedTitleAndAuthenticatedUser()
+    {
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+        _service
+            .Setup(x => x.DeleteStudioProblemAsync(problemId, "Count Vowels", userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        IActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext(userId))
+            .DeleteStudioProblemAsync(
+                problemId,
+                new DeleteStudioProblemRequest("Count Vowels"),
+                CancellationToken.None
+            );
+
+        Assert.Equal(StatusCodes.Status200OK, ControllerAssert.StatusCodeOf((ActionResult)result));
+        _service.Verify(
+            x => x.DeleteStudioProblemAsync(problemId, "Count Vowels", userId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task DeleteStudioProblemAsync_SurfacesAMismatchedTitle()
+    {
+        _service
+            .Setup(x =>
+                x.DeleteStudioProblemAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(Result.Invalid(new ValidationError("ConfirmationTitle", "Titles do not match.")));
+
+        IActionResult result = await ControllerFor(ControllerAssert.AuthenticatedContext())
+            .DeleteStudioProblemAsync(
+                Guid.NewGuid(),
+                new DeleteStudioProblemRequest("wrong"),
+                CancellationToken.None
+            );
+
+        Assert.Equal(StatusCodes.Status400BadRequest, ControllerAssert.StatusCodeOf((ActionResult)result));
+    }
 }

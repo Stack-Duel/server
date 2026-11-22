@@ -346,4 +346,37 @@ public class SubmitProblemForValidationHandlerTests
 
         Assert.True(result.IsSuccess, string.Join("; ", result.ValidationErrors.Select(e => e.ErrorMessage)));
     }
+
+    [Fact]
+    public async Task Handle_DeletedProblem_ReturnsNotFound()
+    {
+        Problem problem = CreateReadyProblem();
+        problem.Delete();
+        GivenProblem(problem.Id, problem);
+
+        Result result = await Handle(problem.Id);
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
+    }
+
+    [Fact]
+    public async Task Handle_SampleTestCasesWithDifferentInputCounts_IsRejected()
+    {
+        Problem problem = CreateDraftProblem();
+        ProblemSetup setup = AddSetupWithReferenceSolution(problem);
+        AttachSampleTestCase(setup, inputCount: 1);
+        AttachSampleTestCase(setup, inputCount: 2);
+        SetGenerationParameters(problem);
+        GivenProblem(problem.Id, problem);
+
+        Result result = await Handle(problem.Id);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        Assert.Contains(
+            ErrorMessages(result),
+            message => message.Contains("same number of inputs") && message.Contains("1 and 2")
+        );
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
+    }
 }
