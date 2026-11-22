@@ -8,11 +8,13 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: "app-awapi-scrum-centralus-03"
-  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
 
 jobs:
   build:
     uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
     with:
       publish-container: true
       upload-migration-artifacts: true
@@ -75,15 +77,9 @@ jobs:
       url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
 
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: webapp
-          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-
-      - name: Deploy to Azure App Service
+      - name: Deploy container to Azure App Service
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          images: ghcr.io/stack-duel/server:${{ github.sha }}
