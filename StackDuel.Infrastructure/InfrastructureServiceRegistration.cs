@@ -95,6 +95,8 @@ namespace StackDuel.Infrastructure;
 
 public static class InfrastructureServiceRegistration
 {
+    public const string DatabaseHealthCheckName = "database";
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions(configuration);
@@ -351,6 +353,8 @@ public static class InfrastructureServiceRegistration
                 dbOptions.UseNpgsql(options.DefaultConnection);
             }
         );
+
+        services.AddHealthChecks().AddDbContextCheck<StackDuelDbContext>(DatabaseHealthCheckName);
 
         return services;
     }

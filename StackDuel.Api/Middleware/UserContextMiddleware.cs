@@ -23,6 +23,12 @@ public partial class AccountContextMiddleware(
             return;
         }
 
+        if (endpoint.Metadata.GetMetadata<SkipAccountContextAttribute>() != null)
+        {
+            await next(context);
+            return;
+        }
+
         bool requiresUser = endpoint.Metadata.GetMetadata<RequireUserAttribute>() != null;
 
         bool isAuthenticated = context.User.Identity?.IsAuthenticated == true;

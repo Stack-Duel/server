@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Ardalis.Result.AspNetCore" />
     <PackageReference Include="Asp.Versioning.Mvc" />
+    <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" />
+    <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />

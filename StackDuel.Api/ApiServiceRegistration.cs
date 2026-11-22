@@ -54,6 +54,7 @@ public static class ApiServiceRegistration
 
         services.AddAuth0(configuration);
         services.AddAppInsights(configuration);
+        services.AddPersistedDataProtection(configuration);
         services.AddScoped<AccountContextMiddleware>();
         services.AddAttributeRateLimiting();
 

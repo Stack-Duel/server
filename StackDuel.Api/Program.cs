@@ -1,4 +1,5 @@
 using StackDuel.Api;
+using StackDuel.Api.Attributes;
 using StackDuel.Api.Middleware;
 using StackDuel.Application;
 using StackDuel.Infrastructure;
@@ -18,8 +19,17 @@ await app.UseApi();
 
 app.MapGet("/api/v1/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
     .AllowAnonymous()
-    .ExcludeFromDescription();
+    .ExcludeFromDescription()
+    .WithMetadata(new SkipAccountContextAttribute());
 
-app.MapGet("/", () => Results.Ok()).AllowAnonymous().ExcludeFromDescription();
+app.MapHealthChecks("/api/v1/health/ready")
+    .AllowAnonymous()
+    .ExcludeFromDescription()
+    .WithMetadata(new SkipAccountContextAttribute());
+
+app.MapGet("/", () => Results.Ok())
+    .AllowAnonymous()
+    .ExcludeFromDescription()
+    .WithMetadata(new SkipAccountContextAttribute());
 
 app.Run();
