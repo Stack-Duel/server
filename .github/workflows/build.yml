@@ -32,9 +32,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     outputs:
       image: ${{ steps.image-ref.outputs.pushed }}
