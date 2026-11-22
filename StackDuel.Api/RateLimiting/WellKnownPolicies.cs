@@ -6,6 +6,8 @@ public static class WellKnownPolicies
 
     public const string Submissions = "rl:submissions";
 
+    public const string GradedSubmissions = "rl:graded-submissions";
+
     public const string AvatarUpload = "rl:avatar-upload";
 
     public const string ProblemCreation = "rl:problem-creation";

@@ -5,6 +5,7 @@ using StackDuel.Application.Commands.Submissions.ReceiveJudge0Callback;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Queries.Submissions.GetAdminSubmissionDetail;
 using StackDuel.Application.Queries.Submissions.GetAdminSubmissionsPageable;
+using StackDuel.Application.Queries.Submissions.GetSubmissionProblemSnapshot;
 using StackDuel.Application.Queries.Submissions.GetSubmissionsByProblemSlug;
 using StackDuel.Application.Queries.Submissions.GetSubmissionStatus;
 using StackDuel.Application.Submissions;
@@ -19,6 +20,12 @@ public interface ISubmissionService
     Task<Result<SubmissionStatusDto>> GetSubmissionStatusAsync(
         Guid submissionId,
         Guid userId,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result<SubmissionProblemSnapshotDto>> GetSubmissionProblemSnapshotAsync(
+        Guid submissionId,
+        Guid? userId,
         CancellationToken cancellationToken
     );
 
@@ -84,6 +91,15 @@ internal sealed class SubmissionService(IMediator mediator) : ISubmissionService
     )
     {
         return await mediator.Send(new GetSubmissionStatusQuery(submissionId, userId), cancellationToken);
+    }
+
+    public async Task<Result<SubmissionProblemSnapshotDto>> GetSubmissionProblemSnapshotAsync(
+        Guid submissionId,
+        Guid? userId,
+        CancellationToken cancellationToken
+    )
+    {
+        return await mediator.Send(new GetSubmissionProblemSnapshotQuery(submissionId, userId), cancellationToken);
     }
 
     public async Task<Result<PageResult<AdminSubmissionListItemDto>>> GetAdminSubmissionsPageableAsync(

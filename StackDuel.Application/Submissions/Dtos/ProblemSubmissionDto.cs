@@ -14,5 +14,6 @@ public sealed record ProblemSubmissionDto(
     DateTime CreatedAt,
     SubmissionUserDto User,
     int? MemoryUsage,
-    int? ExecutionTime
+    int? ExecutionTime,
+    int? ProblemVersionNumber = null
 );

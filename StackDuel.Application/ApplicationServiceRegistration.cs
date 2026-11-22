@@ -6,6 +6,7 @@ using StackDuel.Application.Behaviors;
 using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Application.Problems;
+using StackDuel.Application.ProblemValidation;
 using StackDuel.Application.Services.Audit;
 using StackDuel.Application.Services.Campaigns;
 using StackDuel.Application.Services.DailyChallenges;
@@ -88,6 +89,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IProblemService, ProblemService>();
         services.AddScoped<ISlugService, SlugService>();
         services.AddScoped<IProblemLimitService, ProblemLimitService>();
+        services.AddScoped<IProblemTrackLanguagePolicy, ProblemTrackLanguagePolicy>();
         services.AddScoped<IProblemPoolService, ProblemPoolService>();
         services.AddScoped<IRequiredProblemLanguageAdminService, RequiredProblemLanguageAdminService>();
         services.AddScoped<ICampaignService, CampaignService>();
@@ -114,6 +116,7 @@ public static class ApplicationServiceRegistration
         services.AddScoped<IGameExpiryCanceller, GameExpiryCanceller>();
         services.AddScoped<IGameProblemAdvancer, GameProblemAdvancer>();
         services.AddScoped<IGameConcurrencyGuard, GameConcurrencyGuard>();
+        services.AddScoped<IProblemValidationConcurrencyGuard, ProblemValidationConcurrencyGuard>();
         services.AddScoped<IGameJoiner, GameJoiner>();
         services.AddScoped<IGameProblemCompleter, GameProblemCompleter>();
         services.AddScoped<ISubmissionCreator, SubmissionCreator>();

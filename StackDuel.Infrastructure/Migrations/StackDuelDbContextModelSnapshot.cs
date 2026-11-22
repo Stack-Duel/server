@@ -1193,9 +1193,15 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("problem_id");
 
+                    b.Property<Guid?>("ProblemVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("problem_version_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProblemId");
+
+                    b.HasIndex("ProblemVersionId");
 
                     b.HasIndex("GameId", "Position")
                         .IsUnique()
@@ -1525,6 +1531,11 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("failure_reason");
 
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("last_error");
+
                     b.Property<DateTime?>("LockedUntil")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_until");
@@ -1532,6 +1543,10 @@ namespace StackDuel.Infrastructure.Migrations
                     b.Property<Guid>("ProblemId")
                         .HasColumnType("uuid")
                         .HasColumnName("problem_id");
+
+                    b.Property<int>("ProcessingAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("processing_attempts");
 
                     b.Property<string>("ResultSummary")
                         .HasColumnType("text")
@@ -1548,9 +1563,79 @@ namespace StackDuel.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProblemId", "CreatedAt");
+
                     b.HasIndex("Status", "LockedUntil");
 
                     b.ToTable("problem_validation_jobs", (string)null);
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("detail");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("problem_validation_job_id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("problem_validation_job_id");
+
+                    b.ToTable("problem_validation_steps", (string)null);
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationStepItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("detail");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("label");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("problem_validation_step_id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("problem_validation_step_id");
+
+                    b.ToTable("problem_validation_step_items", (string)null);
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.Problem", b =>
@@ -1567,9 +1652,29 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_id");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("HasUnpublishedChanges")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("has_unpublished_changes");
+
+                    b.Property<bool>("IsRevalidating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_revalidating");
+
                     b.Property<int>("MemoryLimit")
                         .HasColumnType("integer")
                         .HasColumnName("memory_limit");
+
+                    b.Property<Guid?>("PublishedVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_version_id");
 
                     b.Property<string>("Question")
                         .IsRequired()
@@ -1886,6 +1991,90 @@ namespace StackDuel.Infrastructure.Migrations
                     b.ToTable("tags", (string)null);
                 });
 
+            modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("MemoryLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("memory_limit");
+
+                    b.Property<Guid>("ProblemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("problem_id");
+
+                    b.Property<DateTime>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("question");
+
+                    b.Property<int>("State")
+                        .HasColumnType("integer")
+                        .HasColumnName("state");
+
+                    b.Property<DateTime?>("SupersededAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("superseded_at");
+
+                    b.Property<int>("TimeLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("time_limit");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_number");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProblemId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("problem_versions", (string)null);
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemVersionSetup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("FunctionName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("function_name");
+
+                    b.Property<string>("InitialCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("initial_code");
+
+                    b.Property<Guid>("LanguageVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("language_version_id");
+
+                    b.Property<Guid>("ProblemSetupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("problem_setup_id");
+
+                    b.Property<Guid>("problem_version_id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProblemSetupId");
+
+                    b.HasIndex("problem_version_id");
+
+                    b.ToTable("problem_version_setups", (string)null);
+                });
+
             modelBuilder.Entity("StackDuel.Domain.Problems.RequiredLanguages.Entities.RequiredProblemLanguage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2042,6 +2231,10 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("problem_setup_id");
 
+                    b.Property<Guid?>("ProblemVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("problem_version_id");
+
                     b.Property<string>("SourceCode")
                         .IsRequired()
                         .HasMaxLength(65536)
@@ -2065,6 +2258,8 @@ namespace StackDuel.Infrastructure.Migrations
                     b.HasIndex("GameId");
 
                     b.HasIndex("ProblemSetupId");
+
+                    b.HasIndex("ProblemVersionId");
 
                     b.HasIndex("UserId");
 
@@ -2901,6 +3096,11 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasForeignKey("ProblemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Problems.Entities.ProblemVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ProblemVersionId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Games.Entities.GameRoundResult", b =>
@@ -3033,6 +3233,24 @@ namespace StackDuel.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationStep", b =>
+                {
+                    b.HasOne("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationJob", null)
+                        .WithMany("Steps")
+                        .HasForeignKey("problem_validation_job_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationStepItem", b =>
+                {
+                    b.HasOne("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationStep", null)
+                        .WithMany("Items")
+                        .HasForeignKey("problem_validation_step_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.Problem", b =>
                 {
                     b.HasOne("StackDuel.Domain.Users.Entities.User", "CreatedBy")
@@ -3053,6 +3271,25 @@ namespace StackDuel.Infrastructure.Migrations
                             b1.Property<int>("Value")
                                 .HasColumnType("integer")
                                 .HasColumnName("difficulty");
+
+                            b1.HasKey("ProblemId");
+
+                            b1.ToTable("problems");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProblemId");
+                        });
+
+                    b.OwnsOne("StackDuel.Domain.Problems.ValueObjects.Title", "Title", b1 =>
+                        {
+                            b1.Property<Guid>("ProblemId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("title");
 
                             b1.HasKey("ProblemId");
 
@@ -3108,26 +3345,8 @@ namespace StackDuel.Infrastructure.Migrations
                             b1.HasKey("ProblemId");
 
                             b1.HasIndex("Value")
-                                .IsUnique();
-
-                            b1.ToTable("problems");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ProblemId");
-                        });
-
-                    b.OwnsOne("StackDuel.Domain.Problems.ValueObjects.Title", "Title", b1 =>
-                        {
-                            b1.Property<Guid>("ProblemId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Value")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("title");
-
-                            b1.HasKey("ProblemId");
+                                .IsUnique()
+                                .HasFilter("deleted_at IS NULL");
 
                             b1.ToTable("problems");
 
@@ -3225,6 +3444,72 @@ namespace StackDuel.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemVersion", b =>
+                {
+                    b.HasOne("StackDuel.Domain.Problems.Entities.Problem", null)
+                        .WithMany("Versions")
+                        .HasForeignKey("ProblemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("StackDuel.Domain.Problems.ValueObjects.Difficulty", "Difficulty", b1 =>
+                        {
+                            b1.Property<Guid>("ProblemVersionId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Value")
+                                .HasColumnType("integer")
+                                .HasColumnName("difficulty");
+
+                            b1.HasKey("ProblemVersionId");
+
+                            b1.ToTable("problem_versions");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProblemVersionId");
+                        });
+
+                    b.OwnsOne("StackDuel.Domain.Problems.ValueObjects.Title", "Title", b1 =>
+                        {
+                            b1.Property<Guid>("ProblemVersionId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("title");
+
+                            b1.HasKey("ProblemVersionId");
+
+                            b1.ToTable("problem_versions");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProblemVersionId");
+                        });
+
+                    b.Navigation("Difficulty")
+                        .IsRequired();
+
+                    b.Navigation("Title")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemVersionSetup", b =>
+                {
+                    b.HasOne("StackDuel.Domain.Problems.Entities.ProblemSetup", null)
+                        .WithMany()
+                        .HasForeignKey("ProblemSetupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Problems.Entities.ProblemVersion", null)
+                        .WithMany("Setups")
+                        .HasForeignKey("problem_version_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("StackDuel.Domain.SubmissionJobs.Entities.SubmissionJobAttempt", b =>
                 {
                     b.HasOne("StackDuel.Domain.ExecutionPipelines.Entities.ExecutionPipelineStep", null)
@@ -3272,6 +3557,11 @@ namespace StackDuel.Infrastructure.Migrations
                         .HasForeignKey("ProblemSetupId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("StackDuel.Domain.Problems.Entities.ProblemVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ProblemVersionId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("StackDuel.Domain.Users.Entities.User", null)
                         .WithMany()
@@ -3492,16 +3782,33 @@ namespace StackDuel.Infrastructure.Migrations
                     b.Navigation("Versions");
                 });
 
+            modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationJob", b =>
+                {
+                    b.Navigation("Steps");
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.ProblemValidation.Entities.ProblemValidationStep", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.Problem", b =>
                 {
                     b.Navigation("History");
 
                     b.Navigation("Setups");
+
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemPool", b =>
                 {
                     b.Navigation("_items");
+                });
+
+            modelBuilder.Entity("StackDuel.Domain.Problems.Entities.ProblemVersion", b =>
+                {
+                    b.Navigation("Setups");
                 });
 
             modelBuilder.Entity("StackDuel.Domain.SubmissionJobs.SubmissionJob", b =>

@@ -95,7 +95,12 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
                         // back null here. Aggregating over the Results navigation directly (a
                         // real mapped collection) translates to a correlated MAX subquery instead.
                         x.submission.Results.Max(r => r.MemoryUsed),
-                        x.submission.Results.Max(r => r.Runtime)
+                        x.submission.Results.Max(r => r.Runtime),
+                        context
+                            .Set<ProblemVersion>()
+                            .Where(version => version.Id == x.submission.ProblemVersionId)
+                            .Select(version => (int?)version.VersionNumber)
+                            .FirstOrDefault()
                     )
             )
             .ToListAsync(cancellationToken);
@@ -190,7 +195,12 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
                     new ProfileSubmissionDto(
                         x.submission.Id,
                         x.submission.Status,
-                        x.problem.Title.Value,
+                        context
+                            .Set<ProblemVersion>()
+                            .Where(version => version.Id == x.submission.ProblemVersionId)
+                            .Select(version => version.Title.Value)
+                            .FirstOrDefault()
+                            ?? x.problem.Title.Value,
                         x.problem.Slug.Value,
                         new SubmissionLanguageDto(lv.language.Id, lv.language.Name.Value, lv.version.Version.Value),
                         x.submission.CreatedAt
@@ -260,11 +270,7 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
             )
             .Where(x => x.CreatedById == creatorId)
             .GroupBy(x => 1)
-            .Select(g => new
-            {
-                Total = g.Count(),
-                Accepted = g.Count(x => x.Status == SubmissionStatus.Accepted),
-            })
+            .Select(g => new { Total = g.Count(), Accepted = g.Count(x => x.Status == SubmissionStatus.Accepted) })
             .FirstOrDefaultAsync(cancellationToken);
 
         return new SubmissionStatsDto(stats?.Total ?? 0, stats?.Accepted ?? 0);
@@ -287,11 +293,7 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
             .Submissions.AsNoTracking()
             .Where(s => setupIds.Contains(s.ProblemSetupId) && s.Type == SubmissionType.Submit)
             .GroupBy(s => 1)
-            .Select(g => new
-            {
-                Total = g.Count(),
-                Accepted = g.Count(x => x.Status == SubmissionStatus.Accepted),
-            })
+            .Select(g => new { Total = g.Count(), Accepted = g.Count(x => x.Status == SubmissionStatus.Accepted) })
             .FirstOrDefaultAsync(cancellationToken);
 
         return new SubmissionStatsDto(stats?.Total ?? 0, stats?.Accepted ?? 0);
@@ -424,5 +426,115 @@ internal sealed class SubmissionReadRepository(StackDuelDbContext context) : ISu
                         x.submission.Results.Max(r => r.Runtime)
                     )
             );
+    }
+
+    public async Task<SubmissionProblemSnapshotDto?> FindProblemSnapshotForSubmissionAsync(
+        Guid submissionId,
+        Guid? userId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var live = await context
+            .Submissions.AsNoTracking()
+            .Where(submission => submission.Id == submissionId)
+            .Where(submission => userId == null || submission.UserId == userId)
+            .Join(
+                context.Set<ProblemSetup>().AsNoTracking().IgnoreQueryFilters(),
+                submission => submission.ProblemSetupId,
+                setup => setup.Id,
+                (submission, setup) => new { submission, setup }
+            )
+            .Join(
+                context.Problems.AsNoTracking().IgnoreQueryFilters(),
+                x => EF.Property<Guid>(x.setup, "problem_id"),
+                problem => problem.Id,
+                (x, problem) =>
+                    new
+                    {
+                        x.submission.Id,
+                        x.submission.ProblemVersionId,
+                        x.submission.ProblemSetupId,
+                        ProblemId = problem.Id,
+                        ProblemSlug = problem.Slug.Value,
+                        Title = problem.Title.Value,
+                        Question = problem.Question.Value,
+                        Difficulty = problem.Difficulty.Value,
+                        TimeLimit = problem.TimeLimit.Milliseconds,
+                        MemoryLimit = problem.MemoryLimit.Megabytes,
+                        x.setup.InitialCode,
+                        x.setup.FunctionName,
+                    }
+            )
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (live is null)
+            return null;
+
+        if (live.ProblemVersionId is null)
+        {
+            return new SubmissionProblemSnapshotDto(
+                live.Id,
+                live.ProblemId,
+                live.ProblemSlug,
+                null,
+                live.Title,
+                live.Question,
+                live.Difficulty,
+                live.TimeLimit,
+                live.MemoryLimit,
+                live.InitialCode,
+                live.FunctionName
+            );
+        }
+
+        var pinned = await context
+            .Set<ProblemVersion>()
+            .AsNoTracking()
+            .Where(version => version.Id == live.ProblemVersionId)
+            .Select(version => new
+            {
+                version.VersionNumber,
+                Title = version.Title.Value,
+                Question = version.Question.Value,
+                Difficulty = version.Difficulty.Value,
+                TimeLimit = version.TimeLimit.Milliseconds,
+                MemoryLimit = version.MemoryLimit.Megabytes,
+                Setup = version
+                    .Setups.Where(setup => setup.ProblemSetupId == live.ProblemSetupId)
+                    .Select(setup => new { setup.InitialCode, setup.FunctionName })
+                    .FirstOrDefault(),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (pinned is null)
+        {
+            return new SubmissionProblemSnapshotDto(
+                live.Id,
+                live.ProblemId,
+                live.ProblemSlug,
+                null,
+                live.Title,
+                live.Question,
+                live.Difficulty,
+                live.TimeLimit,
+                live.MemoryLimit,
+                live.InitialCode,
+                live.FunctionName
+            );
+        }
+
+        return new SubmissionProblemSnapshotDto(
+            live.Id,
+            live.ProblemId,
+            live.ProblemSlug,
+            pinned.VersionNumber,
+            pinned.Title,
+            pinned.Question,
+            pinned.Difficulty,
+            pinned.TimeLimit,
+            pinned.MemoryLimit,
+            pinned.Setup?.InitialCode ?? live.InitialCode,
+            pinned.Setup?.FunctionName ?? live.FunctionName
+        );
     }
 }

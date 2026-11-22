@@ -1,4 +1,5 @@
 using StackDuel.Application.Audit;
+using StackDuel.Application.Authorization;
 using StackDuel.Application.Commands;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 
@@ -9,8 +10,9 @@ internal sealed record SetProblemGenerationParametersCommand(
     IReadOnlyList<GenerationParameterSpec> Parameters,
     string OutputValueType,
     int TargetCaseCount,
-    int Seed
-) : ICommand, IAuditableCommand
+    int Seed,
+    Guid? RequestedByUserId = null
+) : ICommand, IAuditableCommand, INotFoundWhenUnauthorizedCommand
 {
     public string AuditAction => "problem.generation-parameters-set";
     public string? AuditTargetType => "problem";
@@ -23,4 +25,7 @@ internal sealed record SetProblemGenerationParametersCommand(
             Seed,
             ParameterCount = Parameters.Count,
         };
+
+    public IReadOnlyList<IAuthorizationRequirement> Requirements =>
+        ProblemCommandAuthorization.OwnershipRequirements(ProblemId, RequestedByUserId);
 }

@@ -33,29 +33,96 @@ public sealed class Problem : AggregateRoot
         Status = ProblemStatus.Archived;
     }
 
+    public void Delete()
+    {
+        DeletedAt ??= DateTime.UtcNow;
+    }
+
+    public bool IsDeleted => DeletedAt.HasValue;
+
     public void Publish()
     {
         Status = ProblemStatus.Published;
+        FreezeVersion();
     }
 
     public void SubmitForValidation()
     {
-        Status = ProblemStatus.Pending;
         ValidationFailureReason = null;
+
+        if (IsPublished)
+        {
+            IsRevalidating = true;
+            return;
+        }
+
+        Status = ProblemStatus.Pending;
     }
+
+    public bool IsPublished => PublishedVersionId.HasValue && Status == ProblemStatus.Published;
+
+    public bool IsEditLocked => Status == ProblemStatus.Pending || IsRevalidating;
+
+    public bool CanSubmitForValidation =>
+        CanSubmit(Status, PublishedVersionId.HasValue, HasUnpublishedChanges, IsRevalidating);
+
+    public static bool CanSubmit(
+        ProblemStatus status,
+        bool hasPublishedVersion,
+        bool hasUnpublishedChanges,
+        bool isRevalidating
+    ) =>
+        status != ProblemStatus.Pending
+        && !isRevalidating
+        && (
+            status is ProblemStatus.Draft or ProblemStatus.Failed
+            || (status == ProblemStatus.Published && hasPublishedVersion && hasUnpublishedChanges)
+        );
 
     public void FailValidation(string reason)
     {
-        ValidationFailureReason = !string.IsNullOrWhiteSpace(reason)
-            ? reason
-            : throw new ArgumentException("Reason must not be empty.", nameof(reason));
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Reason must not be empty.", nameof(reason));
+
+        ValidationFailureReason =
+            reason.Length > MaxValidationFailureReasonLength ? reason[..MaxValidationFailureReasonLength] : reason;
+
+        if (IsRevalidating)
+        {
+            IsRevalidating = false;
+            return;
+        }
+
         Status = ProblemStatus.Failed;
+    }
+
+    public const int MaxValidationFailureReasonLength = 4000;
+
+    public void CancelValidation()
+    {
+        if (IsRevalidating)
+        {
+            IsRevalidating = false;
+            ValidationFailureReason = null;
+            return;
+        }
+
+        if (Status != ProblemStatus.Pending)
+            return;
+
+        Status = ProblemStatus.Draft;
+        ValidationFailureReason = null;
     }
 
     public void CompleteValidation()
     {
+        if (Status != ProblemStatus.Pending && !IsRevalidating)
+            return;
+
         Status = ProblemStatus.Published;
         ValidationFailureReason = null;
+        IsRevalidating = false;
+        FreezeVersion();
     }
 
     public void SetTrack(Guid trackId)
@@ -74,6 +141,7 @@ public sealed class Problem : AggregateRoot
     )
     {
         GenerationSpec = new ProblemGenerationSpec(parameters, outputValueType, targetCaseCount, seed);
+        MarkContentChanged();
     }
 
     public void UpdateContent(
@@ -91,6 +159,7 @@ public sealed class Problem : AggregateRoot
         MemoryLimit = memoryLimit ?? throw new ArgumentNullException(nameof(memoryLimit));
 
         _history.Add(new ProblemHistory(Title, Question, Difficulty, TimeLimit, MemoryLimit));
+        MarkContentChanged();
     }
 
     public void UpdateSlug(Slug slug)
@@ -102,60 +171,64 @@ public sealed class Problem : AggregateRoot
     {
         var setup = new ProblemSetup(languageVersionId, initialCode, functionName, pipelineId);
         _setups.Add(setup);
+        MarkContentChanged();
         return setup;
     }
 
     public void SetReferenceSolution(Guid setupId, string code)
     {
-        ProblemSetup setup =
-            _setups.FirstOrDefault(s => s.Id == setupId)
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
             ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
         setup.SetReferenceSolution(code);
+        MarkContentChanged();
     }
 
     public void SetGenerationSpecId(Guid setupId, Guid specId)
     {
-        ProblemSetup setup =
-            _setups.FirstOrDefault(s => s.Id == setupId)
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
             ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
         setup.SetGenerationSpecId(specId);
     }
 
     public void SetAdditionalFileBundle(Guid setupId, Guid bundleId)
     {
-        ProblemSetup setup =
-            _setups.FirstOrDefault(s => s.Id == setupId)
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
             ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
         setup.SetAdditionalFileBundle(bundleId);
     }
 
     public void UpdateSetupInitialCode(Guid setupId, string initialCode)
     {
-        ProblemSetup setup =
-            _setups.FirstOrDefault(s => s.Id == setupId)
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
             ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
         setup.UpdateInitialCode(initialCode);
+        MarkContentChanged();
     }
 
     public void UpdateSetupFunctionName(Guid setupId, string? functionName)
     {
-        ProblemSetup setup =
-            _setups.FirstOrDefault(s => s.Id == setupId)
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
             ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
         setup.UpdateFunctionName(functionName);
+        MarkContentChanged();
     }
 
     public void AddTag(ProblemTag tag)
     {
         ArgumentNullException.ThrowIfNull(tag);
-        if (!_tags.Contains(tag))
-            _tags.Add(tag);
+        if (_tags.Contains(tag))
+            return;
+
+        _tags.Add(tag);
+        MarkContentChanged();
     }
 
     public void RemoveTag(ProblemTag tag)
     {
         ArgumentNullException.ThrowIfNull(tag);
-        _tags.Remove(tag);
+
+        if (_tags.Remove(tag))
+            MarkContentChanged();
     }
 
     public void SetCreatedBy(Guid userId)
@@ -174,6 +247,60 @@ public sealed class Problem : AggregateRoot
         TimeLimit = null!;
         MemoryLimit = null!;
     }
+
+    public void MarkSampleTestCasesChanged() => MarkContentChanged();
+
+    private void MarkContentChanged()
+    {
+        if (PublishedVersionId.HasValue)
+            HasUnpublishedChanges = true;
+    }
+
+    private void FreezeVersion()
+    {
+        HasUnpublishedChanges = false;
+
+        PublishedVersion?.Supersede();
+
+        ProblemVersion version = new(
+            Id,
+            NextVersionNumber,
+            Title,
+            Question,
+            Difficulty,
+            TimeLimit,
+            MemoryLimit,
+            _setups.Select(setup => new ProblemVersionSetupSpec(
+                setup.Id,
+                setup.LanguageVersionId,
+                setup.InitialCode,
+                setup.FunctionName
+            ))
+        );
+
+        _versions.Add(version);
+        PublishedVersionId = version.Id;
+    }
+
+    public ProblemVersion? PublishedVersion =>
+        PublishedVersionId.HasValue ? _versions.FirstOrDefault(version => version.Id == PublishedVersionId) : null;
+
+    public ProblemVersion? FindVersion(Guid versionId) => _versions.FirstOrDefault(version => version.Id == versionId);
+
+    private int NextVersionNumber =>
+        _versions.Count == 0 ? ProblemVersion.FirstVersionNumber : _versions.Max(version => version.VersionNumber) + 1;
+
+    public IReadOnlyList<int> SampleTestCaseInputCounts() =>
+        [
+            .. _setups
+                .SelectMany(setup => setup.TestSuites)
+                .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
+                .SelectMany(testSuite => testSuite.TestCases)
+                .Where(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt is null)
+                .Select(testCase => testCase.Inputs.Count)
+                .Distinct()
+                .Order(),
+        ];
 
     public IEnumerable<ProblemSetup> SetupsMissingReferenceSolution() =>
         _setups.Where(setup => string.IsNullOrWhiteSpace(setup.ReferenceSolutionCode));
@@ -227,10 +354,21 @@ public sealed class Problem : AggregateRoot
         ProblemStatus.Archived,
     };
 
+    public DateTime? DeletedAt { get; private set; }
+
+    public Guid? PublishedVersionId { get; private set; }
+
+    public bool HasUnpublishedChanges { get; private set; }
+
+    public bool IsRevalidating { get; private set; }
+
+    public IReadOnlyCollection<ProblemVersion> Versions => _versions.AsReadOnly();
+
     public IReadOnlyCollection<ProblemSetup> Setups => _setups.AsReadOnly();
     public IReadOnlyCollection<ProblemTag> Tags => _tags.AsReadOnly();
 
     private readonly List<ProblemHistory> _history = [];
     private readonly List<ProblemSetup> _setups = [];
+    private readonly List<ProblemVersion> _versions = [];
     private readonly List<ProblemTag> _tags = [];
 }

@@ -2,6 +2,8 @@ using Ardalis.Result;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.StudioProblems.Dtos;
+using StackDuel.Domain.Problems.Entities;
+using StackDuel.Domain.TestSuites.Enums;
 
 namespace StackDuel.Application.Queries.StudioProblems.GetStudioProblemSetups;
 
@@ -58,11 +60,32 @@ internal sealed class GetStudioProblemSetupsHandler(
                     setup.FunctionName ?? string.Empty,
                     setup.ReferenceSolutionCode ?? string.Empty,
                     setup.TestSuites.Count.ToString(),
-                    setup.TestSuites.Sum(testSuite => testSuite.TestCases.Count).ToString()
+                    setup.TestSuites.Sum(testSuite => testSuite.TestCases.Count).ToString(),
+                    ToSampleTestCases(setup)
                 );
             }),
         ];
 
         return Result<IEnumerable<StudioProblemDetailsSetupDto>>.Success(setups);
     }
+
+    private static IReadOnlyList<StudioProblemSampleTestCaseDto> ToSampleTestCases(ProblemSetup setup) =>
+        [
+            .. setup
+                .TestSuites.Where(testSuite => testSuite.Type == TestSuiteType.Sample)
+                .SelectMany(testSuite => testSuite.TestCases)
+                .Where(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt is null)
+                .Select(testCase => new StudioProblemSampleTestCaseDto(
+                    testCase.Id,
+                    testCase.Name,
+                    [
+                        .. testCase.Inputs.Select(input => new StudioProblemSampleTestCaseInputDto(
+                            input.Value,
+                            input.ValueType
+                        )),
+                    ],
+                    testCase.ExpectedOutputs.Select(output => output.Value).FirstOrDefault() ?? string.Empty,
+                    testCase.ExpectedOutputs.Select(output => output.ValueType).FirstOrDefault() ?? string.Empty
+                )),
+        ];
 }

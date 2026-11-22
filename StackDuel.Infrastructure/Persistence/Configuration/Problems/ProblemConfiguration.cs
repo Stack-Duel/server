@@ -24,7 +24,7 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
             {
                 slug.Property(s => s.Value).HasColumnName("slug").HasMaxLength(Slug.MaxLength).IsRequired();
 
-                slug.HasIndex(s => s.Value).IsUnique();
+                slug.HasIndex(s => s.Value).IsUnique().HasFilter("deleted_at IS NULL");
             }
         );
 
@@ -109,6 +109,8 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
 
         builder.Property(p => p.CreatedAt).HasColumnName("created_at").IsRequired();
 
+        builder.Property(p => p.DeletedAt).HasColumnName("deleted_at").IsRequired(false);
+
         builder
             .HasMany(p => p.History)
             .WithOne()
@@ -126,6 +128,25 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Setups).HasField("_setups").UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder
+            .HasMany(p => p.Versions)
+            .WithOne()
+            .HasForeignKey(v => v.ProblemId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.Versions).HasField("_versions").UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Property(p => p.PublishedVersionId).HasColumnName("published_version_id").IsRequired(false);
+
+        builder
+            .Property(p => p.HasUnpublishedChanges)
+            .HasColumnName("has_unpublished_changes")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(p => p.IsRevalidating).HasColumnName("is_revalidating").HasDefaultValue(false).IsRequired();
 
         builder.HasMany(p => p.Tags).WithMany(t => t.Problems).UsingEntity(j => j.ToTable("problem_tags"));
 

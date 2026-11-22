@@ -52,10 +52,13 @@ public class SubmitProblemForValidationHandlerTests
         return setup;
     }
 
-    private static void AttachSampleTestCase(ProblemSetup setup)
+    private static void AttachSampleTestCase(ProblemSetup setup, int inputCount = 1)
     {
         TestSuite sampleSuite = new("samples", TestSuiteType.Sample);
-        sampleSuite.AddTestCase("first");
+        TestCase sampleCase = sampleSuite.AddTestCase("first");
+
+        for (int position = 0; position < inputCount; position++)
+            sampleCase.AddInput("1", "integer");
 
         FieldInfo testSuitesField = typeof(ProblemSetup).GetField(
             "_testSuites",
@@ -302,5 +305,78 @@ public class SubmitProblemForValidationHandlerTests
             default:
                 throw new ArgumentOutOfRangeException(nameof(status), status, "Unsupported status for this test.");
         }
+    }
+
+    [Fact]
+    public async Task Handle_GenerationParametersDoNotMatchTheSampleInputs_ReturnsInvalid()
+    {
+        Problem problem = CreateDraftProblem();
+        AttachSampleTestCase(AddSetupWithReferenceSolution(problem), inputCount: 2);
+
+        problem.SetGenerationParameters(
+            [new GenerationParameterSpec("asdfa", "integer", 1, 4123, null, null, null)],
+            "integer",
+            20,
+            12345
+        );
+
+        _problemRepository
+            .Setup(repository => repository.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problem);
+
+        Result result = await _handler.Handle(new SubmitProblemForValidationCommand(problem.Id), default);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        Assert.Contains(
+            result.ValidationErrors,
+            error => error.ErrorMessage.Contains("generation parameter(s) but each sample test case has")
+        );
+    }
+
+    [Fact]
+    public async Task Handle_GenerationParametersMatchTheSampleInputs_IsAccepted()
+    {
+        Problem problem = CreateReadyProblem();
+
+        _problemRepository
+            .Setup(repository => repository.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problem);
+
+        Result result = await _handler.Handle(new SubmitProblemForValidationCommand(problem.Id), default);
+
+        Assert.True(result.IsSuccess, string.Join("; ", result.ValidationErrors.Select(e => e.ErrorMessage)));
+    }
+
+    [Fact]
+    public async Task Handle_DeletedProblem_ReturnsNotFound()
+    {
+        Problem problem = CreateReadyProblem();
+        problem.Delete();
+        GivenProblem(problem.Id, problem);
+
+        Result result = await Handle(problem.Id);
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
+    }
+
+    [Fact]
+    public async Task Handle_SampleTestCasesWithDifferentInputCounts_IsRejected()
+    {
+        Problem problem = CreateDraftProblem();
+        ProblemSetup setup = AddSetupWithReferenceSolution(problem);
+        AttachSampleTestCase(setup, inputCount: 1);
+        AttachSampleTestCase(setup, inputCount: 2);
+        SetGenerationParameters(problem);
+        GivenProblem(problem.Id, problem);
+
+        Result result = await Handle(problem.Id);
+
+        Assert.Equal(ResultStatus.Invalid, result.Status);
+        Assert.Contains(
+            ErrorMessages(result),
+            message => message.Contains("same number of inputs") && message.Contains("1 and 2")
+        );
+        Assert.Equal(ProblemStatus.Draft, problem.Status);
     }
 }

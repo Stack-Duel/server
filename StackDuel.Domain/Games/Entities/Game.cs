@@ -24,8 +24,7 @@ public sealed class Game : AggregateRoot
         if (poolId == Guid.Empty)
             throw new ArgumentException("Pool id must not be empty.", nameof(poolId));
 
-        Guid[] trackIdArray =
-            trackIds?.Where(id => id != Guid.Empty).Distinct().ToArray()
+        Guid[] trackIdArray = trackIds?.Where(id => id != Guid.Empty).Distinct().ToArray()
             ?? throw new ArgumentNullException(nameof(trackIds));
 
         if (trackIdArray.Length == 0)
@@ -34,8 +33,7 @@ public sealed class Game : AggregateRoot
         if (timeLimitInSeconds <= 0)
             throw new ArgumentException("Time limit must be greater than zero.", nameof(timeLimitInSeconds));
 
-        Guid[] participantIds =
-            playerUserIds?.Where(id => id != Guid.Empty).Distinct().ToArray()
+        Guid[] participantIds = playerUserIds?.Where(id => id != Guid.Empty).Distinct().ToArray()
             ?? throw new ArgumentNullException(nameof(playerUserIds));
 
         if (participantIds.Length == 0)
@@ -93,8 +91,7 @@ public sealed class Game : AggregateRoot
         if (Status != GameStatus.Pending)
             throw new InvalidOperationException("Only pending games can be left.");
 
-        GameParticipant participant =
-            _participants.FirstOrDefault(p => p.UserId == userId)
+        GameParticipant participant = _participants.FirstOrDefault(p => p.UserId == userId)
             ?? throw new InvalidOperationException("User is not a participant in this game.");
 
         _participants.Remove(participant);
@@ -172,8 +169,7 @@ public sealed class Game : AggregateRoot
         if (Status != GameStatus.Running)
             throw new InvalidOperationException("Only running games can be forfeited.");
 
-        GameParticipant participant =
-            _participants.FirstOrDefault(p => p.UserId == userId)
+        GameParticipant participant = _participants.FirstOrDefault(p => p.UserId == userId)
             ?? throw new InvalidOperationException("User is not a participant in this game.");
 
         participant.Forfeit();
@@ -232,8 +228,7 @@ public sealed class Game : AggregateRoot
         if (Status != GameStatus.Running)
             throw new InvalidOperationException("Only running games can record progress.");
 
-        GameParticipant participant =
-            _participants.FirstOrDefault(p => p.UserId == userId)
+        GameParticipant participant = _participants.FirstOrDefault(p => p.UserId == userId)
             ?? throw new InvalidOperationException("User is not a participant in this game.");
 
         participant.IncrementScore();
@@ -246,8 +241,7 @@ public sealed class Game : AggregateRoot
         if (Status != GameStatus.Running)
             throw new InvalidOperationException("Only running games can be updated.");
 
-        GameParticipant participant =
-            _participants.FirstOrDefault(p => p.UserId == userId)
+        GameParticipant participant = _participants.FirstOrDefault(p => p.UserId == userId)
             ?? throw new InvalidOperationException("User is not a participant in this game.");
 
         participant.FinishProblems();
@@ -270,7 +264,7 @@ public sealed class Game : AggregateRoot
     public Guid? ProblemIdAtPosition(int position) =>
         _rounds.FirstOrDefault(round => round.Position == position)?.ProblemId;
 
-    public void AppendRound(Guid problemId)
+    public void AppendRound(Guid problemId, Guid? problemVersionId = null)
     {
         if (problemId == Guid.Empty)
             throw new ArgumentException("Problem id must not be empty.", nameof(problemId));
@@ -278,7 +272,7 @@ public sealed class Game : AggregateRoot
         if (_rounds.Any(round => round.ProblemId == problemId))
             throw new DuplicateGameProblemException(Id, problemId);
 
-        _rounds.Add(new GameRound(Id, _rounds.Count, problemId));
+        _rounds.Add(new GameRound(Id, _rounds.Count, problemId, problemVersionId));
     }
 
     public Guid? CurrentProblemIdFor(Guid userId)

@@ -27,6 +27,18 @@ internal sealed partial class TestCaseGenerationJobProcessorService(
     // Must comfortably exceed how long a single problem's generation can take (attempts up to
     // TargetCaseCount * 15, in rounds — see TestCaseGenerationService). If a worker crashes
     // mid-run the lease simply expires and another sweep picks it back up.
+    private const int MaxReportedWarnings = 3;
+
+    private static string DescribeWarnings(IReadOnlyList<string> warnings)
+    {
+        if (warnings.Count == 0)
+            return string.Empty;
+
+        IEnumerable<string> distinct = warnings.Distinct().Take(MaxReportedWarnings);
+
+        return $" First problems: {string.Join(" | ", distinct)}";
+    }
+
     private static readonly TimeSpan LeaseDuration = TimeSpan.FromMinutes(10);
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -97,7 +109,8 @@ internal sealed partial class TestCaseGenerationJobProcessorService(
 
                 string summary =
                     $"Generated {result.Generated}/{result.Requested} "
-                    + $"({result.Skipped} attempts skipped, {result.Warnings.Count} warnings).";
+                    + $"({result.Skipped} attempts skipped, {result.Warnings.Count} warnings)."
+                    + DescribeWarnings(result.Warnings);
 
                 // A job that produced at least some verified cases is a completion, even if it
                 // fell short of the target (result.Succeeded is the stricter "hit target

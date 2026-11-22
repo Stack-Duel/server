@@ -37,6 +37,8 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
                 .ThenInclude(s => s.TestSuites)
                     .ThenInclude(ts => ts.TestCases)
                         .ThenInclude(tc => tc.ExpectedOutputs)
+            .Include(p => p.Versions)
+                .ThenInclude(v => v.Setups)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
@@ -51,8 +53,10 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
                 .ThenInclude(s => s.TestSuites)
                     .ThenInclude(ts => ts.TestCases)
                         .ThenInclude(tc => tc.ExpectedOutputs)
+            .Include(p => p.Versions)
+                .ThenInclude(v => v.Setups)
             .AsSplitQuery()
-            .FirstOrDefaultAsync(p => p.Slug.Value == slug.Value, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Slug.Value == slug.Value && p.DeletedAt == null, cancellationToken);
 
     public async Task<Problem?> FindBySetupIdAsync(Guid setupId, CancellationToken cancellationToken = default) =>
         await context
@@ -65,6 +69,8 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
                 .ThenInclude(s => s.TestSuites)
                     .ThenInclude(ts => ts.TestCases)
                         .ThenInclude(tc => tc.ExpectedOutputs)
+            .Include(p => p.Versions)
+                .ThenInclude(v => v.Setups)
             .Where(p => p.Setups.Any(s => s.Id == setupId))
             .AsSplitQuery()
             .FirstOrDefaultAsync(cancellationToken);
@@ -89,4 +95,5 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
 
         return await context.Tags.Where(t => tagList.Contains(t.Name)).ToListAsync(cancellationToken);
     }
+
 }

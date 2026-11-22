@@ -30,6 +30,15 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
             s.UserId,
         });
 
+        builder.Property(s => s.ProblemVersionId).HasColumnName("problem_version_id").IsRequired(false);
+
+        builder
+            .HasOne<ProblemVersion>()
+            .WithMany()
+            .HasForeignKey(s => s.ProblemVersionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(s => s.GameId).HasColumnName("game_id").IsRequired(false);
 
         builder.Property(s => s.Type).HasColumnName("type").HasConversion<int>().IsRequired();

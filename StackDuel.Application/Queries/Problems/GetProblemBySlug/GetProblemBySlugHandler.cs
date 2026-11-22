@@ -2,6 +2,7 @@
 using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Application.Queries.Problems.GetProblemBySlug;
 
@@ -27,26 +28,27 @@ internal sealed class GetProblemBySlugHandler(
             cancellationToken
         );
 
-        var publicTestCases =
-            problem
-                .Setups.FirstOrDefault()
-                ?.PublicTestSuites()
-                .SelectMany(suite => suite.TestCases)
-                .Select(tc => new PublicTestCaseDto(
-                    tc.Name,
-                    tc.Description,
-                    tc.Inputs.Select(i => new PublicTestCaseInputDto(i.Value, i.ValueType)),
-                    tc.ExpectedOutputs.Select(o => new PublicTestCaseExpectedOutputDto(o.Value, o.ValueType))
-                ))
+        var publicTestCases = problem
+            .Setups.FirstOrDefault()
+            ?.PublicTestSuites()
+            .SelectMany(suite => suite.TestCases)
+            .Select(tc => new PublicTestCaseDto(
+                tc.Name,
+                tc.Description,
+                tc.Inputs.Select(i => new PublicTestCaseInputDto(i.Value, i.ValueType)),
+                tc.ExpectedOutputs.Select(o => new PublicTestCaseExpectedOutputDto(o.Value, o.ValueType))
+            ))
             ?? [];
+
+        ProblemVersion? published = problem.PublishedVersion;
 
         return Result.Success(
             new ProblemWithSetupsDto(
                 Id: problem.Id,
                 Slug: problem.Slug,
-                Title: problem.Title,
-                DifficultyTier: problem.Difficulty.Tier,
-                Question: problem.Question,
+                Title: published?.Title ?? problem.Title,
+                DifficultyTier: (published?.Difficulty ?? problem.Difficulty).Tier,
+                Question: published?.Question ?? problem.Question,
                 AvailableLanguages: languages.Select(language => new ProblemSetupLanguageDto(
                     language.Id,
                     language.Name,

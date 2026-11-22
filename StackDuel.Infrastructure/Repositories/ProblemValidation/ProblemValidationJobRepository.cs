@@ -21,7 +21,21 @@ internal sealed class ProblemValidationJobRepository(StackDuelDbContext context)
     }
 
     public async Task<ProblemValidationJob?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await context.ProblemValidationJobs.FirstOrDefaultAsync(j => j.Id == id, cancellationToken);
+        await context
+            .ProblemValidationJobs.Include(j => j.Steps)
+                .ThenInclude(step => step.Items)
+            .FirstOrDefaultAsync(j => j.Id == id, cancellationToken);
+
+    public async Task<bool?> IsCancelledAsync(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        ProblemValidationJobStatus? status = await context
+            .ProblemValidationJobs.AsNoTracking()
+            .Where(job => job.Id == jobId)
+            .Select(job => (ProblemValidationJobStatus?)job.Status)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return status is null ? null : status == ProblemValidationJobStatus.Cancelled;
+    }
 
     public async Task<IReadOnlyList<ProblemValidationJob>> FindPendingAsync(
         int batchSize,
@@ -85,4 +99,30 @@ internal sealed class ProblemValidationJobRepository(StackDuelDbContext context)
             .ProblemValidationJobs.Where(j => j.Id == jobId)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.LockedUntil, (DateTime?)null), cancellationToken);
     }
+
+    public async Task SetRetryAfterAsync(Guid jobId, TimeSpan delay, CancellationToken cancellationToken = default)
+    {
+        DateTime retryAt = DateTime.UtcNow.Add(delay);
+
+        await context
+            .ProblemValidationJobs.Where(j => j.Id == jobId)
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.LockedUntil, retryAt), cancellationToken);
+    }
+
+    public async Task<ProblemValidationJob?> FindActiveForProblemAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await context
+            .ProblemValidationJobs.Include(j => j.Steps)
+                .ThenInclude(step => step.Items)
+            .Where(j =>
+                j.ProblemId == problemId
+                && (
+                    j.Status == ProblemValidationJobStatus.Pending
+                    || j.Status == ProblemValidationJobStatus.AwaitingGeneration
+                )
+            )
+            .OrderByDescending(j => j.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
 }
