@@ -14,7 +14,8 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     with:
-      upload-artifact: true
+      publish-container: true
+      upload-migration-artifacts: true
 
   migrate:
     runs-on: ubuntu-latest
