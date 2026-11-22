@@ -15,11 +15,13 @@ public sealed class Submission : AggregateRoot
         SourceCode sourceCode,
         IEnumerable<Guid> testCaseIds,
         IEnumerable<SubmissionSourceFile>? additionalFiles = null,
-        Guid? gameId = null
+        Guid? gameId = null,
+        Guid? problemVersionId = null
     )
     {
         UserId = userId;
         ProblemSetupId = problemSetupId;
+        ProblemVersionId = problemVersionId;
         GameId = gameId;
         Type = type;
         SourceCode = sourceCode ?? throw new ArgumentNullException(nameof(sourceCode));
@@ -79,8 +81,7 @@ public sealed class Submission : AggregateRoot
         string? compileOutput = null
     )
     {
-        SubmissionResult result =
-            _results.FirstOrDefault(r => r.TestCaseId == testCaseId)
+        SubmissionResult result = _results.FirstOrDefault(r => r.TestCaseId == testCaseId)
             ?? throw new SubmissionResultNotFoundException(testCaseId);
 
         result.Update(status, runtime, memoryUsed, actualOutput, standardOutput, standardError, compileOutput);
@@ -95,6 +96,7 @@ public sealed class Submission : AggregateRoot
     public int? MemoryUsage => Results.Max(r => r.MemoryUsed);
 
     public Guid ProblemSetupId { get; private set; }
+    public Guid? ProblemVersionId { get; private set; }
     public Guid? GameId { get; private set; }
     public IReadOnlyCollection<SubmissionResult> Results => _results.AsReadOnly();
     public SourceCode SourceCode { get; private set; } = null!;

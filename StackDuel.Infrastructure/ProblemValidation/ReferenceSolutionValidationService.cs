@@ -26,11 +26,24 @@ internal sealed record SetupValidationOutcome(
 
 internal sealed record ReferenceSolutionValidationResult(bool AllPassed, IReadOnlyList<SetupValidationOutcome> Outcomes)
 {
+    private const int MaxWarningsPerLanguage = 3;
+    private const int MaxLanguageSummaryLength = 600;
+
     public string BuildFailureSummary() =>
-        string.Join(
-            "\n",
-            Outcomes.Where(o => !o.Passed).Select(o => $"{o.LanguageLabel}: {string.Join("; ", o.Warnings)}")
-        );
+        string.Join("\n", Outcomes.Where(outcome => !outcome.Passed).Select(DescribeFailure));
+
+    private static string DescribeFailure(SetupValidationOutcome outcome)
+    {
+        string warnings = string.Join("; ", outcome.Warnings.Take(MaxWarningsPerLanguage));
+
+        if (outcome.Warnings.Count > MaxWarningsPerLanguage)
+            warnings += $" (+{outcome.Warnings.Count - MaxWarningsPerLanguage} more)";
+
+        if (warnings.Length > MaxLanguageSummaryLength)
+            warnings = warnings[..MaxLanguageSummaryLength] + "...";
+
+        return $"{outcome.LanguageLabel}: {warnings}";
+    }
 }
 
 internal sealed class ReferenceSolutionValidationService(

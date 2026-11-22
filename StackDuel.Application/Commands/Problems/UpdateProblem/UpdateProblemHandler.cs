@@ -27,7 +27,10 @@ internal sealed class UpdateProblemHandler(
         if (problem is null)
             return Result.NotFound();
 
-        if (problem.Status == ProblemStatus.Pending)
+        if (problem.IsDeleted)
+            return Result.NotFound();
+
+        if (problem.IsEditLocked)
             return Result.Invalid(
                 new ValidationError("Status", "Cannot edit a problem while validation is in progress.")
             );
@@ -61,14 +64,13 @@ internal sealed class UpdateProblemHandler(
     {
         try
         {
-            List<string> desiredTagNames =
-            [
-                .. request.Tags.Select(t => t.Trim().ToLowerInvariant()).Where(t => t.Length > 0).Distinct(),
-            ];
+            List<string>? desiredTagNames = request.Tags is null
+                ? null
+                : [.. request.Tags.Select(t => t.Trim().ToLowerInvariant()).Where(t => t.Length > 0).Distinct()];
 
             // Validate tag formatting up front so a bad tag doesn't fail after the content
             // update below has already mutated the tracked entity.
-            foreach (string name in desiredTagNames)
+            foreach (string name in desiredTagNames ?? [])
                 _ = new Tag(name);
 
             return (
@@ -113,8 +115,15 @@ internal sealed class UpdateProblemHandler(
             );
     }
 
-    private async Task SyncTagsAsync(Problem problem, List<string> desiredTagNames, CancellationToken cancellationToken)
+    private async Task SyncTagsAsync(
+        Problem problem,
+        List<string>? desiredTagNames,
+        CancellationToken cancellationToken
+    )
     {
+        if (desiredTagNames is null)
+            return;
+
         HashSet<string> currentTagNames = [.. problem.Tags.Select(t => t.Name.Value)];
 
         List<ProblemTag> tagsToRemove = [.. problem.Tags.Where(t => !desiredTagNames.Contains(t.Name.Value))];
@@ -144,27 +153,12 @@ internal sealed class UpdateProblemHandler(
 
         if (status == ProblemStatus.Published)
         {
-            Slug slug = await ResolveUniqueSlugAsync(problem.Title, cancellationToken);
+            Slug slug = await slugService.ResolveUniqueSlugFromTitleAsync(problem.Title, cancellationToken);
             problem.UpdateSlug(slug);
             problem.Publish();
         }
         else if (status == ProblemStatus.Archived)
             problem.Archive();
-    }
-
-    private async Task<Slug> ResolveUniqueSlugAsync(Title title, CancellationToken cancellationToken)
-    {
-        Slug baseSlug = slugService.GenerateSlugFromTitle(title);
-        Slug slug = baseSlug;
-        int suffix = 2;
-
-        while (await problemReadRepository.SlugExistsAsync(slug, cancellationToken))
-        {
-            slug = new Slug($"{baseSlug.Value}-{suffix}");
-            suffix++;
-        }
-
-        return slug;
     }
 
     private sealed record ParsedContent(
@@ -173,6 +167,6 @@ internal sealed class UpdateProblemHandler(
         Difficulty Difficulty,
         TimeLimit TimeLimit,
         MemoryLimit MemoryLimit,
-        List<string> TagNames
+        List<string>? TagNames
     );
 }

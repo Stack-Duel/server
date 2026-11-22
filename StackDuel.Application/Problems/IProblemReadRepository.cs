@@ -17,6 +17,13 @@ public interface IProblemReadRepository
 
     Task<Problem?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<Problem?> FindByIdForGameParticipantAsync(
+        Guid problemId,
+        Guid gameId,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<Problem?> FindByIdForAdminAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<AdminProblemListRowDto>> FindByIdsAsync(
@@ -31,7 +38,17 @@ public interface IProblemReadRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Guid?> FindPublishedVersionIdAsync(Guid problemId, CancellationToken cancellationToken = default);
+
+    Task<Guid?> FindPublishedVersionIdByProblemSetupIdAsync(
+        Guid problemSetupId,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<StudioProblemDetailsDto?> FindStudioProblemDetailsAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
 
     Task<ProblemPublishReadinessProjection?> FindPublishReadinessAsync(
         Guid id,
@@ -96,4 +113,9 @@ public interface IProblemReadRepository
     );
 
     Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken = default);
+
+    Task<ProblemDeletionImpactDto> FindDeletionImpactAsync(
+        Guid problemId,
+        CancellationToken cancellationToken = default
+    );
 }

@@ -123,4 +123,83 @@ public class GetProblemByIdHandlerTests
         Assert.Equal("Python", mappedLanguage.Name);
         Assert.Equal("3.12", mappedLanguage.Versions.Single().Version);
     }
+
+    [Fact]
+    public async Task Handle_ADeletedProblemInAGameTheCallerIsPlaying_IsStillServed()
+    {
+        var problem = CreateProblem();
+        Guid gameId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+
+        _problemReadRepository
+            .Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Problem?)null);
+        _problemReadRepository
+            .Setup(x =>
+                x.FindByIdForGameParticipantAsync(problem.Id, gameId, userId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(problem);
+
+        Result<ProblemWithSetupsDto> result = await _handler.Handle(
+            new GetProblemByIdQuery(problem.Id, gameId, userId),
+            CancellationToken.None
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(problem.Id, result.Value.Id);
+    }
+
+    [Fact]
+    public async Task Handle_ADeletedProblemOutsideAGame_StaysHidden()
+    {
+        var problem = CreateProblem();
+
+        _problemReadRepository
+            .Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Problem?)null);
+
+        Result<ProblemWithSetupsDto> result = await _handler.Handle(
+            new GetProblemByIdQuery(problem.Id),
+            CancellationToken.None
+        );
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+        _problemReadRepository.Verify(
+            x =>
+                x.FindByIdForGameParticipantAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Handle_AGameIdWithNoCaller_DoesNotReachForTheParticipantLookup()
+    {
+        var problem = CreateProblem();
+
+        _problemReadRepository
+            .Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Problem?)null);
+
+        Result<ProblemWithSetupsDto> result = await _handler.Handle(
+            new GetProblemByIdQuery(problem.Id, Guid.NewGuid()),
+            CancellationToken.None
+        );
+
+        Assert.Equal(ResultStatus.NotFound, result.Status);
+        _problemReadRepository.Verify(
+            x =>
+                x.FindByIdForGameParticipantAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
 }

@@ -62,11 +62,7 @@ internal sealed class Judge0ReferenceSolutionRunner(IExecutionEngineStrategy exe
 
             if (!ok)
             {
-                warnings.Add(
-                    $"Reference solution failed on case '{testCases[i].Name}' "
-                        + $"(status: {result?.Status.ToString() ?? "none"}, expected: {expected}, actual: {actual}, "
-                        + $"stderr: {result?.Stderr}, compileOutput: {result?.CompileOutput})."
-                );
+                warnings.Add(ReferenceSolutionFailureDescription.Describe(testCases[i].Name, result, expected, actual));
             }
         }
 

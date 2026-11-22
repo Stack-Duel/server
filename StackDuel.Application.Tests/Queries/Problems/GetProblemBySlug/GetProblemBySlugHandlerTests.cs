@@ -87,4 +87,51 @@ public class GetProblemBySlugHandlerTests
 
         _problemReadRepository.Verify(x => x.FindBySlugAsync("some-slug", It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_PublishedProblem_ServesTheStatementAsPublished()
+    {
+        Problem problem = CreateProblem();
+        problem.SubmitForValidation();
+        problem.CompleteValidation();
+
+        problem.UpdateContent(
+            new Title("Two Sum Revised"),
+            new Question(new string('z', 60)),
+            new Difficulty(900),
+            problem.TimeLimit,
+            problem.MemoryLimit
+        );
+
+        _problemReadRepository
+            .Setup(x => x.FindBySlugAsync("two-sum", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problem);
+
+        Result<ProblemWithSetupsDto> result = await _handler.Handle(
+            new GetProblemBySlugQuery("two-sum"),
+            CancellationToken.None
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Two Sum", result.Value.Title);
+        Assert.Equal(new string('q', 60), result.Value.Question);
+    }
+
+    [Fact]
+    public async Task Handle_DraftProblem_ServesTheLiveStatement()
+    {
+        Problem problem = CreateProblem();
+
+        _problemReadRepository
+            .Setup(x => x.FindBySlugAsync("two-sum", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(problem);
+
+        Result<ProblemWithSetupsDto> result = await _handler.Handle(
+            new GetProblemBySlugQuery("two-sum"),
+            CancellationToken.None
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Two Sum", result.Value.Title);
+    }
 }

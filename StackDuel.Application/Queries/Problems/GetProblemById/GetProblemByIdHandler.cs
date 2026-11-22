@@ -2,6 +2,7 @@
 using StackDuel.Application.Languages;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Problems.Dtos;
+using StackDuel.Domain.Problems.Entities;
 
 namespace StackDuel.Application.Queries.Problems.GetProblemById;
 
@@ -15,7 +16,7 @@ internal sealed class GetProblemByIdHandler(
         CancellationToken cancellationToken
     )
     {
-        var problem = await problemReadRepository.FindByIdAsync(request.Id, cancellationToken);
+        Problem? problem = await ResolveProblemAsync(request, cancellationToken);
 
         if (problem is null)
         {
@@ -61,6 +62,27 @@ internal sealed class GetProblemByIdHandler(
                     : new ProblemAuthorDto(problem.CreatedBy.Username.Value, problem.CreatedBy.ImageUrl?.Value),
                 Tags: problem.Tags.Select(t => t.Name.Value)
             )
+        );
+    }
+
+    private async Task<Problem?> ResolveProblemAsync(
+        GetProblemByIdQuery request,
+        CancellationToken cancellationToken
+    )
+    {
+        Problem? problem = await problemReadRepository.FindByIdAsync(request.Id, cancellationToken);
+
+        if (problem is not null)
+            return problem;
+
+        if (!request.GameId.HasValue || !request.RequestedByUserId.HasValue)
+            return null;
+
+        return await problemReadRepository.FindByIdForGameParticipantAsync(
+            request.Id,
+            request.GameId.Value,
+            request.RequestedByUserId.Value,
+            cancellationToken
         );
     }
 }

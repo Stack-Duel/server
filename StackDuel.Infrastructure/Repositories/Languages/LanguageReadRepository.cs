@@ -50,6 +50,7 @@ internal sealed class LanguageReadRepository(StackDuelDbContext context) : ILang
             .Languages.AsNoTracking()
             .Where(l => languageIdList.Contains(l.Id))
             .SelectMany(l => l.Versions)
+            .Where(v => v.Status == LanguageVersionStatus.Active)
             .Select(v => v.Id)
             .ToListAsync(cancellationToken);
     }

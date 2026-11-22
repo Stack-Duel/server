@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Authorization;
 using StackDuel.Application.Problems;
 using StackDuel.Application.Services.Problems;
 using StackDuel.Domain.Problems;
@@ -33,6 +34,9 @@ public class UpdateProblemHandlerTests
         _slugService
             .Setup(x => x.GenerateSlugFromTitle(It.IsAny<Title>()))
             .Returns((Title title) => Slug.FromTitle(title));
+        _slugService
+            .Setup(x => x.ResolveUniqueSlugFromTitleAsync(It.IsAny<Title>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Title title, CancellationToken _) => Slug.FromTitle(title));
         _problemReadRepository
             .Setup(x => x.SlugExistsAsync(It.IsAny<Slug>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -116,21 +120,6 @@ public class UpdateProblemHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PublishingADraft_AppendsSuffixOnSlugCollision()
-    {
-        var problem = CreateProblem();
-        _problemRepository.Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>())).ReturnsAsync(problem);
-        _problemReadRepository
-            .SetupSequence(x => x.SlugExistsAsync(It.IsAny<Slug>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true)
-            .ReturnsAsync(false);
-
-        await _handler.Handle(ValidCommand(problem.Id, status: ProblemStatus.Published), CancellationToken.None);
-
-        Assert.Equal("updated-title-2", problem.Slug.Value);
-    }
-
-    [Fact]
     public async Task Handle_InvalidStatusTransition_ReturnsInvalidAndLeavesProblemUnchanged()
     {
         var problem = CreateProblem();
@@ -202,6 +191,45 @@ public class UpdateProblemHandlerTests
                 ),
             Times.Once
         );
+    }
+
+    [Fact]
+    public async Task Handle_NullTags_LeavesExistingTagsUntouched()
+    {
+        var problem = CreateProblem();
+        var existingTag = new ProblemTag(new Tag("old-tag"));
+        problem.AddTag(existingTag);
+        _problemRepository.Setup(x => x.FindByIdAsync(problem.Id, It.IsAny<CancellationToken>())).ReturnsAsync(problem);
+
+        var command = ValidCommand(problem.Id) with { Tags = null };
+
+        Result result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(existingTag, problem.Tags);
+        _problemRepository.Verify(
+            x => x.FindOrCreateTagsAsync(It.IsAny<IEnumerable<Tag>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public void Requirements_WithRequestedByUserId_RequireOwnershipOfTheProblem()
+    {
+        Guid problemId = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
+
+        var command = ValidCommand(problemId) with { RequestedByUserId = userId };
+
+        Assert.Equal([new OwnershipRequirement<Problem>(problemId, userId)], command.Requirements);
+    }
+
+    [Fact]
+    public void Requirements_WithoutRequestedByUserId_AreEmpty()
+    {
+        var command = ValidCommand(Guid.NewGuid());
+
+        Assert.Empty(command.Requirements);
     }
 
     [Fact]

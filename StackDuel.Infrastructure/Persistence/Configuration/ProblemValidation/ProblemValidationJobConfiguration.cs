@@ -39,8 +39,23 @@ internal sealed class ProblemValidationJobConfiguration : IEntityTypeConfigurati
 
         builder.Property(j => j.CompletedAt).HasColumnName("completed_at").IsRequired(false);
 
+        builder.Property(j => j.ProcessingAttempts).HasColumnName("processing_attempts").IsRequired();
+
+        builder.Property(j => j.LastError).HasColumnName("last_error").HasMaxLength(2000).IsRequired(false);
+
         builder.Property(j => j.LockedUntil).HasColumnName("locked_until").IsRequired(false);
 
         builder.HasIndex(j => new { j.Status, j.LockedUntil });
+
+        builder.HasIndex(j => new { j.ProblemId, j.CreatedAt });
+
+        builder
+            .HasMany(j => j.Steps)
+            .WithOne()
+            .HasForeignKey("problem_validation_job_id")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(j => j.Steps).HasField("_steps").UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

@@ -1,4 +1,5 @@
 using StackDuel.Application.Audit;
+using StackDuel.Application.Authorization;
 using StackDuel.Application.Commands;
 using StackDuel.Domain.Problems.Enums;
 
@@ -11,9 +12,10 @@ internal sealed record UpdateProblemCommand(
     int Difficulty,
     int TimeLimitMs,
     int MemoryLimitMb,
-    IReadOnlyCollection<string> Tags,
-    ProblemStatus? Status
-) : ICommand, IAuditableCommand
+    IReadOnlyCollection<string>? Tags,
+    ProblemStatus? Status,
+    Guid? RequestedByUserId = null
+) : ICommand, IAuditableCommand, INotFoundWhenUnauthorizedCommand
 {
     public string AuditAction => "problem.updated";
     public string? AuditTargetType => "problem";
@@ -28,4 +30,7 @@ internal sealed record UpdateProblemCommand(
             Tags,
             Status,
         };
+
+    public IReadOnlyList<IAuthorizationRequirement> Requirements =>
+        ProblemCommandAuthorization.OwnershipRequirements(ProblemId, RequestedByUserId);
 }

@@ -16,7 +16,7 @@ public sealed record TimeLimit
 
     public override string ToString() => $"{Milliseconds}ms";
 
-    public static readonly int MaxMilliseconds = 10000;
+    public static readonly int MaxMilliseconds = 2000;
     public static readonly int MinMilliseconds = 100;
     public int Milliseconds { get; }
 }
