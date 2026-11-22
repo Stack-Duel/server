@@ -16,12 +16,14 @@ public sealed class DatabaseUpgrader(string connectionString, IUpgradeLog log)
     public GroupStatus GetStatus(ScriptGroup group)
     {
         UpgradeEngine engine = Build(group);
+        List<string> toRun = [.. engine.GetScriptsToExecute().Select(script => script.Name)];
 
         return new GroupStatus
         {
             Group = group,
             AppliedScripts = engine.GetExecutedScripts(),
-            PendingScripts = [.. engine.GetScriptsToExecute().Select(script => script.Name)],
+            PendingScripts = [.. toRun.Where(name => !ScriptGroup.IsRepeatable(name))],
+            RepeatableScripts = [.. toRun.Where(ScriptGroup.IsRepeatable)],
             OrphanedScripts = engine.GetExecutedButNotDiscoveredScripts(),
         };
     }
@@ -48,9 +50,16 @@ public sealed class DatabaseUpgrader(string connectionString, IUpgradeLog log)
     public IReadOnlyList<string> MarkAsExecuted(ScriptGroup group)
     {
         UpgradeEngine engine = Build(group);
-        IReadOnlyList<string> pending = [.. engine.GetScriptsToExecute().Select(script => script.Name)];
+        IReadOnlyList<string> pending =
+        [
+            .. engine
+                .GetScriptsToExecute()
+                .Select(script => script.Name)
+                .Where(name => !ScriptGroup.IsRepeatable(name)),
+        ];
 
-        engine.MarkAsExecuted();
+        foreach (string name in pending)
+            engine.MarkAsExecuted(name);
 
         return pending;
     }

@@ -52,6 +52,9 @@ or baselined without touching the others:
 | `dev` | Sample data for working locally | `Data/Scripts/Dev` |
 | `e2e` | Fixtures the Playwright suites assert against | `Data/Scripts/E2E` |
 
+Every group also has a `Repeatable/` subfolder for scripts that must run on every pass instead of
+once — see [Data that must be re-applied on every run](#data-that-must-be-re-applied-on-every-run).
+
 `schema`, `reference`, and `content` are embedded in `StackDuel.Infrastructure`, so the API applies
 them itself on startup in Development. `dev` and `e2e` are embedded in the CLI only, so neither the
 API nor a deploy can apply them by accident.
@@ -81,8 +84,70 @@ Two rules for the content of a script:
 
 - **Make it idempotent.** Data scripts use literal UUIDs and `ON CONFLICT DO NOTHING` so a partial
   run can be repeated. Schema scripts should be written so re-running them is harmless.
-- **Never edit a script that has shipped.** The journal records it as applied, so an edit silently
-  diverges environments. Add a new script instead.
+- **Never edit a run-once script that has shipped.** The journal records it as applied, so an edit
+  silently diverges environments. Add a new script instead, or move the data to a `Repeatable/`
+  script if editing it in place is what you actually want (see below).
+
+#### Data that must be re-applied on every run
+
+A script in a group's root is journaled and runs **once**. A script in that group's `Repeatable/`
+subfolder runs on **every** `migrate` or `seed`, is never journaled, and always sorts after the
+run-once scripts in its group. Use it for a list the *code* owns and must agree with on every
+deploy — statuses, kinds, closed enum-like sets — where editing the list in place is the natural
+way to change it:
+
+```
+Scripts/Reference/202612010900_OrderStatuses.sql   # run once, journaled
+Scripts/Reference/Repeatable/OrderStatuses.sql     # re-applied every run
+```
+
+Such a script must be a full upsert, because it runs against a database that already has the
+previous version of the list:
+
+```sql
+INSERT INTO public.order_statuses (id, key, name, sort_order) VALUES
+    ('...-0001', 'pending',  'Pending',  1),
+    ('...-0002', 'complete', 'Complete', 2)
+ON CONFLICT (key) DO UPDATE
+SET name = EXCLUDED.name,
+    sort_order = EXCLUDED.sort_order;
+```
+
+Two things not to put in `Repeatable/`:
+
+- **Anything an operator can change at runtime.** Feature flags are the trap here: `default_enabled`
+  and `rollout_percentage` are edited through the admin API, so a repeatable script would silently
+  revert every toggle on each deploy. Operator-owned data belongs in a run-once script that sets the
+  initial value and then leaves it alone.
+- **Schema changes.** `Schema/Repeatable/` exists for completeness (a view or function definition is
+  a reasonable fit), but a table change is a one-time event and belongs in a timestamped script so
+  the journal records when it happened.
+
+Removing a row is still a run-once script: a repeatable upsert cannot express a deletion without
+also deleting rows that other environments legitimately added.
+
+#### Transactional fixtures for e2e tests
+
+The `e2e` group is where a known starting state for the Playwright suites goes, and those fixtures
+almost always belong in `Data/Scripts/E2E/Repeatable/` — a test run wants the same state every time,
+not whatever the last run left behind. Because the script re-runs, delete the rows it owns before
+inserting them, scoped to its own fixed ids so it never touches data a test created:
+
+```sql
+DELETE FROM public.submissions WHERE id IN ('...-0001', '...-0002');
+DELETE FROM public.games       WHERE id = '...-0100';
+
+INSERT INTO public.games (id, ...) VALUES ('...-0100', ...);
+INSERT INTO public.submissions (id, game_id, ...) VALUES ('...-0001', '...-0100', ...);
+```
+
+Apply them with `seed --e2e`, which the e2e workflow can call after `migrate`. For a genuinely clean
+slate instead, `reset --force --e2e` drops every table, migrates, and then applies the fixtures.
+
+Both folders ship empty. Nothing needs them yet: the current reference lists are stable enough that
+a new timestamped script is the right way to change them, and the e2e suites create their users
+through Auth0 and then call `grant-admin`, which cannot be a script because the user does not exist
+until the run is underway.
 
 #### Baselining a database that predates DbUp
 

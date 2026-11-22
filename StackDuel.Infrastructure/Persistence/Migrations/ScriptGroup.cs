@@ -4,6 +4,8 @@ namespace StackDuel.Infrastructure.Persistence.Migrations;
 
 public sealed record ScriptGroup
 {
+    private const string RepeatableFolder = "Repeatable.";
+
     private ScriptGroup(string name, string description, string resourcePrefix, Assembly scriptAssembly)
     {
         Name = name;
@@ -33,4 +35,7 @@ public sealed record ScriptGroup
     public bool Owns(string resourceName) => resourceName.StartsWith(ResourcePrefix, StringComparison.Ordinal);
 
     public string ToScriptName(string resourceName) => resourceName[ResourcePrefix.Length..];
+
+    public static bool IsRepeatable(string scriptName) =>
+        scriptName.StartsWith(RepeatableFolder, StringComparison.Ordinal);
 }

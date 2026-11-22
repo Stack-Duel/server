@@ -17,7 +17,7 @@ internal static class UpgradeRunner
         }
 
         List<GroupStatus> statuses = [.. groups.Select(upgrader.GetStatus)];
-        int pendingCount = statuses.Sum(status => status.PendingScripts.Count);
+        int pendingCount = statuses.Sum(status => status.ScriptsToRun);
 
         WarnAboutOrphans(statuses);
 
@@ -54,8 +54,8 @@ internal static class UpgradeRunner
                 foreach (GroupStatus status in statuses.Where(status => !status.IsUpToDate))
                 {
                     ProgressTask task = context.AddTask(
-                        $"[bold]{status.Group.Name}[/] ({status.PendingScripts.Count})",
-                        maxValue: status.PendingScripts.Count
+                        $"[bold]{status.Group.Name}[/] ({status.ScriptsToRun})",
+                        maxValue: status.ScriptsToRun
                     );
 
                     GroupUpgradeResult result = upgrader.Upgrade(status.Group, scriptName =>
@@ -97,12 +97,15 @@ internal static class UpgradeRunner
 
     private static void ReportPending(List<GroupStatus> statuses)
     {
-        Table table = new Table().Border(TableBorder.Rounded).AddColumn("Group").AddColumn("Pending script");
+        Table table = new Table().Border(TableBorder.Rounded).AddColumn("Group").AddColumn("Script").AddColumn("Kind");
 
         foreach (GroupStatus status in statuses.Where(status => !status.IsUpToDate))
         {
             foreach (string script in status.PendingScripts)
-                table.AddRow(Markup.Escape(status.Group.Name), Markup.Escape(script));
+                table.AddRow(Markup.Escape(status.Group.Name), Markup.Escape(script), "pending");
+
+            foreach (string script in status.RepeatableScripts)
+                table.AddRow(Markup.Escape(status.Group.Name), Markup.Escape(script), "[blue]repeatable[/]");
         }
 
         AnsiConsole.Write(table);

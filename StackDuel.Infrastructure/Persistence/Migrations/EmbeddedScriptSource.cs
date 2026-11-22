@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using DbUp.Engine;
+using DbUp.Support;
 
 namespace StackDuel.Infrastructure.Persistence.Migrations;
 
@@ -27,6 +28,11 @@ internal static class EmbeddedScriptSource
         using Stream stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Embedded script '{resourceName}' could not be opened.");
 
-        return SqlScript.FromStream(scriptName, stream, Encoding.UTF8);
+        SqlScriptOptions options = new()
+        {
+            ScriptType = ScriptGroup.IsRepeatable(scriptName) ? ScriptType.RunAlways : ScriptType.RunOnce,
+        };
+
+        return SqlScript.FromStream(scriptName, stream, Encoding.UTF8, options);
     }
 }

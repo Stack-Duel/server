@@ -43,6 +43,14 @@ internal static class StatusCommand
         return command;
     }
 
+    private static string NextUp(GroupStatus status)
+    {
+        if (status.PendingScripts.Count > 0)
+            return Markup.Escape(status.PendingScripts[0]);
+
+        return status.RepeatableScripts.Count > 0 ? "[grey]repeatable only[/]" : "[grey]up to date[/]";
+    }
+
     private static void Write(IReadOnlyList<GroupStatus> statuses)
     {
         Table table = new Table()
@@ -50,6 +58,7 @@ internal static class StatusCommand
             .AddColumn("Group")
             .AddColumn("Applied", column => column.RightAligned())
             .AddColumn("Pending", column => column.RightAligned())
+            .AddColumn("Repeatable", column => column.RightAligned())
             .AddColumn("Next up");
 
         foreach (GroupStatus status in statuses)
@@ -57,8 +66,9 @@ internal static class StatusCommand
             table.AddRow(
                 status.Group.Name,
                 status.AppliedScripts.Count.ToString(),
-                status.IsUpToDate ? "[green]0[/]" : $"[yellow]{status.PendingScripts.Count}[/]",
-                status.IsUpToDate ? "[grey]up to date[/]" : Markup.Escape(status.PendingScripts[0])
+                status.PendingScripts.Count == 0 ? "[green]0[/]" : $"[yellow]{status.PendingScripts.Count}[/]",
+                status.RepeatableScripts.Count == 0 ? "[grey]0[/]" : $"[blue]{status.RepeatableScripts.Count}[/]",
+                NextUp(status)
             );
         }
 
