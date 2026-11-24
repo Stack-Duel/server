@@ -1,8 +1,8 @@
-﻿using Microsoft.ApplicationInsights.DataContracts;
-using StackDuel.Api.Attributes;
+﻿using StackDuel.Api.Attributes;
 using StackDuel.Application;
 using StackDuel.Application.Services.FeatureFlags;
 using StackDuel.Application.Services.Users;
+using System.Diagnostics;
 using System.Security.Claims;
 
 namespace StackDuel.Api.Middleware;
@@ -40,13 +40,9 @@ public partial class AccountContextMiddleware(
                 userContext.Roles = result.Value.Roles;
                 userId = result.Value.User.Id;
 
-                var requestTelemetry = context.Features.Get<RequestTelemetry>();
-                if (requestTelemetry is not null)
-                {
-                    requestTelemetry.Properties.TryAdd("account.id", userContext.User.Id.ToString());
-                    requestTelemetry.Properties.TryAdd("account.username", userContext.User.Username);
-                    requestTelemetry.Properties.TryAdd("account.roles", string.Join(", ", userContext.Roles));
-                }
+                Activity.Current?.SetTag("account.id", userContext.User.Id.ToString());
+                Activity.Current?.SetTag("account.username", userContext.User.Username);
+                Activity.Current?.SetTag("account.roles", string.Join(", ", userContext.Roles));
             }
             else
             {

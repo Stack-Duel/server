@@ -1,5 +1,4 @@
-﻿using Microsoft.ApplicationInsights;
-using Microsoft.AspNetCore.Diagnostics;
+﻿using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
 
 namespace StackDuel.Api.Middleware;
@@ -16,8 +15,6 @@ public static class ExceptionMiddlewareExtensions
                     .RequestServices.GetRequiredService<ILoggerFactory>()
                     .CreateLogger("GlobalExceptionHandler");
 
-                var telemetryClient = context.RequestServices.GetService<TelemetryClient>();
-
                 var feature = context.Features.Get<IExceptionHandlerPathFeature>();
                 var ex = feature?.Error;
 
@@ -28,7 +25,6 @@ public static class ExceptionMiddlewareExtensions
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
 
                     AppLog.UnhandledExceptionWithPath(logger, context.Request.Method, context.Request.Path, ex);
-                    telemetryClient?.TrackException(ex);
 
                     await context.Response.WriteAsync(JsonSerializer.Serialize(new { message = "Validation failed" }));
                     return;
@@ -38,7 +34,6 @@ public static class ExceptionMiddlewareExtensions
 
                 var exceptionToLog = ex ?? new Exception("Unknown error");
                 AppLog.UnhandledExceptionWithPath(logger, context.Request.Method, context.Request.Path, exceptionToLog);
-                telemetryClient?.TrackException(exceptionToLog);
 
                 await context.Response.WriteAsync(
                     JsonSerializer.Serialize(new { message = "An unexpected error occurred." })
