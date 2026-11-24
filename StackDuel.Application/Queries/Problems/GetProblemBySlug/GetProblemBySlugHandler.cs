@@ -29,7 +29,7 @@ internal sealed class GetProblemBySlugHandler(
         );
 
         var publicTestCases = problem
-            .Setups.FirstOrDefault()
+            .ActiveSetups().FirstOrDefault()
             ?.PublicTestSuites()
             .SelectMany(suite => suite.TestCases)
             .Select(tc => new PublicTestCaseDto(

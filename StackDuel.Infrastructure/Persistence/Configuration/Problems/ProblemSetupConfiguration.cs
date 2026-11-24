@@ -76,6 +76,8 @@ internal sealed class ProblemSetupConfiguration : IEntityTypeConfiguration<Probl
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(s => s.RetiredAt).HasColumnName("retired_at").IsRequired(false);
+
         builder
             .Property(s => s.AdditionalFiles)
             .HasColumnName("additional_files")

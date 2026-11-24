@@ -226,7 +226,7 @@ internal sealed partial class ProblemValidationJobProcessorService(
 
         job.SucceedStep(
             ProblemValidationStepKind.AuthorChecks,
-            $"{problem.Setups.Count} setup(s) and generation parameters present."
+            $"{problem.ActiveSetups().Count()} setup(s) and generation parameters present."
         );
         job.BeginStep(ProblemValidationStepKind.ReferenceSolutions);
 

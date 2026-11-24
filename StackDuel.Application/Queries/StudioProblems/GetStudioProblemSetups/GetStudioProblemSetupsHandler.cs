@@ -42,7 +42,7 @@ internal sealed class GetStudioProblemSetupsHandler(
 
         List<StudioProblemDetailsSetupDto> setups =
         [
-            .. problem.Setups.Select(setup =>
+            .. problem.ActiveSetups().Select(setup =>
             {
                 var (languageId, languageName, versionLabel) = versionLookup.TryGetValue(
                     setup.LanguageVersionId,

@@ -4,6 +4,7 @@ using StackDuel.Application.Authorization;
 using StackDuel.Application.Commands.Problems.AddProblemSetup;
 using StackDuel.Application.Commands.Problems.CancelProblemValidation;
 using StackDuel.Application.Commands.Problems.DeleteProblem;
+using StackDuel.Application.Commands.Problems.RemoveProblemSetup;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
 using StackDuel.Application.Commands.Problems.SubmitProblemForValidation;
@@ -26,6 +27,7 @@ public class StudioProblemCommandContractTests
             { new SubmitProblemForValidationCommand(ProblemId), "problem.submitted-for-validation" },
             { new AddProblemSetupCommand(ProblemId, Guid.NewGuid()), "problem.setup-added" },
             { new SetProblemSampleTestCasesCommand(ProblemId, []), "problem.sample-test-cases-set" },
+            { new RemoveProblemSetupCommand(ProblemId, Guid.NewGuid()), "problem.setup-removed" },
         };
 
     [Theory]
@@ -57,6 +59,17 @@ public class StudioProblemCommandContractTests
         object? details = new AddProblemSetupCommand(ProblemId, languageVersionId).AuditDetails;
 
         Assert.Contains(languageVersionId.ToString(), details!.ToString());
+    }
+
+    [Fact]
+    public void RemovingASetup_AuditsTheLanguageVersion()
+    {
+        Guid languageVersionId = Guid.NewGuid();
+
+        RemoveProblemSetupCommand command = new(ProblemId, languageVersionId, UserId);
+
+        Assert.Contains(languageVersionId.ToString(), command.AuditDetails!.ToString());
+        Assert.NotEmpty(command.Requirements);
     }
 
     [Fact]

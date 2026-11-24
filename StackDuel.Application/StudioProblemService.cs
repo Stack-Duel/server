@@ -4,6 +4,7 @@ using StackDuel.Application.Commands.Problems.AddProblemSetup;
 using StackDuel.Application.Commands.Problems.CancelProblemValidation;
 using StackDuel.Application.Commands.Problems.CreateDraftProblem;
 using StackDuel.Application.Commands.Problems.DeleteProblem;
+using StackDuel.Application.Commands.Problems.RemoveProblemSetup;
 using StackDuel.Application.Commands.Problems.SetProblemGenerationParameters;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
 using StackDuel.Application.Commands.Problems.SubmitProblemForValidation;
@@ -75,6 +76,13 @@ public interface IStudioProblemService
     );
 
     Task<Result<Guid>> AddStudioProblemSetupAsync(
+        Guid problemId,
+        Guid languageVersionId,
+        Guid userId,
+        CancellationToken cancellationToken
+    );
+
+    Task<Result> RemoveStudioProblemSetupAsync(
         Guid problemId,
         Guid languageVersionId,
         Guid userId,
@@ -176,6 +184,17 @@ internal sealed class StudioProblemService(IMediator mediator) : IStudioProblemS
     ) =>
         await mediator.Send(
             new AddProblemSetupCommand(problemId, languageVersionId, RequestedByUserId: userId),
+            cancellationToken
+        );
+
+    public async Task<Result> RemoveStudioProblemSetupAsync(
+        Guid problemId,
+        Guid languageVersionId,
+        Guid userId,
+        CancellationToken cancellationToken
+    ) =>
+        await mediator.Send(
+            new RemoveProblemSetupCommand(problemId, languageVersionId, RequestedByUserId: userId),
             cancellationToken
         );
 

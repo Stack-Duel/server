@@ -69,6 +69,11 @@ public sealed class ProblemSetup : Entity
         FunctionName = functionName;
     }
 
+    public void Retire()
+    {
+        RetiredAt ??= DateTime.UtcNow;
+    }
+
     internal void SetGenerationSpecId(Guid specId)
     {
         GenerationSpecId =
@@ -94,6 +99,8 @@ public sealed class ProblemSetup : Entity
     public string? ReferenceSolutionCode { get; private set; }
     public Guid? GenerationSpecId { get; private set; }
     public Guid? AdditionalFileBundleId { get; private set; }
+    public DateTime? RetiredAt { get; private set; }
+    public bool IsRetired => RetiredAt is not null;
     public IReadOnlyList<ProblemSetupFile> AdditionalFiles { get; private set; } = [];
 
     public IReadOnlyCollection<TestSuite> TestSuites => _testSuites.AsReadOnly();
