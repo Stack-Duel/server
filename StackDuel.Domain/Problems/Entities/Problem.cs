@@ -175,6 +175,14 @@ public sealed class Problem : AggregateRoot
         return setup;
     }
 
+    public void RemoveSetup(Guid setupId)
+    {
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
+            ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
+        _setups.Remove(setup);
+        MarkContentChanged();
+    }
+
     public void SetReferenceSolution(Guid setupId, string code)
     {
         ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)

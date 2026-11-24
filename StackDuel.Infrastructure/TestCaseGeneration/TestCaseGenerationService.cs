@@ -148,15 +148,23 @@ internal sealed class TestCaseGenerationService(
 
             List<ExecutionEngineSubmission> submissions =
             [
-                .. roundCases.Select(c => new ExecutionEngineSubmission(
-                    SourceCode: templateStrategy.Render(
-                        new CodeTemplateContext(request.ReferenceSolutionCode, setup.FunctionName, c.Inputs)
-                    ),
-                    LanguageId: judge0LanguageId,
-                    Stdin: templateStrategy.BuildStdin(c.Inputs),
-                    TimeLimitMs: null,
-                    MemoryLimitKb: null
-                )),
+                .. roundCases.Select(c =>
+                {
+                    CodeTemplateContext context = new(
+                        request.ReferenceSolutionCode,
+                        setup.FunctionName,
+                        c.Inputs
+                    );
+
+                    return new ExecutionEngineSubmission(
+                        SourceCode: templateStrategy.Render(context),
+                        LanguageId: judge0LanguageId,
+                        Stdin: templateStrategy.BuildStdin(c.Inputs),
+                        TimeLimitMs: null,
+                        MemoryLimitKb: null,
+                        AdditionalFiles: templateStrategy.BuildAdditionalFiles(context)
+                    );
+                }),
             ];
 
             List<ExecutionEngineResult> results = await runner.SubmitAndPollAsync(submissions, cancellationToken);
