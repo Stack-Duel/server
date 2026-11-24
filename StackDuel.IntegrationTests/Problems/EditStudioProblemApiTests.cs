@@ -279,6 +279,96 @@ public sealed class EditStudioProblemApiTests(IntegrationTestEnvironment environ
     }
 
     [Fact]
+    public async Task RemoveSetup_Owner_StopsOfferingTheLanguageButKeepsItForHistory()
+    {
+        const string sub = "sub-studio-remove-setup-owner";
+        await CreateAccountAsync(sub, "studiormvowner");
+        await GrantStudioEditPermissionsAsync(sub);
+        Guid trackId = await Seeder.CreateTrackAsync("track-studio-remove-setup", "Studio Remove Setup Track");
+        Guid problemId = await CreateProblemAsync(sub, trackId, "Remove Setup Problem");
+
+        await Seeder.EnsureExecutionPipelineAsync(WellKnownExecutionPipelines.DefaultName);
+        Guid pythonVersionId = await Seeder.CreateLanguageVersionOnTrackAsync(
+            trackId,
+            "studio-remove-python",
+            judge0Id: 71
+        );
+        Guid javaVersionId = await Seeder.CreateLanguageVersionOnTrackAsync(
+            trackId,
+            "studio-remove-java",
+            judge0Id: 89
+        );
+
+        await AddSetupAsync(sub, problemId, pythonVersionId);
+        await AddSetupAsync(sub, problemId, javaVersionId);
+
+        HttpResponseMessage response = await Client.SendAsync(
+            AuthenticatedRequest(
+                HttpMethod.Delete,
+                $"/api/v1/studio/problems/{problemId}/setups/{javaVersionId}",
+                sub
+            )
+        );
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+
+        List<StudioProblemDetailsSetupDto> setups = await GetSetupsAsync(sub, problemId);
+        StudioProblemDetailsSetupDto remaining = Assert.Single(setups);
+        Assert.Equal(pythonVersionId, remaining.LanguageVersionId);
+    }
+
+    [Fact]
+    public async Task RemoveSetup_UnknownLanguageVersion_ReturnsNotFound()
+    {
+        const string sub = "sub-studio-remove-setup-missing";
+        await CreateAccountAsync(sub, "studiormvmissing");
+        await GrantStudioEditPermissionsAsync(sub);
+        Guid trackId = await Seeder.CreateTrackAsync("track-studio-remove-missing", "Studio Remove Missing Track");
+        Guid problemId = await CreateProblemAsync(sub, trackId, "Remove Setup Missing");
+
+        HttpResponseMessage response = await Client.SendAsync(
+            AuthenticatedRequest(
+                HttpMethod.Delete,
+                $"/api/v1/studio/problems/{problemId}/setups/{Guid.NewGuid()}",
+                sub
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemoveSetup_NotOwner_ReturnsNotFound()
+    {
+        const string ownerSub = "sub-studio-remove-setup-owner2";
+        const string otherSub = "sub-studio-remove-setup-other2";
+        await CreateAccountAsync(ownerSub, "studioremoveowner2");
+        await CreateAccountAsync(otherSub, "studioremoveother2");
+        await GrantStudioEditPermissionsAsync(ownerSub);
+        await GrantStudioEditPermissionsAsync(otherSub);
+        Guid trackId = await Seeder.CreateTrackAsync("track-studio-remove-other", "Studio Remove Other Track");
+        Guid problemId = await CreateProblemAsync(ownerSub, trackId, "Remove Setup Not Yours");
+
+        await Seeder.EnsureExecutionPipelineAsync(WellKnownExecutionPipelines.DefaultName);
+        Guid languageVersionId = await Seeder.CreateLanguageVersionOnTrackAsync(
+            trackId,
+            "studio-remove-other-python",
+            judge0Id: 71
+        );
+        await AddSetupAsync(ownerSub, problemId, languageVersionId);
+
+        HttpResponseMessage response = await Client.SendAsync(
+            AuthenticatedRequest(
+                HttpMethod.Delete,
+                $"/api/v1/studio/problems/{problemId}/setups/{languageVersionId}",
+                otherSub
+            )
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task AddSetup_NotOwner_ReturnsNotFound()
     {
         const string ownerSub = "sub-studio-add-setup-owner";
@@ -433,6 +523,38 @@ public sealed class EditStudioProblemApiTests(IntegrationTestEnvironment environ
         request.Content = JsonContent.Create(body);
 
         return await Client.SendAsync(request);
+    }
+
+    private async Task AddSetupAsync(string sub, Guid problemId, Guid languageVersionId)
+    {
+        HttpRequestMessage request = AuthenticatedRequest(
+            HttpMethod.Post,
+            $"/api/v1/studio/problems/{problemId}/setups",
+            sub
+        );
+        request.Content = JsonContent.Create(new AddProblemSetupRequest(languageVersionId));
+
+        HttpResponseMessage response = await Client.SendAsync(request);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    }
+
+    private async Task<List<StudioProblemDetailsSetupDto>> GetSetupsAsync(string sub, Guid problemId)
+    {
+        HttpRequestMessage request = AuthenticatedRequest(
+            HttpMethod.Get,
+            $"/api/v1/studio/problems/{problemId}/setups",
+            sub
+        );
+        HttpResponseMessage response = await Client.SendAsync(request);
+
+        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+
+        List<StudioProblemDetailsSetupDto>? setups = await response.Content.ReadFromJsonAsync<
+            List<StudioProblemDetailsSetupDto>
+        >(JsonOptions);
+
+        Assert.NotNull(setups);
+        return setups;
     }
 
     private async Task<StudioProblemDetailsDto> GetDetailsAsync(string sub, Guid problemId)

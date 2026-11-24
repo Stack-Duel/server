@@ -30,7 +30,7 @@ internal sealed class RemoveProblemSetupHandler(
         if (setup is null)
             return Result.NotFound();
 
-        problem.RemoveSetup(setup.Id);
+        problem.RetireSetup(setup.Id);
 
         await problemRepository.UpdateAsync(problem, cancellationToken);
 

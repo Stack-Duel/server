@@ -34,18 +34,14 @@ internal sealed class Judge0ReferenceSolutionRunner(IExecutionEngineStrategy exe
         List<ExecutionEngineSubmission> submissions =
         [
             .. inputsByCase.Select(inputs =>
-            {
-                CodeTemplateContext context = new(referenceSolutionCode, functionName, inputs);
-
-                return new ExecutionEngineSubmission(
-                    SourceCode: templateStrategy.Render(context),
-                    LanguageId: judge0LanguageId,
-                    Stdin: templateStrategy.BuildStdin(inputs),
-                    TimeLimitMs: null,
-                    MemoryLimitKb: null,
-                    AdditionalFiles: templateStrategy.BuildAdditionalFiles(context)
-                );
-            }),
+                ReferenceSolutionSubmissionFactory.Create(
+                    templateStrategy,
+                    referenceSolutionCode,
+                    functionName,
+                    inputs,
+                    judge0LanguageId
+                )
+            ),
         ];
 
         List<ExecutionEngineResult> results = await SubmitAndPollAsync(submissions, cancellationToken);

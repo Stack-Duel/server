@@ -112,8 +112,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
                 p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
-                p.Setups.Count,
+                p.Setups.Where(s => s.RetiredAt == null).Select(s => s.LanguageVersionId).Distinct().ToList(),
+                p.Setups.Count(s => s.RetiredAt == null),
                 p.CreatedAt,
                 p.CreatedBy != null ? p.CreatedBy.Username.Value : null
             ))
@@ -204,7 +204,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.Status,
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
-                p.Setups.Count,
+                p.Setups.Count(s => s.RetiredAt == null),
                 p.CreatedAt,
                 p.Question,
                 0,
@@ -238,7 +238,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.Setups.Where(setup => setup.ReferenceSolutionCode == null || setup.ReferenceSolutionCode == "")
                     .Select(setup => setup.LanguageVersionId)
                     .ToList(),
-                p.Setups.SelectMany(setup => setup.TestSuites)
+                p.Setups.Where(setup => setup.RetiredAt == null)
+                    .SelectMany(setup => setup.TestSuites)
                     .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
                     .SelectMany(testSuite => testSuite.TestCases)
                     .Count(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt == null),

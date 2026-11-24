@@ -65,7 +65,7 @@ public class RemoveProblemSetupHandlerTests
     }
 
     [Fact]
-    public async Task RemovesOnlyTheRequestedLanguageSetup()
+    public async Task RetiresOnlyTheRequestedLanguageSetup()
     {
         Problem problem = CreateProblem();
         Guid javaVersionId = Guid.NewGuid();
@@ -83,6 +83,38 @@ public class RemoveProblemSetupHandlerTests
             repository => repository.UpdateAsync(problem, It.IsAny<CancellationToken>()),
             Times.Once
         );
+    }
+
+    [Fact]
+    public async Task KeepsTheRetiredSetupRowSoHistoryCanStillReferenceIt()
+    {
+        Problem problem = CreateProblem();
+        Guid javaVersionId = Guid.NewGuid();
+        ProblemSetup setup = problem.AddSetup(javaVersionId, "// java", "minCoins", Guid.NewGuid());
+        SetUpProblem(problem);
+
+        await RemoveAsync(problem, javaVersionId);
+
+        ProblemSetup retained = Assert.Single(problem.Setups);
+        Assert.Equal(setup.Id, retained.Id);
+        Assert.True(retained.IsRetired);
+        Assert.Empty(problem.ActiveSetups());
+    }
+
+    [Fact]
+    public async Task RetiredLanguageCanBeAddedAgain()
+    {
+        Problem problem = CreateProblem();
+        Guid javaVersionId = Guid.NewGuid();
+        problem.AddSetup(javaVersionId, "// java", "minCoins", Guid.NewGuid());
+        SetUpProblem(problem);
+
+        await RemoveAsync(problem, javaVersionId);
+        ProblemSetup replacement = problem.AddSetup(javaVersionId, "// java v2", "minCoins", Guid.NewGuid());
+
+        Assert.Equal(2, problem.Setups.Count);
+        Assert.Equal(replacement.Id, problem.FindSetupByLanguageVersionId(javaVersionId)?.Id);
+        Assert.Single(problem.ActiveSetups());
     }
 
     [Fact]
