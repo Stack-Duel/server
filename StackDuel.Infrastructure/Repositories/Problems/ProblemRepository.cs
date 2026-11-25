@@ -62,17 +62,7 @@ internal sealed class ProblemRepository(StackDuelDbContext context) : IProblemRe
         await context
             .Problems.IgnoreQueryFilters()
             .Include(p => p.Setups)
-                .ThenInclude(s => s.TestSuites)
-                    .ThenInclude(ts => ts.TestCases)
-                        .ThenInclude(tc => tc.Inputs.OrderBy(i => i.Position))
-            .Include(p => p.Setups)
-                .ThenInclude(s => s.TestSuites)
-                    .ThenInclude(ts => ts.TestCases)
-                        .ThenInclude(tc => tc.ExpectedOutputs)
-            .Include(p => p.Versions)
-                .ThenInclude(v => v.Setups)
             .Where(p => p.Setups.Any(s => s.Id == setupId))
-            .AsSplitQuery()
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<IReadOnlyCollection<ProblemTag>> FindOrCreateTagsAsync(

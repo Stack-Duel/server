@@ -17,7 +17,7 @@ partial class StackDuelDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261124223514_TitleAndDifficultyAsComplexProperties";
+    public override string LastMigrationId => "20261125113451_RestrictVersionSetupSnapshotDelete";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -3455,7 +3455,7 @@ partial class StackDuelDbContextModelSnapshot : ModelSnapshot
                 b.HasOne("StackDuel.Domain.Problems.Entities.ProblemSetup", null)
                     .WithMany()
                     .HasForeignKey("ProblemSetupId")
-                    .OnDelete(DeleteBehavior.Cascade)
+                    .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
 
                 b.HasOne("StackDuel.Domain.Problems.Entities.ProblemVersion", null)

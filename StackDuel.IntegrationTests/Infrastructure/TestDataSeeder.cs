@@ -387,6 +387,51 @@ public sealed class TestDataSeeder(string connectionString)
         return result is Guid id ? id : throw new InvalidOperationException("Problem has no setups.");
     }
 
+    public async Task AttachGenerationSpecAsync(
+        Guid setupId,
+        string outputValueType = "integer",
+        int targetCaseCount = 5,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid specId = Guid.NewGuid();
+
+        await ExecuteAsync(
+            """
+            INSERT INTO test_case_generation_specs
+                (id, problem_setup_id, parameters, output_value_type, target_case_count, seed, version, created_at)
+            VALUES (@id, @setupId, @parameters::jsonb, @outputValueType, @targetCaseCount, 1, 1, NOW())
+            """,
+            cancellationToken,
+            ("id", specId),
+            ("setupId", setupId),
+            ("parameters", "[]"),
+            ("outputValueType", outputValueType),
+            ("targetCaseCount", targetCaseCount)
+        );
+
+        await ExecuteAsync(
+            "UPDATE problem_setups SET generation_spec_id = @specId WHERE id = @setupId",
+            cancellationToken,
+            ("specId", specId),
+            ("setupId", setupId)
+        );
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetGenerationJobSetupIdsAsync(CancellationToken cancellationToken = default)
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT problem_setup_id FROM test_case_generation_jobs";
+
+        List<Guid> ids = [];
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            ids.Add(reader.GetGuid(0));
+
+        return ids;
+    }
+
     public async Task<string> GetProblemSlugAsync(Guid problemId, CancellationToken cancellationToken = default)
     {
         await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
