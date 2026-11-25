@@ -23,7 +23,7 @@ internal sealed class ProblemVersionConfiguration : IEntityTypeConfiguration<Pro
 
         builder.Property(v => v.State).HasColumnName("state").HasConversion<int>().IsRequired();
 
-        builder.OwnsOne(
+        builder.ComplexProperty(
             v => v.Title,
             title =>
             {
@@ -38,7 +38,7 @@ internal sealed class ProblemVersionConfiguration : IEntityTypeConfiguration<Pro
             .IsRequired()
             .HasConversion(q => q.Value, value => new Question(value));
 
-        builder.OwnsOne(
+        builder.ComplexProperty(
             v => v.Difficulty,
             difficulty =>
             {

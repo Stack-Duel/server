@@ -27,6 +27,6 @@ internal sealed class ProblemVersionSetupConfiguration : IEntityTypeConfiguratio
             .WithMany()
             .HasForeignKey(s => s.ProblemSetupId)
             .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

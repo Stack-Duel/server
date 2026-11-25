@@ -67,7 +67,7 @@ internal sealed class ReferenceSolutionValidationService(
             );
 
         IEnumerable<Language> languages = await languageReadRepository.FindLanguagesByVersionId(
-            [.. problem.Setups.Select(s => s.LanguageVersionId)],
+            [.. problem.ActiveSetups().Select(s => s.LanguageVersionId)],
             cancellationToken
         );
 
@@ -79,7 +79,7 @@ internal sealed class ReferenceSolutionValidationService(
 
         List<SetupValidationOutcome> outcomes = [];
 
-        foreach (ProblemSetup setup in problem.Setups)
+        foreach (ProblemSetup setup in problem.ActiveSetups())
         {
             if (!versionLookup.TryGetValue(setup.LanguageVersionId, out var resolved))
             {
