@@ -175,6 +175,14 @@ public sealed class Problem : AggregateRoot
         return setup;
     }
 
+    public void RetireSetup(Guid setupId)
+    {
+        ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
+            ?? throw new InvalidOperationException($"Setup {setupId} not found on problem.");
+        setup.Retire();
+        MarkContentChanged();
+    }
+
     public void SetReferenceSolution(Guid setupId, string code)
     {
         ProblemSetup setup = _setups.FirstOrDefault(s => s.Id == setupId)
@@ -270,7 +278,7 @@ public sealed class Problem : AggregateRoot
             Difficulty,
             TimeLimit,
             MemoryLimit,
-            _setups.Select(setup => new ProblemVersionSetupSpec(
+            ActiveSetups().Select(setup => new ProblemVersionSetupSpec(
                 setup.Id,
                 setup.LanguageVersionId,
                 setup.InitialCode,
@@ -292,7 +300,7 @@ public sealed class Problem : AggregateRoot
 
     public IReadOnlyList<int> SampleTestCaseInputCounts() =>
         [
-            .. _setups
+            .. ActiveSetups()
                 .SelectMany(setup => setup.TestSuites)
                 .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
                 .SelectMany(testSuite => testSuite.TestCases)
@@ -303,28 +311,28 @@ public sealed class Problem : AggregateRoot
         ];
 
     public IEnumerable<ProblemSetup> SetupsMissingReferenceSolution() =>
-        _setups.Where(setup => string.IsNullOrWhiteSpace(setup.ReferenceSolutionCode));
+        ActiveSetups().Where(setup => string.IsNullOrWhiteSpace(setup.ReferenceSolutionCode));
 
     public ProblemPublishReadiness EvaluatePublishReadiness()
     {
-        int sampleTestCaseCount = _setups
+        int sampleTestCaseCount = ActiveSetups()
             .SelectMany(setup => setup.TestSuites)
             .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
             .SelectMany(testSuite => testSuite.TestCases)
             .Count(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt is null);
 
         return new ProblemPublishReadiness(
-            _setups.Count,
+            ActiveSetups().Count(),
             SetupsMissingReferenceSolution().Count(),
             sampleTestCaseCount,
             GenerationSpec is not null
         );
     }
 
-    public IEnumerable<Guid> AvailableLanguageVersionIds() => _setups.Select(setup => setup.LanguageVersionId);
+    public IEnumerable<Guid> AvailableLanguageVersionIds() => ActiveSetups().Select(setup => setup.LanguageVersionId);
 
     public ProblemSetup? FindSetupByLanguageVersionId(Guid languageVersionId) =>
-        _setups.SingleOrDefault(setup => setup.LanguageVersionId == languageVersionId);
+        ActiveSetups().SingleOrDefault(setup => setup.LanguageVersionId == languageVersionId);
 
     public Slug Slug { get; private set; }
     public Title Title { get; private set; }
@@ -365,6 +373,8 @@ public sealed class Problem : AggregateRoot
     public IReadOnlyCollection<ProblemVersion> Versions => _versions.AsReadOnly();
 
     public IReadOnlyCollection<ProblemSetup> Setups => _setups.AsReadOnly();
+
+    public IEnumerable<ProblemSetup> ActiveSetups() => _setups.Where(setup => setup.RetiredAt is null);
     public IReadOnlyCollection<ProblemTag> Tags => _tags.AsReadOnly();
 
     private readonly List<ProblemHistory> _history = [];

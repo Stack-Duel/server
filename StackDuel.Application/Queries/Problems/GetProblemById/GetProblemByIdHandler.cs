@@ -30,7 +30,7 @@ internal sealed class GetProblemByIdHandler(
 
         var publicTestCases =
             problem
-                .Setups.FirstOrDefault()
+                .ActiveSetups().FirstOrDefault()
                 ?.PublicTestSuites()
                 .SelectMany(suite => suite.TestCases)
                 .Select(tc => new PublicTestCaseDto(

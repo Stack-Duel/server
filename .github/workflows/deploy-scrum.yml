@@ -6,15 +6,26 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
-  AZURE_WEBAPP_NAME: "app-awapi-scrum-centralus-03"
-  AZURE_WEBAPP_PACKAGE_PATH: "./publish"
+  AZURE_CONTAINER_APP: "ca-awapi-scrum-01"
+  AZURE_RESOURCE_GROUP: "rg-aw-scrum-01"
+  DOTNET_VERSION: "11.0.x"
+
+concurrency:
+  group: deploy-scrum
+  cancel-in-progress: false
 
 jobs:
   build:
     uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
     with:
-      upload-artifact: true
+      container: push
 
   migrate:
     runs-on: ubuntu-latest
@@ -28,7 +39,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "11.0.x"
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore dependencies
         run: dotnet restore
@@ -41,22 +52,49 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: migrate
-    if: ${{ always() && needs.migrate.result == 'success' }}
-    environment:
-      name: Scrum
-      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
+    needs: [build, migrate]
+    environment: Scrum
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: webapp
-          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      - name: Verify image reference
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+        run: |
+          if [ -z "$IMAGE" ]; then
+            echo "Build produced no image reference. Was it called with container: push?"
+            exit 1
+          fi
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3
+      - name: Azure login
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update container app image
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+        run: |
+          set -euo pipefail
+
+          az containerapp update \
+            --name "$AZURE_CONTAINER_APP" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --image "$IMAGE" \
+            --output none
+
+      - name: Report deployed revision
+        run: |
+          set -euo pipefail
+
+          fqdn=$(az containerapp show \
+            --name "$AZURE_CONTAINER_APP" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv)
+
+          echo "Deployed to https://$fqdn" >> "$GITHUB_STEP_SUMMARY"

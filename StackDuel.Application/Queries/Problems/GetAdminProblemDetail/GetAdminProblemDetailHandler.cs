@@ -45,7 +45,7 @@ internal sealed class GetAdminProblemDetailHandler(
             .ToDictionary(x => x.Id, x => (x.LanguageName, x.VersionLabel));
 
         var setups = problem
-            .Setups.Select(setup =>
+            .ActiveSetups().Select(setup =>
             {
                 var (languageName, versionLabel) = versionLookup.TryGetValue(setup.LanguageVersionId, out var found)
                     ? found

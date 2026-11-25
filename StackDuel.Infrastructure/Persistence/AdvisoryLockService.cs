@@ -11,7 +11,7 @@ internal sealed class AdvisoryLockService(StackDuelDbContext context) : IAdvisor
 
     public async Task AcquireUserScopedLockAsync(Guid key, CancellationToken cancellationToken = default)
     {
-        await context.Database.ExecuteSqlInterpolatedAsync(
+        await context.Database.ExecuteSqlAsync(
             $"SELECT pg_advisory_xact_lock({UserScopedLockNamespace}, hashtext({key.ToString()}))",
             cancellationToken
         );
@@ -26,7 +26,7 @@ internal sealed class AdvisoryLockService(StackDuelDbContext context) : IAdvisor
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        await context.Database.ExecuteSqlInterpolatedAsync(
+        await context.Database.ExecuteSqlAsync(
             $"SELECT pg_advisory_xact_lock(hashtext({lockNamespace}), hashtext({key.ToString()}))",
             cancellationToken
         );

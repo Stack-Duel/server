@@ -112,8 +112,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
                 p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
-                p.Setups.Count,
+                p.Setups.Where(s => s.RetiredAt == null).Select(s => s.LanguageVersionId).Distinct().ToList(),
+                p.Setups.Count(s => s.RetiredAt == null),
                 p.CreatedAt,
                 p.CreatedBy != null ? p.CreatedBy.Username.Value : null
             ))
@@ -204,7 +204,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.Status,
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
-                p.Setups.Count,
+                p.Setups.Count(s => s.RetiredAt == null),
                 p.CreatedAt,
                 p.Question,
                 0,
@@ -234,11 +234,12 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
             .Where(problem => problem.DeletedAt == null)
             .Where(p => p.Id == id)
             .Select(p => new ProblemPublishReadinessProjection(
-                p.Setups.Count,
-                p.Setups.Where(setup => setup.ReferenceSolutionCode == null || setup.ReferenceSolutionCode == "")
+                p.Setups.Count(s => s.RetiredAt == null),
+                p.Setups.Where(setup => setup.RetiredAt == null && (setup.ReferenceSolutionCode == null || setup.ReferenceSolutionCode == ""))
                     .Select(setup => setup.LanguageVersionId)
                     .ToList(),
-                p.Setups.SelectMany(setup => setup.TestSuites)
+                p.Setups.Where(setup => setup.RetiredAt == null)
+                    .SelectMany(setup => setup.TestSuites)
                     .Where(testSuite => testSuite.Type == TestSuiteType.Sample)
                     .SelectMany(testSuite => testSuite.TestCases)
                     .Count(testCase => testCase.Source == TestCaseSource.Authored && testCase.RetiredAt == null),
@@ -288,8 +289,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
                 p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
-                p.Setups.Count,
+                p.Setups.Where(s => s.RetiredAt == null).Select(s => s.LanguageVersionId).Distinct().ToList(),
+                p.Setups.Count(s => s.RetiredAt == null),
                 p.CreatedAt,
                 p.CreatedBy != null ? p.CreatedBy.Username.Value : null
             ))
@@ -358,8 +359,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 p.TimeLimit.Milliseconds,
                 p.MemoryLimit.Megabytes,
                 p.Tags.Select(t => t.Name.Value).ToList(),
-                p.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
-                p.Setups.Count,
+                p.Setups.Where(s => s.RetiredAt == null).Select(s => s.LanguageVersionId).Distinct().ToList(),
+                p.Setups.Count(s => s.RetiredAt == null),
                 p.CreatedAt,
                 p.CreatedBy != null ? p.CreatedBy.Username.Value : null
             ))
@@ -434,7 +435,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 row.PublishedVersion != null ? row.PublishedVersion.Title.Value : row.Problem.Title.Value,
                 row.PublishedVersion != null ? row.PublishedVersion.Difficulty.Value : row.Problem.Difficulty.Value,
                 row.Problem.Tags.Select(t => t.Name.Value).ToList(),
-                row.Problem.Setups.Select(s => s.LanguageVersionId).Distinct().ToList()
+                row.Problem.Setups.Where(s => s.RetiredAt == null).Select(s => s.LanguageVersionId).Distinct().ToList()
             ))
             .ToListAsync(cancellationToken);
 
@@ -476,8 +477,8 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
                 x.Problem.TimeLimit.Milliseconds,
                 x.Problem.MemoryLimit.Megabytes,
                 x.Problem.Tags.Select(t => t.Name.Value).ToList(),
-                x.Problem.Setups.Select(s => s.LanguageVersionId).Distinct().ToList(),
-                x.Problem.Setups.Count,
+                x.Problem.Setups.Where(s => s.RetiredAt == null).Select(s => s.LanguageVersionId).Distinct().ToList(),
+                x.Problem.Setups.Count(s => s.RetiredAt == null),
                 x.Problem.CreatedAt,
                 x.Problem.CreatedBy != null ? x.Problem.CreatedBy.Username.Value : null
             ))
@@ -538,7 +539,7 @@ internal sealed class ProblemReadRepository(StackDuelDbContext context) : IProbl
 
         if (allowedLanguageVersionIdList.Count > 0)
             query = query.Where(problem =>
-                problem.Setups.Any(setup => allowedLanguageVersionIdList.Contains(setup.LanguageVersionId))
+                problem.Setups.Any(setup => setup.RetiredAt == null && allowedLanguageVersionIdList.Contains(setup.LanguageVersionId))
             );
 
         var candidateIds = await query

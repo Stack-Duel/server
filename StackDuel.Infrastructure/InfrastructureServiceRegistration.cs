@@ -306,8 +306,6 @@ public static class InfrastructureServiceRegistration
                 var options = serviceProvider.GetRequiredService<ConnectionStringOptions>();
 
                 dbOptions.UseNpgsql(options.DefaultConnection);
-
-                dbOptions.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
             }
         );
 
@@ -316,7 +314,7 @@ public static class InfrastructureServiceRegistration
             {
                 var options = serviceProvider.GetRequiredService<ConnectionStringOptions>();
 
-                dbOptions.UseNpgsql(options.DefaultConnection);
+                dbOptions.UseNpgsql(options.DefaultConnection, npgsql => npgsql.EnableRetryOnFailure());
             }
         );
 

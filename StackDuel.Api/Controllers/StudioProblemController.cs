@@ -113,6 +113,29 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
         );
     }
 
+    [HttpDelete("{id:guid}/setups/{languageVersionId:guid}")]
+    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> RemoveSetupAsync(
+        Guid id,
+        Guid languageVersionId,
+        CancellationToken cancellationToken
+    )
+    {
+        return this.ToActionResult(
+            await studioProblemService.RemoveStudioProblemSetupAsync(
+                id,
+                languageVersionId,
+                userContext.User!.Id,
+                cancellationToken
+            )
+        );
+    }
+
     [HttpPut("{id:guid}/setups/reference-solution")]
     [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
     [ProducesResponseType(StatusCodes.Status200OK)]

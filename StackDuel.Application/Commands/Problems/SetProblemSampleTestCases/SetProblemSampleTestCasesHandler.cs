@@ -32,7 +32,7 @@ internal sealed class SetProblemSampleTestCasesHandler(
                 new ValidationError("Status", "Cannot edit a problem while validation is in progress.")
             );
 
-        List<Guid> setupIds = [.. problem.Setups.Select(s => s.Id)];
+        List<Guid> setupIds = [.. problem.ActiveSetups().Select(s => s.Id)];
 
         if (setupIds.Count == 0)
             return Result.Invalid(

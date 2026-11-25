@@ -22,61 +22,6 @@
 
   <ItemGroup>
     <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\host-config.js"
-      LogicalName="ReactRuntime/host-config.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\harness.js"
-      LogicalName="ReactRuntime/harness.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react\package.json"
-      LogicalName="ReactRuntime/node_modules/react/package.json"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react\index.js"
-      LogicalName="ReactRuntime/node_modules/react/index.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react\cjs\react.production.js"
-      LogicalName="ReactRuntime/node_modules/react/cjs/react.production.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react-reconciler\package.json"
-      LogicalName="ReactRuntime/node_modules/react-reconciler/package.json"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react-reconciler\index.js"
-      LogicalName="ReactRuntime/node_modules/react-reconciler/index.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react-reconciler\constants.js"
-      LogicalName="ReactRuntime/node_modules/react-reconciler/constants.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react-reconciler\cjs\react-reconciler.production.js"
-      LogicalName="ReactRuntime/node_modules/react-reconciler/cjs/react-reconciler.production.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\react-reconciler\cjs\react-reconciler-constants.production.js"
-      LogicalName="ReactRuntime/node_modules/react-reconciler/cjs/react-reconciler-constants.production.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\scheduler\package.json"
-      LogicalName="ReactRuntime/node_modules/scheduler/package.json"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\scheduler\index.js"
-      LogicalName="ReactRuntime/node_modules/scheduler/index.js"
-    />
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\React\node_modules\scheduler\cjs\scheduler.production.js"
-      LogicalName="ReactRuntime/node_modules/scheduler/cjs/scheduler.production.js"
-    />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource
       Include="ExecutionEngine\CodeTemplates\Assets\VanillaJs\harness.js"
       LogicalName="VanillaJsRuntime/harness.js"
     />

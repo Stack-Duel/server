@@ -1,4 +1,4 @@
-using Microsoft.ApplicationInsights.AspNetCore.Extensions;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 
 namespace StackDuel.Api.Extensions;
 
@@ -17,9 +17,7 @@ public static class ApplicationInsightsExtensions
             return services;
         }
 
-        services.AddApplicationInsightsTelemetry(
-            new ApplicationInsightsServiceOptions { ConnectionString = connectionString }
-        );
+        services.AddOpenTelemetry().UseAzureMonitor(options => options.ConnectionString = connectionString);
         return services;
     }
 }
