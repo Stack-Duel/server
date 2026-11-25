@@ -17,10 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Persistence\Migrations\Scripts\**\*.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource
       Include="ExecutionEngine\CodeTemplates\Assets\VanillaJs\harness.js"
       LogicalName="VanillaJsRuntime/harness.js"
@@ -30,7 +26,6 @@
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.ServiceBus" />
     <PackageReference Include="Azure.Storage.Blobs" />
-    <PackageReference Include="dbup-postgresql" />
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />

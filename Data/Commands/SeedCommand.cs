@@ -45,7 +45,7 @@ internal static class SeedCommand
                 new SpectreUpgradeLog(parseResult.GetValue(SharedOptions.Verbose))
             );
 
-            if (!parseResult.GetValue(dryRun))
+            if (!parseResult.GetValue(dryRun) && parseResult.GetValue(dev))
             {
                 bool inserted = FileBundleSeeder.EnsureChinookBundle(connectionString);
 

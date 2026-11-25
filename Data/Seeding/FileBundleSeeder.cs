@@ -21,7 +21,7 @@ internal static class FileBundleSeeder
         command.CommandText = """
             INSERT INTO additional_file_bundles (id, name, content, created_at)
             VALUES (@id, @name, @content, NOW())
-            ON CONFLICT (id) DO NOTHING
+            ON CONFLICT (name) DO NOTHING
             """;
         command.Parameters.AddWithValue("id", ChinookBundleId);
         command.Parameters.AddWithValue("name", ChinookBundleName);
