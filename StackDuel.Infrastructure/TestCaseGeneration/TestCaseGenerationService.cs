@@ -208,7 +208,7 @@ internal sealed class TestCaseGenerationService(
         string suiteName = $"{problem.Slug.Value} - Generated Cases";
         Guid suiteId = await testSuiteRepository.FindOrCreateGeneratedSuiteAsync(
             suiteName,
-            [.. problem.Setups.Select(s => s.Id)],
+            [.. problem.ActiveSetups().Select(s => s.Id)],
             cancellationToken
         );
 

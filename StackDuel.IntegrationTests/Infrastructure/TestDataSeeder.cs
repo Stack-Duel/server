@@ -387,6 +387,18 @@ public sealed class TestDataSeeder(string connectionString)
         return result is Guid id ? id : throw new InvalidOperationException("Problem has no setups.");
     }
 
+    public async Task<string> GetProblemSlugAsync(Guid problemId, CancellationToken cancellationToken = default)
+    {
+        await using NpgsqlConnection connection = await OpenConnectionAsync(cancellationToken);
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT slug FROM problems WHERE id = @problemId";
+        command.Parameters.AddWithValue("problemId", problemId);
+
+        object? result = await command.ExecuteScalarAsync(cancellationToken);
+
+        return result as string ?? throw new InvalidOperationException("Problem not found.");
+    }
+
     public async Task MarkProblemPublishedAsync(Guid problemId, CancellationToken cancellationToken = default) =>
         await ExecuteAsync(
             "UPDATE problems SET status = 2 WHERE id = @problemId",

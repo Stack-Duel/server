@@ -28,7 +28,7 @@ internal sealed partial class TestCaseRefreshService(StackDuelDbContext context,
                 p.GenerationSpec.OutputValueType,
                 p.GenerationSpec.TargetCaseCount,
                 Setups = p
-                    .Setups.Where(s => s.GenerationSpecId != null && s.ReferenceSolutionCode != null)
+                    .Setups.Where(s => s.RetiredAt == null && s.GenerationSpecId != null && s.ReferenceSolutionCode != null)
                     .Select(s => new SetupCandidate(s.Id, s.ReferenceSolutionCode!))
                     .ToList(),
             })

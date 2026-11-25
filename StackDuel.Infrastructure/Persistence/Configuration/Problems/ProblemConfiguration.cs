@@ -18,17 +18,17 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
 
         builder.Property(p => p.Id).HasColumnName("id");
 
-        builder.OwnsOne(
+        builder.ComplexProperty(
             p => p.Slug,
             slug =>
             {
                 slug.Property(s => s.Value).HasColumnName("slug").HasMaxLength(Slug.MaxLength).IsRequired();
-
-                slug.HasIndex(s => s.Value).IsUnique().HasFilter("deleted_at IS NULL");
             }
         );
 
-        builder.OwnsOne(
+        builder.HasIndex(p => p.Slug.Value).IsUnique().HasFilter("deleted_at IS NULL");
+
+        builder.ComplexProperty(
             p => p.Title,
             title =>
             {
@@ -43,7 +43,7 @@ internal sealed class ProblemConfiguration : IEntityTypeConfiguration<Problem>
             .IsRequired()
             .HasConversion(q => q.Value, v => new Question(v));
 
-        builder.OwnsOne(
+        builder.ComplexProperty(
             p => p.Difficulty,
             difficulty =>
             {
