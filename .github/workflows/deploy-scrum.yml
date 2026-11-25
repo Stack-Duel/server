@@ -26,7 +26,6 @@ jobs:
       packages: write
     with:
       container: push
-      upload-migration-artifacts: true
 
   migrate:
     runs-on: ubuntu-latest
@@ -34,51 +33,26 @@ jobs:
     environment: Scrum
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Download migrations bundle artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: migrations-bundle
-          path: ./migrations-bundle
+      - name: Restore dependencies
+        run: dotnet restore
 
-      - name: Run migrations
-        run: |
-          chmod +x ./migrations-bundle/efbundle
-          ./migrations-bundle/efbundle
-        env:
-          ASPNETCORE_ENVIRONMENT: Production
-          ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}
-
-  seed:
-    runs-on: ubuntu-latest
-    needs: migrate
-    environment: Scrum
-
-    steps:
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Download seeder artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: seeder
-          path: ./seeder-publish
-
-      - name: Run static seed
-        run: dotnet ./seeder-publish/StackDuel.Seeder.dll --static
+      - name: Apply schema, reference, and content scripts
+        run: dotnet run --project Data -- migrate
         env:
           ASPNETCORE_ENVIRONMENT: Production
           ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [build, seed]
+    needs: [build, migrate]
     environment: Scrum
     permissions:
       id-token: write

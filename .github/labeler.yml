@@ -23,7 +23,7 @@ area/tests:
 
 area/seeder:
   - changed-files:
-    - any-glob-to-any-file: 'StackDuel.Seeder/**'
+    - any-glob-to-any-file: 'Data/**'
 
 ci/cd:
   - changed-files:

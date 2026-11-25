@@ -79,39 +79,16 @@ jobs:
           path: ./publish
           if-no-files-found: error
 
-      - name: Install EF Core tools
+      - name: Publish the Data CLI
         if: ${{ inputs.upload-migration-artifacts }}
-        run: dotnet tool install --global dotnet-ef
+        run: dotnet publish Data/Data.csproj --configuration Release --no-build --output ./data-publish
 
-      - name: Create migrations bundle
-        if: ${{ inputs.upload-migration-artifacts }}
-        run: |
-          dotnet ef migrations bundle \
-            --configuration Release \
-            --context StackDuelDbContext \
-            --project StackDuel.Infrastructure \
-            --startup-project StackDuel.Api \
-            --output ./migrations-bundle/efbundle \
-            --force
-
-      - name: Upload migrations bundle artifact
+      - name: Upload the Data CLI artifact
         if: ${{ inputs.upload-migration-artifacts }}
         uses: actions/upload-artifact@v4
         with:
-          name: migrations-bundle
-          path: ./migrations-bundle
-          if-no-files-found: error
-
-      - name: Publish seeder
-        if: ${{ inputs.upload-migration-artifacts }}
-        run: dotnet publish StackDuel.Seeder/StackDuel.Seeder.csproj --configuration Release --output ./seeder-publish
-
-      - name: Upload seeder artifact
-        if: ${{ inputs.upload-migration-artifacts }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: seeder
-          path: ./seeder-publish
+          name: data-cli
+          path: ./data-publish
           if-no-files-found: error
 
       - name: Resolve image reference

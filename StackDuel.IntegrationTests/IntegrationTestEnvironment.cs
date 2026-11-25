@@ -33,6 +33,8 @@ public sealed class IntegrationTestEnvironment : IAsyncLifetime
 
         _factory = new StackDuelApiFactory();
         _ = _factory.Services;
+
+        await DatabaseReset.TruncateEverythingAsync(_connectionString);
     }
 
     public async Task DisposeAsync()

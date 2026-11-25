@@ -14,7 +14,7 @@ var app = builder.Build();
 app.UseApiCors();
 app.UseGlobalExceptionHandler();
 
-await app.UseApi();
+app.UseApi();
 
 app.MapGet("/api/v1/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
     .AllowAnonymous()

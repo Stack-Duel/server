@@ -13,10 +13,11 @@
   <ItemGroup>
     <!-- The execution-engine strategies and step handlers are internal by design. -->
     <InternalsVisibleTo Include="StackDuel.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="StackDuel.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Persistence\Seeders\Assets\chinook-sqlite.zip" />
+    <EmbeddedResource Include="Persistence\Migrations\Scripts\**\*.sql" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,12 +30,9 @@
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.ServiceBus" />
     <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="dbup-postgresql" />
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />

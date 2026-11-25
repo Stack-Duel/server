@@ -8,11 +8,6 @@ Backend for StackDuel, a competitive programming platform. Built with .NET.
 
 - .NET 10 SDK
 - docker
-- dotnet-ef CLI
-
-```
-dotnet tool install --global dotnet-ef
-```
 
 ### Getting started
 
@@ -40,45 +35,131 @@ Where each value comes from:
 
 Java language-server support is separate and optional — `scripts/download-jdtls.sh` (or `.ps1`) downloads the language server and prints the additional `LanguageServer:*` user-secrets commands to run.
 
-### Migrations
+### Database migrations and seeding
 
-Migrations are managed in `StackDuel.Infrastructure`. To add a new migration:
+Schema and data are both plain SQL scripts run by [DbUp](https://github.com/DbUp/DbUp) through the
+`Data` CLI. There is no `dotnet ef` step and no EF Core migrations; EF is only the runtime query
+layer.
 
-```
-dotnet ef migrations add <MigrationName> --project StackDuel.Infrastructure --context StackDuelDbContext --startup-project StackDuel.Api
-```
+Scripts live in five groups, each with its own journal table so one group can be applied, skipped,
+or baselined without touching the others:
 
-To apply migrations against the local database (requires the docker-compose Postgres to be running):
+| Group | What it holds | Where it lives |
+| --- | --- | --- |
+| `schema` | Tables, indexes, constraints | `StackDuel.Infrastructure/Persistence/Migrations/Scripts/Schema` |
+| `reference` | Lookup data the app cannot start without: permissions, roles, feature flags, tracks, languages, game modes, execution pipelines | `.../Scripts/Reference` |
+| `content` | The published problem catalog, its test suites, and the campaigns built from it | `.../Scripts/Content` |
+| `dev` | Sample data for working locally | `Data/Scripts/Dev` |
+| `e2e` | Fixtures the Playwright suites assert against | `Data/Scripts/E2E` |
 
-```
-dotnet ef database update --project StackDuel.Infrastructure --context StackDuelDbContext --startup-project StackDuel.Api
-```
+Every group also has a `Repeatable/` subfolder for scripts that must run on every pass instead of
+once — see [Data that must be re-applied on every run](#data-that-must-be-re-applied-on-every-run).
 
-To apply migrations against an external database:
+`schema`, `reference`, and `content` are embedded in `StackDuel.Infrastructure`, so the API applies
+them itself on startup in Development. `dev` and `e2e` are embedded in the CLI only, so neither the
+API nor a deploy can apply them by accident.
 
-```
-dotnet ef database update --project StackDuel.Infrastructure --context StackDuelDbContext --connection "<connection string>"
-```
-
-### Seeding
-
-Seed everything (languages + demo problems with tags):
-
-```
-dotnet run --project StackDuel.Seeder -- --all
-```
-
-Seed only static data (languages):
+#### Running it
 
 ```
-dotnet run --project StackDuel.Seeder -- --static
+dotnet run --project Data -- migrate          # schema + reference + content
+dotnet run --project Data -- migrate --dry-run
+dotnet run --project Data -- status           # applied/pending per group
+dotnet run --project Data -- seed --dev
+dotnet run --project Data -- reset --force    # drop every table, then migrate (local only)
+dotnet run --project Data -- grant-admin <username>
 ```
 
-Seed only demo data (problems, test suites, tags):
+The connection string is taken from `--connection`, else `ConnectionStrings__DefaultConnection`,
+else user secrets, else `appsettings.json`. Add `--groups schema reference` to narrow a run, and
+`--create-database` to create the database first if it does not exist.
+
+#### Adding a script
+
+Drop a `.sql` file into the group's folder named `<yyyyMMddHHmm>_<Name>.sql`. The csproj globs the
+folder, so no project edit is needed, and DbUp orders scripts by that name — the timestamp prefix
+*is* the ordering, which is also why it avoids the merge conflicts a plain counter causes.
+
+Two rules for the content of a script:
+
+- **Make it idempotent.** Data scripts use literal UUIDs and `ON CONFLICT DO NOTHING` so a partial
+  run can be repeated. Schema scripts should be written so re-running them is harmless.
+- **Never edit a run-once script that has shipped.** The journal records it as applied, so an edit
+  silently diverges environments. Add a new script instead, or move the data to a `Repeatable/`
+  script if editing it in place is what you actually want (see below).
+
+#### Data that must be re-applied on every run
+
+A script in a group's root is journaled and runs **once**. A script in that group's `Repeatable/`
+subfolder runs on **every** `migrate` or `seed`, is never journaled, and always sorts after the
+run-once scripts in its group. Use it for a list the *code* owns and must agree with on every
+deploy — statuses, kinds, closed enum-like sets — where editing the list in place is the natural
+way to change it:
 
 ```
-dotnet run --project StackDuel.Seeder -- --demo
+Scripts/Reference/202612010900_OrderStatuses.sql   # run once, journaled
+Scripts/Reference/Repeatable/OrderStatuses.sql     # re-applied every run
 ```
+
+Such a script must be a full upsert, because it runs against a database that already has the
+previous version of the list:
+
+```sql
+INSERT INTO public.order_statuses (id, key, name, sort_order) VALUES
+    ('...-0001', 'pending',  'Pending',  1),
+    ('...-0002', 'complete', 'Complete', 2)
+ON CONFLICT (key) DO UPDATE
+SET name = EXCLUDED.name,
+    sort_order = EXCLUDED.sort_order;
+```
+
+Two things not to put in `Repeatable/`:
+
+- **Anything an operator can change at runtime.** Feature flags are the trap here: `default_enabled`
+  and `rollout_percentage` are edited through the admin API, so a repeatable script would silently
+  revert every toggle on each deploy. Operator-owned data belongs in a run-once script that sets the
+  initial value and then leaves it alone.
+- **Schema changes.** `Schema/Repeatable/` exists for completeness (a view or function definition is
+  a reasonable fit), but a table change is a one-time event and belongs in a timestamped script so
+  the journal records when it happened.
+
+Removing a row is still a run-once script: a repeatable upsert cannot express a deletion without
+also deleting rows that other environments legitimately added.
+
+#### Transactional fixtures for e2e tests
+
+The `e2e` group is where a known starting state for the Playwright suites goes, and those fixtures
+almost always belong in `Data/Scripts/E2E/Repeatable/` — a test run wants the same state every time,
+not whatever the last run left behind. Because the script re-runs, delete the rows it owns before
+inserting them, scoped to its own fixed ids so it never touches data a test created:
+
+```sql
+DELETE FROM public.submissions WHERE id IN ('...-0001', '...-0002');
+DELETE FROM public.games       WHERE id = '...-0100';
+
+INSERT INTO public.games (id, ...) VALUES ('...-0100', ...);
+INSERT INTO public.submissions (id, game_id, ...) VALUES ('...-0001', '...-0100', ...);
+```
+
+Apply them with `seed --e2e`, which the e2e workflow can call after `migrate`. For a genuinely clean
+slate instead, `reset --force --e2e` drops every table, migrates, and then applies the fixtures.
+
+Both folders ship empty. Nothing needs them yet: the current reference lists are stable enough that
+a new timestamped script is the right way to change them, and the e2e suites create their users
+through Auth0 and then call `grant-admin`, which cannot be a script because the user does not exist
+until the run is underway.
+
+#### Baselining a database that predates DbUp
+
+A database that already has the schema needs its journal stamped once, or `migrate` will try to
+create tables that exist:
+
+```
+dotnet run --project Data -- baseline --groups schema reference content
+```
+
+`baseline` marks every *pending* script as applied without executing it. Run it once per
+environment, before the first DbUp deploy.
 
 ### Testing
 
@@ -96,7 +177,7 @@ dotnet test StackDuel.Domain.Tests
 
 #### Integration tests
 
-Requires Docker running — nothing else. `StackDuel.IntegrationTests` spins up a disposable Postgres container via [Testcontainers](https://testcontainers.com/), runs the app's own EF Core migrations against it, and tears it down when the run finishes. You don't need `docker-compose up` first, and there's no manual migration or seeding step.
+Requires Docker running — nothing else. `StackDuel.IntegrationTests` spins up a disposable Postgres container via [Testcontainers](https://testcontainers.com/), runs the DbUp schema and reference scripts against it, and tears it down when the run finishes. You don't need `docker-compose up` first, and there's no manual migration or seeding step.
 
 ```
 dotnet test StackDuel.IntegrationTests
@@ -114,7 +195,7 @@ runs both unit and integration tests together — Docker must be running for the
 
 ### Feature flags
 
-Feature flags live in `StackDuel.Domain/FeatureFlags` (evaluation logic in `StackDuel.Application/FeatureFlags`), as their own bounded context separate from RBAC — they're operational toggles, not permanent access grants, though group targeting reuses the existing `Group` entity. `dotnet run --project StackDuel.Seeder -- --static` (or `--all`) creates the seeded `leaderboards` flag; without it, the flag row doesn't exist and resolves as disabled everywhere (evaluation fails closed on an unknown key).
+Feature flags live in `StackDuel.Domain/FeatureFlags` (evaluation logic in `StackDuel.Application/FeatureFlags`), as their own bounded context separate from RBAC — they're operational toggles, not permanent access grants, though group targeting reuses the existing `Group` entity. `dotnet run --project Data -- migrate` creates the seeded `leaderboards` flag; without it, the flag row doesn't exist and resolves as disabled everywhere (evaluation fails closed on an unknown key).
 
 There's no admin UI yet — flags are managed entirely through the API below.
 
@@ -261,7 +342,7 @@ Environment secrets:
 - `AUTH0_DOMAIN`: Auth0 domain.
 - `AZURE_SERVICEBUS_CONNECTION_STRING`: Required when `MESSAGEBUS_TRANSPORT` is `AzureServiceBus`.
 - `AZURE_WEBAPP_PUBLISH_PROFILE`: Publish profile XML for the Azure App Service (same content used by the `azure/webapps-deploy` action), used to authenticate the Kudu zip deploy.
-- `DB_CONNECTION_STRING`: Database connection string used for EF Core migrations and app runtime configuration.
+- `DB_CONNECTION_STRING`: Database connection string used by the Data CLI and the app runtime.
 - `RABBITMQ_HOST`: Required when `MESSAGEBUS_TRANSPORT` is `RabbitMQ`.
 - `RABBITMQ_PASSWORD`: Required when `MESSAGEBUS_TRANSPORT` is `RabbitMQ`.
 - `RABBITMQ_USERNAME`: Required when `MESSAGEBUS_TRANSPORT` is `RabbitMQ`.
@@ -306,4 +387,4 @@ value objects is available via `dotnet new` templates. See [`CODE_GENERATION.md`
 | `StackDuel.Application.Tests` | Unit tests — handlers, mocked repositories |
 | `StackDuel.Domain.Tests`      | Unit tests — domain models                 |
 | `StackDuel.IntegrationTests`  | Integration tests — real API + Postgres    |
-| `StackDuel.Seeder`            | CLI for seeding static/demo data           |
+| `Data`                        | DbUp CLI for migrations and seeding        |

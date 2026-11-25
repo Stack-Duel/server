@@ -9,6 +9,7 @@ using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Settings;
 using StackDuel.Application.Notifications;
 using StackDuel.Infrastructure;
+using StackDuel.Infrastructure.Persistence.Migrations;
 using System.Text.Json.Serialization;
 
 namespace StackDuel.Api;
@@ -34,8 +35,7 @@ public static class ApiServiceRegistration
             .AddMvc();
         services.AddOpenApi();
 
-        var corsOptions =
-            configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>()
+        var corsOptions = configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>()
             ?? throw new InvalidOperationException(
                 $"Configuration section '{CorsOptions.SectionName}' is missing or invalid."
             );
@@ -43,13 +43,10 @@ public static class ApiServiceRegistration
         services.AddSingleton(corsOptions);
         services.AddCors(options =>
         {
-            options.AddPolicy(
-                CorsPolicyName,
-                policy =>
-                {
-                    policy.WithOrigins(corsOptions.AllowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-                }
-            );
+            options.AddPolicy(CorsPolicyName, policy =>
+            {
+                policy.WithOrigins(corsOptions.AllowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+            });
         });
 
         services.AddAuth0(configuration);
@@ -75,13 +72,13 @@ public static class ApiServiceRegistration
     // no Access-Control-Allow-Origin header and the browser blocks them outright.
     public static IApplicationBuilder UseApiCors(this IApplicationBuilder app) => app.UseCors(CorsPolicyName);
 
-    public static async Task UseApi(this WebApplication app)
+    public static void UseApi(this WebApplication app)
     {
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
             app.MapScalarApiReference();
-            await app.Services.MigrateAsync();
+            app.Services.UpgradeDatabase();
         }
 
         app.UseHttpsRedirection();
