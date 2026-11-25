@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace StackDuel.Infrastructure.Persistence.Migrations;
+namespace Data.Migrations;
 
 public sealed record ScriptGroup
 {

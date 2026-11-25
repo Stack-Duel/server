@@ -1,6 +1,7 @@
 using Data.Infrastructure;
+using Data.Migrations;
+using Data.Seeding;
 using Spectre.Console;
-using StackDuel.Infrastructure.Persistence.Migrations;
 using System.CommandLine;
 
 namespace Data.Commands;
@@ -35,10 +36,25 @@ internal static class SeedCommand
                 return UpgradeRunner.Failure;
             }
 
+            string connectionString = ConnectionStringResolver.Resolve(
+                parseResult.GetValue(SharedOptions.Connection)
+            );
+
             DatabaseUpgrader upgrader = new(
-                ConnectionStringResolver.Resolve(parseResult.GetValue(SharedOptions.Connection)),
+                connectionString,
                 new SpectreUpgradeLog(parseResult.GetValue(SharedOptions.Verbose))
             );
+
+            if (!parseResult.GetValue(dryRun))
+            {
+                bool inserted = FileBundleSeeder.EnsureChinookBundle(connectionString);
+
+                AnsiConsole.MarkupLine(
+                    inserted
+                        ? "[green]file bundles: inserted the Chinook SQLite database.[/]"
+                        : "[grey]file bundles: Chinook already present.[/]"
+                );
+            }
 
             return UpgradeRunner.Run(upgrader, groups, parseResult.GetValue(dryRun));
         });

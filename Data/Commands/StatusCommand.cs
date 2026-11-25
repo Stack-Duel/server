@@ -1,6 +1,6 @@
 using Data.Infrastructure;
+using Data.Migrations;
 using Spectre.Console;
-using StackDuel.Infrastructure.Persistence.Migrations;
 using System.CommandLine;
 
 namespace Data.Commands;

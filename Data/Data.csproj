@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="StackDuel.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\StackDuel.Infrastructure\StackDuel.Infrastructure.csproj" />
   </ItemGroup>
 
@@ -23,6 +27,11 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Scripts\**\*.sql" />
+    <EmbeddedResource Include="Assets\**\*.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
   </ItemGroup>
 
   <ItemGroup>

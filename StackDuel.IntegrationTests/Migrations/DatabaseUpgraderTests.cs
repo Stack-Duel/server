@@ -1,27 +1,12 @@
-using DbUp.Engine.Output;
+using Data.Migrations;
 using Npgsql;
-using StackDuel.Infrastructure.Persistence.Migrations;
+using StackDuel.IntegrationTests.Infrastructure;
 
-namespace StackDuel.IntegrationTests;
+namespace StackDuel.IntegrationTests.Migrations;
 
 [Collection(IntegrationTestCollection.Name)]
 public sealed class DatabaseUpgraderTests(IntegrationTestEnvironment environment)
 {
-    private sealed class SilentLog : IUpgradeLog
-    {
-        public void LogTrace(string format, params object[] args) { }
-
-        public void LogDebug(string format, params object[] args) { }
-
-        public void LogInformation(string format, params object[] args) { }
-
-        public void LogWarning(string format, params object[] args) { }
-
-        public void LogError(string format, params object[] args) { }
-
-        public void LogError(Exception ex, string format, params object[] args) { }
-    }
-
     private sealed record FreshDatabase(DatabaseUpgrader Upgrader, string ConnectionString);
 
     private FreshDatabase CreateFreshDatabase()
@@ -31,7 +16,7 @@ public sealed class DatabaseUpgraderTests(IntegrationTestEnvironment environment
             Database = $"upgrader_{Guid.NewGuid():N}",
         };
 
-        DatabaseUpgrader upgrader = new(builder.ConnectionString, new SilentLog());
+        DatabaseUpgrader upgrader = new(builder.ConnectionString, new SilentUpgradeLog());
         upgrader.EnsureDatabaseExists();
 
         return new FreshDatabase(upgrader, builder.ConnectionString);
@@ -122,7 +107,7 @@ public sealed class DatabaseUpgraderTests(IntegrationTestEnvironment environment
     }
 
     [Fact]
-    public void ReferenceAndContentScriptsApplyOnTopOfTheSchema()
+    public void EveryGroupAppliesInOrder()
     {
         DatabaseUpgrader upgrader = CreateFreshDatabase().Upgrader;
 

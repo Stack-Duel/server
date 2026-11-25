@@ -1,4 +1,4 @@
-namespace StackDuel.Infrastructure.Persistence.Migrations;
+namespace Data.Migrations;
 
 public sealed record GroupUpgradeResult
 {

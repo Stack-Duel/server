@@ -1,10 +1,10 @@
 using System.Reflection;
 
-namespace StackDuel.Infrastructure.Persistence.Migrations;
+namespace Data.Migrations;
 
 public static class ScriptGroups
 {
-    private const string ResourceRoot = "StackDuel.Infrastructure.Persistence.Migrations.Scripts.";
+    private const string ResourceRoot = "Data.Scripts.";
 
     public static readonly ScriptGroup Schema = ScriptGroup.InAssembly(
         "schema",
@@ -20,14 +20,7 @@ public static class ScriptGroups
         ThisAssembly
     );
 
-    public static readonly ScriptGroup Content = ScriptGroup.InAssembly(
-        "content",
-        "The published problem catalog, its test suites, and the campaigns built from it.",
-        ResourceRoot + "Content.",
-        ThisAssembly
-    );
-
-    public static IReadOnlyList<ScriptGroup> All { get; } = [Schema, Reference, Content];
+    public static IReadOnlyList<ScriptGroup> All { get; } = [Schema, Reference];
 
     private static Assembly ThisAssembly => typeof(ScriptGroups).Assembly;
 }

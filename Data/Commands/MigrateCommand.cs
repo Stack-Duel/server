@@ -1,5 +1,5 @@
 using Data.Infrastructure;
-using StackDuel.Infrastructure.Persistence.Migrations;
+using Data.Migrations;
 using System.CommandLine;
 
 namespace Data.Commands;

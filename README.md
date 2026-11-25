@@ -41,28 +41,32 @@ Schema and data are both plain SQL scripts run by [DbUp](https://github.com/DbUp
 `Data` CLI. There is no `dotnet ef` step and no EF Core migrations; EF is only the runtime query
 layer.
 
-Scripts live in five groups, each with its own journal table so one group can be applied, skipped,
+Scripts live in four groups, each with its own journal table so one group can be applied, skipped,
 or baselined without touching the others:
 
 | Group | What it holds | Where it lives |
 | --- | --- | --- |
-| `schema` | Tables, indexes, constraints | `StackDuel.Infrastructure/Persistence/Migrations/Scripts/Schema` |
-| `reference` | Lookup data the app cannot start without: permissions, roles, feature flags, tracks, languages, game modes, execution pipelines | `.../Scripts/Reference` |
-| `content` | The published problem catalog, its test suites, and the campaigns built from it | `.../Scripts/Content` |
+| `schema` | Tables, indexes, constraints | `Data/Scripts/Schema` |
+| `reference` | Lookup data the app cannot start without: permissions, roles, feature flags, tracks, languages, game modes, execution pipelines | `Data/Scripts/Reference` |
 | `dev` | Sample data for working locally | `Data/Scripts/Dev` |
 | `e2e` | Fixtures the Playwright suites assert against | `Data/Scripts/E2E` |
 
 Every group also has a `Repeatable/` subfolder for scripts that must run on every pass instead of
 once — see [Data that must be re-applied on every run](#data-that-must-be-re-applied-on-every-run).
 
-`schema`, `reference`, and `content` are embedded in `StackDuel.Infrastructure`, so the API applies
-them itself on startup in Development. `dev` and `e2e` are embedded in the CLI only, so neither the
-API nor a deploy can apply them by accident.
+Every group is embedded in the `Data` CLI, which is the only project that touches the database
+schema. The API never migrates: run `migrate` yourself locally, the same way a deploy does.
+
+`dev` and `e2e` hold a handful of problems each — enough to exercise every track and both Judge0
+paths. Hidden test cases are generated from a reference solution rather than seeded, so the
+catalog stays small. The one bulky fixture, the Chinook SQLite database, ships as a binary at
+`Data/Assets/chinook-sqlite-db.zip` and is inserted by `seed` rather than carried as a SQL
+literal.
 
 #### Running it
 
 ```
-dotnet run --project Data -- migrate          # schema + reference + content
+dotnet run --project Data -- migrate          # schema + reference
 dotnet run --project Data -- migrate --dry-run
 dotnet run --project Data -- status           # applied/pending per group
 dotnet run --project Data -- seed --dev
@@ -155,7 +159,7 @@ A database that already has the schema needs its journal stamped once, or `migra
 create tables that exist:
 
 ```
-dotnet run --project Data -- baseline --groups schema reference content
+dotnet run --project Data -- baseline --groups schema
 ```
 
 `baseline` marks every *pending* script as applied without executing it. Run it once per

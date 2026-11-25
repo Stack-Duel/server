@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using StackDuel.Api;
 
 namespace StackDuel.IntegrationTests.Infrastructure;
 
-public sealed class StackDuelApiFactory : WebApplicationFactory<Program>
+public sealed class StackDuelApiFactory : WebApplicationFactory<ApiAssemblyMarker>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

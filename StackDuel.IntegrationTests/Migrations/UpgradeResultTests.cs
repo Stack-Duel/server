@@ -1,6 +1,6 @@
-using StackDuel.Infrastructure.Persistence.Migrations;
+using Data.Migrations;
 
-namespace StackDuel.Infrastructure.Tests.Persistence.Migrations;
+namespace StackDuel.IntegrationTests.Migrations;
 
 public class UpgradeResultTests
 {

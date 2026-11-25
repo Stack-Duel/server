@@ -1,5 +1,5 @@
+using Data.Migrations;
 using Spectre.Console;
-using StackDuel.Infrastructure.Persistence.Migrations;
 
 namespace Data.Commands;
 

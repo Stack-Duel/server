@@ -1,3 +1,4 @@
+using Data.Migrations;
 using StackDuel.IntegrationTests.Infrastructure;
 using Testcontainers.PostgreSql;
 
@@ -31,10 +32,21 @@ public sealed class IntegrationTestEnvironment : IAsyncLifetime
 
         Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _connectionString);
 
+        ApplySchema(_connectionString);
+
         _factory = new StackDuelApiFactory();
         _ = _factory.Services;
 
         await DatabaseReset.TruncateEverythingAsync(_connectionString);
+    }
+
+    private static void ApplySchema(string connectionString)
+    {
+        DatabaseUpgrader upgrader = new(connectionString, new SilentUpgradeLog());
+        GroupUpgradeResult result = upgrader.Upgrade(ScriptGroups.Schema);
+
+        if (!result.Succeeded)
+            throw new InvalidOperationException("Applying the schema scripts to the test container failed.", result.Error);
     }
 
     public async Task DisposeAsync()

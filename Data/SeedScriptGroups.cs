@@ -1,4 +1,4 @@
-using StackDuel.Infrastructure.Persistence.Migrations;
+using Data.Migrations;
 using System.Reflection;
 
 namespace Data;

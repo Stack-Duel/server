@@ -1,7 +1,7 @@
-using StackDuel.Infrastructure.Persistence.Migrations;
+using Data.Migrations;
 using System.Reflection;
 
-namespace StackDuel.Infrastructure.Tests.Persistence.Migrations;
+namespace StackDuel.IntegrationTests.Migrations;
 
 public class ScriptGroupTests
 {
@@ -44,9 +44,9 @@ public class ScriptGroupTests
     }
 
     [Fact]
-    public void TheConfiguredGroupsCoverSchemaReferenceAndContent()
+    public void TheConfiguredGroupsCoverSchemaAndReference()
     {
-        Assert.Equal(["schema", "reference", "content"], ScriptGroups.All.Select(group => group.Name));
+        Assert.Equal(["schema", "reference"], ScriptGroups.All.Select(group => group.Name));
         Assert.All(ScriptGroups.All, group => Assert.NotEmpty(group.Description));
         Assert.All(ScriptGroups.All, group => Assert.Equal(ScriptAssembly, group.ScriptAssembly));
     }
