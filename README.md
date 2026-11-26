@@ -41,38 +41,45 @@ Schema and data are both plain SQL scripts run by [DbUp](https://github.com/DbUp
 `Data` CLI. There is no `dotnet ef` step and no EF Core migrations; EF is only the runtime query
 layer.
 
-Scripts live in five groups, each with its own journal table so one group can be applied, skipped,
+Scripts live in four groups, each with its own journal table so one group can be applied, skipped,
 or baselined without touching the others:
 
 | Group | What it holds | Where it lives |
 | --- | --- | --- |
-| `schema` | Tables, indexes, constraints | `StackDuel.Infrastructure/Persistence/Migrations/Scripts/Schema` |
-| `reference` | Lookup data the app cannot start without: permissions, roles, feature flags, tracks, languages, game modes, execution pipelines | `.../Scripts/Reference` |
-| `content` | The published problem catalog, its test suites, and the campaigns built from it | `.../Scripts/Content` |
-| `dev` | Sample data for working locally | `Data/Scripts/Dev` |
-| `e2e` | Fixtures the Playwright suites assert against | `Data/Scripts/E2E` |
+| `schema` | Tables, indexes, constraints | `StackDuel.Data/Scripts/Schema` |
+| `reference` | Lookup data the app cannot start without: permissions, roles, feature flags, tracks, languages, game modes, execution pipelines | `StackDuel.Data/Scripts/Reference` |
+| `dev` | Sample data for working locally | `StackDuel.Data/Scripts/Dev` |
+| `e2e` | Fixtures the Playwright suites assert against | `StackDuel.Data/Scripts/E2E` |
 
 Every group also has a `Repeatable/` subfolder for scripts that must run on every pass instead of
 once — see [Data that must be re-applied on every run](#data-that-must-be-re-applied-on-every-run).
 
-`schema`, `reference`, and `content` are embedded in `StackDuel.Infrastructure`, so the API applies
-them itself on startup in Development. `dev` and `e2e` are embedded in the CLI only, so neither the
-API nor a deploy can apply them by accident.
+Every group is embedded in the `Data` CLI, which is the only project that touches the database
+schema. The API never migrates: run `migrate` yourself locally, the same way a deploy does.
+
+`dev` and `e2e` hold a handful of problems each — enough to exercise every track and both Judge0
+paths. Hidden test cases are generated from a reference solution rather than seeded, so the
+catalog stays small. The one bulky fixture, the Chinook SQLite database, ships as a binary at
+`StackDuel.Data/Assets/chinook-sqlite-db.zip` and is inserted by `seed` rather than carried as a SQL
+literal.
 
 #### Running it
 
 ```
-dotnet run --project Data -- migrate          # schema + reference + content
-dotnet run --project Data -- migrate --dry-run
-dotnet run --project Data -- status           # applied/pending per group
-dotnet run --project Data -- seed --dev
-dotnet run --project Data -- reset --force    # drop every table, then migrate (local only)
-dotnet run --project Data -- grant-admin <username>
+dotnet run --project StackDuel.Data -- migrate          # schema + reference
+dotnet run --project StackDuel.Data -- migrate --dry-run
+dotnet run --project StackDuel.Data -- status           # applied/pending per group
+dotnet run --project StackDuel.Data -- seed --dev
+dotnet run --project StackDuel.Data -- reset --force    # drop every table, then migrate (local only)
+dotnet run --project StackDuel.Data -- grant-admin <username>
 ```
 
 The connection string is taken from `--connection`, else `ConnectionStrings__DefaultConnection`,
-else user secrets, else `appsettings.json`. Add `--groups schema reference` to narrow a run, and
-`--create-database` to create the database first if it does not exist.
+else user secrets. The CLI shares the API user-secrets id, so
+`dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<connection>"` covers both.
+Add `--groups schema reference` to narrow a run, and `--create-database` to create the database
+first if it does not exist. Creating one needs a maintenance database to connect to, so the CLI
+tries `postgres`, then `defaultdb` (what Aiven provisions), then `template1`.
 
 #### Adding a script
 
@@ -129,7 +136,7 @@ also deleting rows that other environments legitimately added.
 #### Transactional fixtures for e2e tests
 
 The `e2e` group is where a known starting state for the Playwright suites goes, and those fixtures
-almost always belong in `Data/Scripts/E2E/Repeatable/` — a test run wants the same state every time,
+almost always belong in `StackDuel.Data/Scripts/E2E/Repeatable/`, since a test run wants the same state every time,
 not whatever the last run left behind. Because the script re-runs, delete the rows it owns before
 inserting them, scoped to its own fixed ids so it never touches data a test created:
 
@@ -155,7 +162,7 @@ A database that already has the schema needs its journal stamped once, or `migra
 create tables that exist:
 
 ```
-dotnet run --project Data -- baseline --groups schema reference content
+dotnet run --project StackDuel.Data -- baseline --groups schema
 ```
 
 `baseline` marks every *pending* script as applied without executing it. Run it once per
@@ -195,7 +202,7 @@ runs both unit and integration tests together — Docker must be running for the
 
 ### Feature flags
 
-Feature flags live in `StackDuel.Domain/FeatureFlags` (evaluation logic in `StackDuel.Application/FeatureFlags`), as their own bounded context separate from RBAC — they're operational toggles, not permanent access grants, though group targeting reuses the existing `Group` entity. `dotnet run --project Data -- migrate` creates the seeded `leaderboards` flag; without it, the flag row doesn't exist and resolves as disabled everywhere (evaluation fails closed on an unknown key).
+Feature flags live in `StackDuel.Domain/FeatureFlags` (evaluation logic in `StackDuel.Application/FeatureFlags`), as their own bounded context separate from RBAC. They're operational toggles, not permanent access grants, though group targeting reuses the existing `Group` entity. `dotnet run --project StackDuel.Data -- migrate` creates the seeded `leaderboards` flag; without it, the flag row doesn't exist and resolves as disabled everywhere (evaluation fails closed on an unknown key).
 
 There's no admin UI yet — flags are managed entirely through the API below.
 

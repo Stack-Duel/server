@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="StackDuel.Api/StackDuel.Api.csproj" />
-  <Project Path="Data/Data.csproj" Id="2687b10f-994a-4672-b32a-125a7ba487c9" />
+  <Project Path="StackDuel.Data/StackDuel.Data.csproj" Id="2687b10f-994a-4672-b32a-125a7ba487c9" />
   <Project Path="StackDuel.Api.Tests/StackDuel.Api.Tests.csproj" />
   <Project Path="StackDuel.ArchitectureTests/StackDuel.ArchitectureTests.csproj" />
   <Project Path="StackDuel.Application.Tests/StackDuel.Application.Tests.csproj" />

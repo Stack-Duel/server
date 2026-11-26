@@ -9,7 +9,6 @@ using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Settings;
 using StackDuel.Application.Notifications;
 using StackDuel.Infrastructure;
-using StackDuel.Infrastructure.Persistence.Migrations;
 using System.Text.Json.Serialization;
 
 namespace StackDuel.Api;
@@ -78,7 +77,6 @@ public static class ApiServiceRegistration
         {
             app.MapOpenApi();
             app.MapScalarApiReference();
-            app.Services.UpgradeDatabase();
         }
 
         app.UseHttpsRedirection();

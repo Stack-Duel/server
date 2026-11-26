@@ -81,7 +81,7 @@ jobs:
 
       - name: Publish the Data CLI
         if: ${{ inputs.upload-migration-artifacts }}
-        run: dotnet publish Data/Data.csproj --configuration Release --no-build --output ./data-publish
+        run: dotnet publish StackDuel.Data/StackDuel.Data.csproj --configuration Release --no-build --output ./data-publish
 
       - name: Upload the Data CLI artifact
         if: ${{ inputs.upload-migration-artifacts }}
