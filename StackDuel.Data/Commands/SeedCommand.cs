@@ -1,7 +1,6 @@
 using Spectre.Console;
 using StackDuel.Data.Infrastructure;
 using StackDuel.Data.Migrations;
-using StackDuel.Data.Seeding;
 using System.CommandLine;
 
 namespace StackDuel.Data.Commands;
@@ -46,15 +45,7 @@ internal static class SeedCommand
             );
 
             if (!parseResult.GetValue(dryRun) && parseResult.GetValue(dev))
-            {
-                bool inserted = FileBundleSeeder.EnsureChinookBundle(connectionString);
-
-                AnsiConsole.MarkupLine(
-                    inserted
-                        ? "[green]file bundles: inserted the Chinook SQLite database.[/]"
-                        : "[grey]file bundles: Chinook already present.[/]"
-                );
-            }
+                ChinookBundleStep.Ensure(connectionString);
 
             return UpgradeRunner.Run(upgrader, groups, parseResult.GetValue(dryRun));
         });

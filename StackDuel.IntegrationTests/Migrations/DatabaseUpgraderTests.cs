@@ -120,4 +120,46 @@ public sealed class DatabaseUpgraderTests(IntegrationTestEnvironment environment
 
         Assert.All(ScriptGroups.All, group => Assert.True(upgrader.GetStatus(group).IsUpToDate));
     }
+    private DatabaseUpgrader UpgraderForAnUncreatedDatabase()
+    {
+        NpgsqlConnectionStringBuilder builder = new(environment.ConnectionString)
+        {
+            Database = $"upgrader_{Guid.NewGuid():N}",
+        };
+
+        return new DatabaseUpgrader(builder.ConnectionString, new SilentUpgradeLog());
+    }
+
+    [Fact]
+    public void CreatingSkipsTheMaintenanceDatabasesItCannotReach()
+    {
+        DatabaseUpgrader upgrader = UpgraderForAnUncreatedDatabase();
+
+        upgrader.EnsureDatabaseExists(["no_such_maintenance_database", "postgres"]);
+
+        Assert.True(upgrader.TryConnect(out string error), error);
+        Assert.NotEmpty(upgrader.GetStatus(ScriptGroups.Schema).PendingScripts);
+    }
+
+    [Fact]
+    public void CreatingIsAnEmptyActWhenTheDatabaseIsAlreadyThere()
+    {
+        DatabaseUpgrader upgrader = CreateFreshDatabase().Upgrader;
+
+        upgrader.EnsureDatabaseExists(["no_such_maintenance_database"]);
+
+        Assert.True(upgrader.TryConnect(out string error), error);
+    }
+
+    [Fact]
+    public void CreatingSaysWhichMaintenanceDatabasesItTried()
+    {
+        DatabaseUpgrader upgrader = UpgraderForAnUncreatedDatabase();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => upgrader.EnsureDatabaseExists(["no_such_database", "also_missing"])
+        );
+
+        Assert.Contains("no_such_database, also_missing", exception.Message, StringComparison.Ordinal);
+    }
 }

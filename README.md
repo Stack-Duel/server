@@ -78,7 +78,8 @@ The connection string is taken from `--connection`, else `ConnectionStrings__Def
 else user secrets. The CLI shares the API user-secrets id, so
 `dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<connection>"` covers both.
 Add `--groups schema reference` to narrow a run, and `--create-database` to create the database
-first if it does not exist.
+first if it does not exist. Creating one needs a maintenance database to connect to, so the CLI
+tries `postgres`, then `defaultdb` (what Aiven provisions), then `template1`.
 
 #### Adding a script
 
