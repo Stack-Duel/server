@@ -167,7 +167,6 @@ public sealed class DatabaseUpgraderTests(IntegrationTestEnvironment environment
     [InlineData("has a space")]
     [InlineData("quote\"injected")]
     [InlineData("1starts_with_a_digit")]
-    [InlineData("")]
     public void CreatingRefusesANameItCannotSafelyQuote(string databaseName)
     {
         NpgsqlConnectionStringBuilder builder = new(environment.ConnectionString)

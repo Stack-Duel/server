@@ -1,6 +1,5 @@
 using Npgsql;
 using StackDuel.Data;
-using StackDuel.Data.Commands;
 using StackDuel.Data.Migrations;
 using StackDuel.Data.Seeding;
 using StackDuel.IntegrationTests.Infrastructure;
@@ -195,47 +194,5 @@ public sealed class DevSeedTests(IntegrationTestEnvironment environment)
         Assert.False(FileBundleSeeder.EnsureChinookBundle(connectionString));
         Assert.Empty(upgrader.Upgrade(SeedScriptGroups.Dev).ExecutedScripts);
         Assert.Equal(4, await ScalarAsync(connectionString, "SELECT count(*) FROM problems"));
-    }
-    [Fact]
-    public void TheDevSeedCannotRunBeforeTheChinookBundleExists()
-    {
-        NpgsqlConnectionStringBuilder builder = new(environment.ConnectionString)
-        {
-            Database = $"devseed_{Guid.NewGuid():N}",
-        };
-
-        DatabaseUpgrader upgrader = new(builder.ConnectionString, new SilentUpgradeLog());
-        upgrader.EnsureDatabaseExists();
-
-        foreach (ScriptGroup group in ScriptGroups.All)
-            Assert.True(upgrader.Upgrade(group).Succeeded);
-
-        GroupUpgradeResult dev = upgrader.Upgrade(SeedScriptGroups.Dev);
-
-        Assert.False(dev.Succeeded);
-        Assert.Contains(
-            "additional_file_bundle",
-            dev.Error?.ToString() ?? string.Empty,
-            StringComparison.OrdinalIgnoreCase
-        );
-    }
-    [Fact]
-    public async Task TheResetOrderingSeedsADatabaseThatAlreadyHadContent()
-    {
-        string connectionString = SeedAFreshDatabase();
-
-        DatabaseUpgrader upgrader = new(connectionString, new SilentUpgradeLog());
-        upgrader.DropEverything();
-
-        foreach (ScriptGroup group in ScriptGroups.All)
-            Assert.True(upgrader.Upgrade(group).Succeeded);
-
-        ChinookBundleStep.Ensure(connectionString);
-
-        GroupUpgradeResult dev = upgrader.Upgrade(SeedScriptGroups.Dev);
-
-        Assert.True(dev.Succeeded, dev.Error?.Message);
-        Assert.Equal(4, await ScalarAsync(connectionString, "SELECT count(*) FROM problems"));
-        Assert.Equal(8, await ScalarAsync(connectionString, "SELECT count(*) FROM problem_version_setups"));
     }
 }

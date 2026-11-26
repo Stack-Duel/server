@@ -27,12 +27,8 @@ internal static class ResetCommand
                 return UpgradeRunner.Failure;
             }
 
-            string connectionString = ConnectionStringResolver.Resolve(
-                parseResult.GetValue(SharedOptions.Connection)
-            );
-
             DatabaseUpgrader upgrader = new(
-                connectionString,
+                ConnectionStringResolver.Resolve(parseResult.GetValue(SharedOptions.Connection)),
                 new SpectreUpgradeLog(parseResult.GetValue(SharedOptions.Verbose))
             );
 
@@ -40,26 +36,15 @@ internal static class ResetCommand
             upgrader.DropEverything();
             AnsiConsole.MarkupLine("[grey]Dropped the public schema.[/]");
 
-            int schemaResult = UpgradeRunner.Run(upgrader, [.. ScriptGroups.All], dryRun: false);
-
-            if (schemaResult != UpgradeRunner.Success)
-                return schemaResult;
-
-            List<ScriptGroup> seedGroups = [];
+            List<ScriptGroup> groups = [.. ScriptGroups.All];
 
             if (parseResult.GetValue(dev))
-                seedGroups.Add(SeedScriptGroups.Dev);
+                groups.Add(SeedScriptGroups.Dev);
 
             if (parseResult.GetValue(e2e))
-                seedGroups.Add(SeedScriptGroups.E2E);
+                groups.Add(SeedScriptGroups.E2E);
 
-            if (seedGroups.Count == 0)
-                return UpgradeRunner.Success;
-
-            if (parseResult.GetValue(dev))
-                ChinookBundleStep.Ensure(connectionString);
-
-            return UpgradeRunner.Run(upgrader, seedGroups, dryRun: false);
+            return UpgradeRunner.Run(upgrader, groups, dryRun: false);
         });
 
         return command;

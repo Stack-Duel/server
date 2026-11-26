@@ -166,16 +166,6 @@ SELECT gen_random_uuid(), s.id, p.published_version_id, s.language_version_id, s
 FROM problem_setups s
 JOIN problems p ON p.id = s.problem_id
 WHERE p.published_version_id IS NOT NULL
-  AND s.id IN (
-    '5e2d0001-0000-4000-8000-000000000001',
-    '5e2d0001-0000-4000-8000-000000000002',
-    '5e2d0001-0000-4000-8000-000000000003',
-    '5e2d0001-0000-4000-8000-000000000004',
-    '5e2d0001-0000-4000-8000-000000000005',
-    '5e2d0001-0000-4000-8000-000000000006',
-    '5e2d0001-0000-4000-8000-000000000007',
-    '5e2d0001-0000-4000-8000-000000000008'
-  )
   AND NOT EXISTS (
         SELECT 1 FROM problem_version_setups existing
         WHERE existing.problem_setup_id = s.id
