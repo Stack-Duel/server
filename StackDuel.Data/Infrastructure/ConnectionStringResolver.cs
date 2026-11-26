@@ -10,8 +10,6 @@ internal static class ConnectionStringResolver
             return fromCommandLine;
 
         IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true)
             .AddUserSecrets(typeof(ConnectionStringResolver).Assembly, optional: true)
             .AddEnvironmentVariables()
             .Build();
@@ -21,7 +19,7 @@ internal static class ConnectionStringResolver
         return string.IsNullOrWhiteSpace(configured)
             ? throw new InvalidOperationException(
                 "No connection string. Pass --connection, set ConnectionStrings__DefaultConnection, "
-                    + "or add ConnectionStrings:DefaultConnection to user secrets or appsettings.json."
+                    + "or run: dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<connection>\"."
             )
             : configured;
     }
