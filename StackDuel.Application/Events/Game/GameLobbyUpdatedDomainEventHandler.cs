@@ -19,7 +19,7 @@ internal sealed partial class GameLobbyUpdatedDomainEventHandler(
 
         try
         {
-            await gameNotificationService.NotifyGameLobbyUpdatedAsync(e.GameId, cancellationToken);
+            await gameNotificationService.NotifyGameLobbyUpdatedAsync(e.GameId);
         }
         catch (Exception ex)
         {

@@ -149,8 +149,9 @@ internal sealed class TestSuiteWriteRepository(StackDuelDbContext context, ITest
                     continue;
                 }
 
-                string valueType = valueTypesByPosition.GetValueOrDefault(position, "json");
-                testCase.AddInput(input, valueType);
+                if (valueTypesByPosition.TryGetValue(position, out string? valueType))
+                    testCase.AddInput(input, valueType);
+
                 position++;
             }
 

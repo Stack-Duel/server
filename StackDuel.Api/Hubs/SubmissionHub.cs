@@ -16,15 +16,20 @@ namespace StackDuel.Api.Hubs;
 /// (standalone problem editor, game workspace, etc.) without coupling to game logic.
 /// </summary>
 [Authorize]
-public sealed class SubmissionHub(IUserService userService) : Hub
+public sealed partial class SubmissionHub(IUserService userService, ILogger<SubmissionHub> logger) : Hub
 {
     public static string UserGroupName(Guid userId) => $"user:{userId}";
 
     public override async Task OnConnectedAsync()
     {
         Guid? userId = await ResolveUserIdAsync();
-        if (userId.HasValue)
-            await Groups.AddToGroupAsync(Context.ConnectionId, UserGroupName(userId.Value), Context.ConnectionAborted);
+        if (!userId.HasValue)
+        {
+            LogUnresolvedAccount(Context.ConnectionId);
+            throw new HubException("Unable to resolve the caller's account.");
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, UserGroupName(userId.Value), Context.ConnectionAborted);
 
         await base.OnConnectedAsync();
     }
@@ -38,4 +43,10 @@ public sealed class SubmissionHub(IUserService userService) : Hub
         var result = await userService.GetBySubAsync(sub, Context.ConnectionAborted);
         return result.IsSuccess ? result.Value.Id : null;
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Rejected submission hub connection {ConnectionId}: the caller's account could not be resolved."
+    )]
+    private partial void LogUnresolvedAccount(string connectionId);
 }

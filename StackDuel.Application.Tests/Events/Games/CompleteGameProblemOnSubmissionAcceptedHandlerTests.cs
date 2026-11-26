@@ -53,7 +53,13 @@ public class CompleteGameProblemOnSubmissionAcceptedHandlerTests
             .Setup(x => x.CompleteAsync(game.Id, problemId, submissionId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GameProblemCompletionDto>.Success(new GameProblemCompletionDto(1, Guid.NewGuid())));
 
-        await Handle(new SubmissionCompletedDomainEvent(userId, submissionId, SubmissionStatus.Accepted, game.Id));
+        await Handle(new SubmissionCompletedDomainEvent(
+                userId,
+                submissionId,
+                SubmissionStatus.Accepted,
+                game.Id,
+                SubmissionCompletionReason.Graded
+            ));
 
         _gameProblemCompleter.Verify(
             x => x.CompleteAsync(game.Id, problemId, submissionId, userId, It.IsAny<CancellationToken>()),
@@ -65,7 +71,13 @@ public class CompleteGameProblemOnSubmissionAcceptedHandlerTests
     public async Task Handle_SubmissionOutsideAGame_DoesNothing()
     {
         await Handle(
-            new SubmissionCompletedDomainEvent(Guid.NewGuid(), Guid.NewGuid(), SubmissionStatus.Accepted, GameId: null)
+            new SubmissionCompletedDomainEvent(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                SubmissionStatus.Accepted,
+                GameId: null,
+                SubmissionCompletionReason.Graded
+            )
         );
 
         _gameReadRepository.Verify(
@@ -83,7 +95,8 @@ public class CompleteGameProblemOnSubmissionAcceptedHandlerTests
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 SubmissionStatus.WrongAnswer,
-                Guid.NewGuid()
+                Guid.NewGuid(),
+                SubmissionCompletionReason.Graded
             )
         );
 
@@ -99,7 +112,13 @@ public class CompleteGameProblemOnSubmissionAcceptedHandlerTests
 
         _gameReadRepository.Setup(x => x.FindGameByIdAsync(game.Id, It.IsAny<CancellationToken>())).ReturnsAsync(game);
 
-        await Handle(new SubmissionCompletedDomainEvent(userId, Guid.NewGuid(), SubmissionStatus.Accepted, game.Id));
+        await Handle(new SubmissionCompletedDomainEvent(
+                userId,
+                Guid.NewGuid(),
+                SubmissionStatus.Accepted,
+                game.Id,
+                SubmissionCompletionReason.Graded
+            ));
 
         VerifyNoCompletion();
     }
@@ -113,7 +132,13 @@ public class CompleteGameProblemOnSubmissionAcceptedHandlerTests
             .ReturnsAsync((Game?)null);
 
         await Handle(
-            new SubmissionCompletedDomainEvent(Guid.NewGuid(), Guid.NewGuid(), SubmissionStatus.Accepted, gameId)
+            new SubmissionCompletedDomainEvent(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                SubmissionStatus.Accepted,
+                gameId,
+                SubmissionCompletionReason.Graded
+            )
         );
 
         VerifyNoCompletion();
@@ -139,7 +164,13 @@ public class CompleteGameProblemOnSubmissionAcceptedHandlerTests
             )
             .ReturnsAsync(Result<GameProblemCompletionDto>.Error("boom"));
 
-        await Handle(new SubmissionCompletedDomainEvent(userId, Guid.NewGuid(), SubmissionStatus.Accepted, game.Id));
+        await Handle(new SubmissionCompletedDomainEvent(
+                userId,
+                Guid.NewGuid(),
+                SubmissionStatus.Accepted,
+                game.Id,
+                SubmissionCompletionReason.Graded
+            ));
     }
 
     private void VerifyNoCompletion() =>

@@ -7,5 +7,6 @@ public sealed record SubmissionCompletedDomainEvent(
     Guid UserId,
     Guid SubmissionId,
     SubmissionStatus Status,
-    Guid? GameId
+    Guid? GameId,
+    SubmissionCompletionReason Reason
 ) : IDomainEvent;

@@ -18,8 +18,7 @@ public interface IGameNotificationService
     Task NotifyGameCompletedAsync(
         Guid gameId,
         GameStatus status,
-        DateTime endedAt,
-        CancellationToken cancellationToken = default
+        DateTime endedAt
     );
 
     /// <summary>
@@ -27,13 +26,13 @@ public interface IGameNotificationService
     /// joined or left. Same best-effort semantics as <see cref="NotifyGameCompletedAsync"/>: purely
     /// a latency optimization, never a correctness dependency.
     /// </summary>
-    Task NotifyGameLobbyUpdatedAsync(Guid gameId, CancellationToken cancellationToken = default);
+    Task NotifyGameLobbyUpdatedAsync(Guid gameId);
 
     /// <summary>
     /// Notifies whoever is watching a Running game that a participant's progress changed (they
     /// solved a problem). Same best-effort semantics as <see cref="NotifyGameCompletedAsync"/>.
     /// </summary>
-    Task NotifyGameProgressUpdatedAsync(Guid gameId, CancellationToken cancellationToken = default);
+    Task NotifyGameProgressUpdatedAsync(Guid gameId);
 
     /// <summary>
     /// Notifies whoever is watching a Running game that a participant's submission just reached a
@@ -45,8 +44,7 @@ public interface IGameNotificationService
         Guid gameId,
         Guid userId,
         SubmissionStatus status,
-        DateTime attemptedAt,
-        CancellationToken cancellationToken = default
+        DateTime attemptedAt
     );
 
     /// <summary>
@@ -59,7 +57,6 @@ public interface IGameNotificationService
         Guid gameId,
         Guid userId,
         string emoji,
-        DateTime sentAt,
-        CancellationToken cancellationToken = default
+        DateTime sentAt
     );
 }

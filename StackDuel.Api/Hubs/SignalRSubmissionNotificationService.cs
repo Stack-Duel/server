@@ -10,13 +10,12 @@ internal sealed class SignalRSubmissionNotificationService(IHubContext<Submissio
 
     public Task NotifySubmissionCompletedAsync(
         Guid userId,
-        Guid submissionId,
-        CancellationToken cancellationToken = default
+        Guid submissionId
     )
     {
         var payload = new { submissionId };
         return hubContext
             .Clients.Group(SubmissionHub.UserGroupName(userId))
-            .SendAsync(SubmissionCompletedMethod, payload, cancellationToken);
+            .SendAsync(SubmissionCompletedMethod, payload);
     }
 }

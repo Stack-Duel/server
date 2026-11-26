@@ -13,5 +13,6 @@ internal static class LoggingEventIds
     {
         public const int UnhandledException = 5000;
         public const int UnhandledExceptionWithPath = 5001;
+        public const int RejectedDomainInvariant = 5002;
     }
 }

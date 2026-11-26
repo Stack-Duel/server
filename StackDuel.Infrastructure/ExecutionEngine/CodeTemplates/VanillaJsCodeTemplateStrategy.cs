@@ -34,13 +34,15 @@ internal sealed class VanillaJsCodeTemplateStrategy : ICodeTemplateStrategy
         using MemoryStream stream = new();
         using (ZipArchive archive = new(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
-            AddEntry(archive, "harness.js", VanillaJsRuntimeAssets.Harness);
-            AddEntry(archive, "solution.js", Encoding.UTF8.GetBytes(wrappedSource));
-            AddEntry(archive, "compile", Encoding.UTF8.GetBytes("#!/bin/bash\ntrue\n"));
-            AddEntry(archive, "run", Encoding.UTF8.GetBytes("#!/bin/bash\nnode harness.js\n"));
+            TemplateZipWriter writer = new(archive);
+
+            writer.AddRuntimeEntry("harness.js", VanillaJsRuntimeAssets.Harness);
+            writer.AddRuntimeEntry("solution.js", Encoding.UTF8.GetBytes(wrappedSource));
+            writer.AddRuntimeEntry("compile", Encoding.UTF8.GetBytes("#!/bin/bash\ntrue\n"));
+            writer.AddRuntimeEntry("run", Encoding.UTF8.GetBytes("#!/bin/bash\nnode harness.js\n"));
 
             foreach (CodeTemplateSourceFile file in context.AdditionalFiles ?? [])
-                AddEntry(archive, NormalizeToJs(file.Path), Encoding.UTF8.GetBytes(file.Content));
+                writer.AddUserEntry(NormalizeToJs(file.Path), Encoding.UTF8.GetBytes(file.Content));
         }
 
         return stream.ToArray();
@@ -50,12 +52,5 @@ internal sealed class VanillaJsCodeTemplateStrategy : ICodeTemplateStrategy
     {
         string withoutExtension = System.IO.Path.ChangeExtension(path, null);
         return withoutExtension + ".js";
-    }
-
-    private static void AddEntry(ZipArchive archive, string name, byte[] content)
-    {
-        ZipArchiveEntry entry = archive.CreateEntry(name, CompressionLevel.Fastest);
-        using Stream entryStream = entry.Open();
-        entryStream.Write(content);
     }
 }

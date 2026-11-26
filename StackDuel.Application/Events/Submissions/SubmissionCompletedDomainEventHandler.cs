@@ -1,6 +1,7 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Notifications;
+using StackDuel.Domain.Submissions.Enums;
 using StackDuel.Domain.Submissions.Events;
 
 namespace StackDuel.Application.Events.Submissions;
@@ -19,19 +20,17 @@ internal sealed partial class SubmissionCompletedDomainEventHandler(
         var e = notification.DomainEvent;
         try
         {
-            await submissionNotificationService.NotifySubmissionCompletedAsync(
-                e.UserId,
-                e.SubmissionId,
-                cancellationToken
-            );
+            await submissionNotificationService.NotifySubmissionCompletedAsync(e.UserId, e.SubmissionId);
         }
         catch (Exception ex)
         {
             LogNotifyFailed(ex, e.SubmissionId);
         }
 
-        if (e.GameId is not { } gameId)
+        if (!e.GameId.HasValue || e.Reason != SubmissionCompletionReason.Graded)
             return;
+
+        Guid gameId = e.GameId.Value;
 
         try
         {
@@ -39,12 +38,10 @@ internal sealed partial class SubmissionCompletedDomainEventHandler(
                 gameId,
                 e.UserId,
                 e.Status,
-                DateTime.UtcNow,
-                cancellationToken
+                DateTime.UtcNow
             );
         }
         catch (Exception ex)
-            when (ex is not (OutOfMemoryException or StackOverflowException or AccessViolationException))
         {
             LogNotifyGameAttemptFailed(ex, gameId, e.SubmissionId);
         }

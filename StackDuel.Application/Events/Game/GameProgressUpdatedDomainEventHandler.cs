@@ -19,7 +19,7 @@ internal sealed partial class GameProgressUpdatedDomainEventHandler(
 
         try
         {
-            await gameNotificationService.NotifyGameProgressUpdatedAsync(e.GameId, cancellationToken);
+            await gameNotificationService.NotifyGameProgressUpdatedAsync(e.GameId);
         }
         catch (Exception ex)
         {

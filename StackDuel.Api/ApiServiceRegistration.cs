@@ -59,8 +59,8 @@ public static class ApiServiceRegistration
             {
                 options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
-        services.AddScoped<IGameNotificationService, SignalRGameNotificationService>();
-        services.AddScoped<ISubmissionNotificationService, SignalRSubmissionNotificationService>();
+        services.AddSingleton<IGameNotificationService, SignalRGameNotificationService>();
+        services.AddSingleton<ISubmissionNotificationService, SignalRSubmissionNotificationService>();
 
         return services;
     }
