@@ -2,14 +2,18 @@ using DbUp;
 using DbUp.Engine;
 using DbUp.Engine.Output;
 using Npgsql;
+using System.Text.RegularExpressions;
 
 namespace StackDuel.Data.Migrations;
 
-public sealed class DatabaseUpgrader(string connectionString, IUpgradeLog log)
+public sealed partial class DatabaseUpgrader(string connectionString, IUpgradeLog log)
 {
     private const string JournalSchema = "public";
 
     private static readonly string[] MaintenanceDatabases = ["postgres", "defaultdb", "template1"];
+
+    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]{0,62}$")]
+    private static partial Regex CreatableDatabaseName();
 
     public void EnsureDatabaseExists() => EnsureDatabaseExists(MaintenanceDatabases);
 
@@ -61,11 +65,18 @@ public sealed class DatabaseUpgrader(string connectionString, IUpgradeLog log)
 
     private static void Create(string maintenanceConnectionString, string databaseName)
     {
+        if (!CreatableDatabaseName().IsMatch(databaseName))
+            throw new InvalidOperationException(
+                $"Refusing to create '{databaseName}'. A name this tool will create must start with "
+                    + "a letter or underscore, continue with letters, digits, or underscores, and fit "
+                    + "in 63 characters. Create it by hand if you need something else."
+            );
+
         using NpgsqlConnection connection = new(maintenanceConnectionString);
         connection.Open();
 
         using NpgsqlCommand command = connection.CreateCommand();
-        command.CommandText = $"CREATE DATABASE \"{databaseName.Replace("\"", "\"\"")}\"";
+        command.CommandText = $"CREATE DATABASE \"{databaseName}\"";
         command.ExecuteNonQuery();
     }
 

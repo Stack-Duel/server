@@ -162,4 +162,25 @@ public sealed class DatabaseUpgraderTests(IntegrationTestEnvironment environment
 
         Assert.Contains("no_such_database, also_missing", exception.Message, StringComparison.Ordinal);
     }
+    [Theory]
+    [InlineData("has-a-dash")]
+    [InlineData("has a space")]
+    [InlineData("quote\"injected")]
+    [InlineData("1starts_with_a_digit")]
+    [InlineData("")]
+    public void CreatingRefusesANameItCannotSafelyQuote(string databaseName)
+    {
+        NpgsqlConnectionStringBuilder builder = new(environment.ConnectionString)
+        {
+            Database = databaseName,
+        };
+
+        DatabaseUpgrader upgrader = new(builder.ConnectionString, new SilentUpgradeLog());
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => upgrader.EnsureDatabaseExists(["postgres"])
+        );
+
+        Assert.Contains("Refusing to create", exception.Message, StringComparison.Ordinal);
+    }
 }
