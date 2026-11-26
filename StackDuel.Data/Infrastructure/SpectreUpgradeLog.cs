@@ -1,7 +1,7 @@
 using DbUp.Engine.Output;
 using Spectre.Console;
 
-namespace Data.Infrastructure;
+namespace StackDuel.Data.Infrastructure;
 
 internal sealed class SpectreUpgradeLog(bool verbose) : IUpgradeLog
 {

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Data.Infrastructure;
+namespace StackDuel.Data.Infrastructure;
 
 internal static class ConnectionStringResolver
 {

@@ -1,9 +1,9 @@
-using Data.Infrastructure;
-using Data.Migrations;
 using Spectre.Console;
+using StackDuel.Data.Infrastructure;
+using StackDuel.Data.Migrations;
 using System.CommandLine;
 
-namespace Data.Commands;
+namespace StackDuel.Data.Commands;
 
 internal static class StatusCommand
 {

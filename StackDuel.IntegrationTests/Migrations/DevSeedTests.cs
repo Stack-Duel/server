@@ -1,7 +1,7 @@
-using Data;
-using Data.Migrations;
-using Data.Seeding;
 using Npgsql;
+using StackDuel.Data;
+using StackDuel.Data.Migrations;
+using StackDuel.Data.Seeding;
 using StackDuel.IntegrationTests.Infrastructure;
 
 namespace StackDuel.IntegrationTests.Migrations;

@@ -45,7 +45,7 @@ jobs:
         run: dotnet restore
 
       - name: Apply schema, reference, and content scripts
-        run: dotnet run --project Data -- migrate
+        run: dotnet run --project StackDuel.Data -- migrate
         env:
           ASPNETCORE_ENVIRONMENT: Production
           ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}

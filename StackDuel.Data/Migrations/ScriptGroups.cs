@@ -1,10 +1,10 @@
 using System.Reflection;
 
-namespace Data.Migrations;
+namespace StackDuel.Data.Migrations;
 
 public static class ScriptGroups
 {
-    private const string ResourceRoot = "Data.Scripts.";
+    internal const string ResourceRoot = "StackDuel.Data.Scripts.";
 
     public static readonly ScriptGroup Schema = ScriptGroup.InAssembly(
         "schema",

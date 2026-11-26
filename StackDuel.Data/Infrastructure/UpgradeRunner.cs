@@ -1,7 +1,7 @@
-using Data.Migrations;
 using Spectre.Console;
+using StackDuel.Data.Migrations;
 
-namespace Data.Infrastructure;
+namespace StackDuel.Data.Infrastructure;
 
 internal static class UpgradeRunner
 {

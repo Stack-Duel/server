@@ -3,7 +3,7 @@ using DbUp.Support;
 using System.Reflection;
 using System.Text;
 
-namespace Data.Migrations;
+namespace StackDuel.Data.Migrations;
 
 internal static class EmbeddedScriptSource
 {

@@ -3,7 +3,7 @@ using DbUp.Engine;
 using DbUp.Engine.Output;
 using Npgsql;
 
-namespace Data.Migrations;
+namespace StackDuel.Data.Migrations;
 
 public sealed class DatabaseUpgrader(string connectionString, IUpgradeLog log)
 {

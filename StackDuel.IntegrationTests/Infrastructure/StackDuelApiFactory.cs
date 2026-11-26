@@ -8,7 +8,7 @@ using StackDuel.Api;
 
 namespace StackDuel.IntegrationTests.Infrastructure;
 
-public sealed class StackDuelApiFactory : WebApplicationFactory<ApiAssemblyMarker>
+public sealed class StackDuelApiFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

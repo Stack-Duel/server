@@ -1,5 +1,5 @@
-using Data.Migrations;
 using Npgsql;
+using StackDuel.Data.Migrations;
 using StackDuel.IntegrationTests.Infrastructure;
 
 namespace StackDuel.IntegrationTests.Migrations;

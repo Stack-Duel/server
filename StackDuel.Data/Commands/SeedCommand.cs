@@ -1,10 +1,10 @@
-using Data.Infrastructure;
-using Data.Migrations;
-using Data.Seeding;
 using Spectre.Console;
+using StackDuel.Data.Infrastructure;
+using StackDuel.Data.Migrations;
+using StackDuel.Data.Seeding;
 using System.CommandLine;
 
-namespace Data.Commands;
+namespace StackDuel.Data.Commands;
 
 internal static class SeedCommand
 {

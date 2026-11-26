@@ -1,7 +1,7 @@
-using Data.Migrations;
 using Spectre.Console;
+using StackDuel.Data.Migrations;
 
-namespace Data.Commands;
+namespace StackDuel.Data.Commands;
 
 internal static class GroupSelection
 {

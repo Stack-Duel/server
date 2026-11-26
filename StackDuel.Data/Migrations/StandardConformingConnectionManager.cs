@@ -1,6 +1,6 @@
 using DbUp.Postgresql;
 
-namespace Data.Migrations;
+namespace StackDuel.Data.Migrations;
 
 internal sealed class StandardConformingConnectionManager : PostgresqlConnectionManager
 {

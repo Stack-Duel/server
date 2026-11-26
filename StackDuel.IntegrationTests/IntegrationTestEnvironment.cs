@@ -1,4 +1,4 @@
-using Data.Migrations;
+using StackDuel.Data.Migrations;
 using StackDuel.IntegrationTests.Infrastructure;
 using Testcontainers.PostgreSql;
 

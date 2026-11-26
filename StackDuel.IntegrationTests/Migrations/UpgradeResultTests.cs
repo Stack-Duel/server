@@ -1,4 +1,4 @@
-using Data.Migrations;
+using StackDuel.Data.Migrations;
 
 namespace StackDuel.IntegrationTests.Migrations;
 

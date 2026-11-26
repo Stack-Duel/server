@@ -1,4 +1,4 @@
-namespace Data.Migrations;
+namespace StackDuel.Data.Migrations;
 
 public sealed record GroupStatus
 {

@@ -1,10 +1,10 @@
-using Data.Infrastructure;
 using Npgsql;
 using Spectre.Console;
+using StackDuel.Data.Infrastructure;
 using StackDuel.Domain.Authorization.Rbac;
 using System.CommandLine;
 
-namespace Data.Commands;
+namespace StackDuel.Data.Commands;
 
 internal static class GrantAdminCommand
 {

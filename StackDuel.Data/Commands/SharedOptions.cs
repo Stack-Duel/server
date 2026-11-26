@@ -1,6 +1,6 @@
 using System.CommandLine;
 
-namespace Data.Commands;
+namespace StackDuel.Data.Commands;
 
 internal static class SharedOptions
 {

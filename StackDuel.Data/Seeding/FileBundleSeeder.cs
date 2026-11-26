@@ -1,6 +1,6 @@
 using Npgsql;
 
-namespace Data.Seeding;
+namespace StackDuel.Data.Seeding;
 
 internal static class FileBundleSeeder
 {
@@ -8,7 +8,7 @@ internal static class FileBundleSeeder
 
     private const string ChinookBundleName = "chinook-sqlite-db";
 
-    private const string ChinookResourceName = "Data.Assets.chinook-sqlite-db.zip";
+    private const string ChinookResourceName = "StackDuel.Data.Assets.chinook-sqlite-db.zip";
 
     public static bool EnsureChinookBundle(string connectionString)
     {

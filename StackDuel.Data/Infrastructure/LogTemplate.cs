@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Data.Infrastructure;
+namespace StackDuel.Data.Infrastructure;
 
 internal static class LogTemplate
 {
