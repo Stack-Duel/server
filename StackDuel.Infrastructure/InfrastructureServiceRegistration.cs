@@ -1,5 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
+using Discord.Webhook;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -104,9 +105,28 @@ public static class InfrastructureServiceRegistration
         services.AddTestCaseGeneration();
         services.AddLanguageServer(configuration);
         services.AddAvatarStorage(configuration);
+        services.AddAnnouncements(configuration);
 
         services.AddMessageBus(configuration);
         services.AddJobs(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddAnnouncements(this IServiceCollection services, IConfiguration configuration)
+    {
+        var opts = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>() ?? new DiscordOptions();
+
+        services.AddSingleton(opts);
+
+        if (!opts.IsConfigured)
+        {
+            services.AddScoped<IGameAnnouncer, LoggingGameAnnouncer>();
+            return services;
+        }
+
+        services.AddSingleton(new DiscordWebhookClient(opts.WebhookUrl));
+        services.AddScoped<IGameAnnouncer, DiscordGameAnnouncer>();
 
         return services;
     }
@@ -175,7 +195,6 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<ICodeTemplateStrategy, JavaCodeTemplateStrategy>();
         services.AddScoped<ICodeTemplateStrategy, CppCodeTemplateStrategy>();
         services.AddSingleton(opts.JsxTranspiler);
-        services.AddScoped<IGameAnnouncer, LoggingGameAnnouncer>();
 
         services.AddScoped<IJsxTranspiler, EsbuildJsxTranspiler>();
         services.AddScoped<ICodeTemplateStrategy, ReactCodeTemplateStrategy>();
