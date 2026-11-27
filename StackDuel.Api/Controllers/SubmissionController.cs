@@ -3,13 +3,13 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Submission;
 using StackDuel.Application;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Submissions.Dtos;
+using StackDuel.Domain.Authorization.Rbac;
 using System.Linq;
 
 namespace StackDuel.Api.Controllers;
@@ -21,7 +21,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 {
     [HttpPost("run")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateSubmission)]
+    [RequirePermission(WellKnownAuthorization.CreateSubmissionPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -51,7 +51,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
     [HttpPost("grade")]
     [EnableRateLimiting(WellKnownPolicies.GradedSubmissions)]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateSubmission)]
+    [RequirePermission(WellKnownAuthorization.CreateSubmissionPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -80,7 +80,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminSubmissions)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminSubmissionsPermission)]
     [EnableRateLimiting(WellKnownPolicies.General)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -105,7 +105,7 @@ public sealed class SubmissionController(ISubmissionService submissionService, U
 
     [HttpGet("admin/{submissionId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminSubmissions)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminSubmissionsPermission)]
     [EnableRateLimiting(WellKnownPolicies.General)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

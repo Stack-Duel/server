@@ -4,12 +4,12 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.Services.Problems;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -17,7 +17,7 @@ namespace StackDuel.Api.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [EnableRateLimiting(WellKnownPolicies.General)]
 [RequireUser]
-[RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+[RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
 public sealed class ProblemPoolController(IProblemPoolService problemPoolService) : ControllerBase
 {
     [HttpGet]
@@ -83,7 +83,7 @@ public sealed class ProblemPoolController(IProblemPoolService problemPoolService
     }
 
     [HttpPost]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -104,7 +104,7 @@ public sealed class ProblemPoolController(IProblemPoolService problemPoolService
     }
 
     [HttpPut("{poolKey}/problems/{problemId:guid}")]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -121,7 +121,7 @@ public sealed class ProblemPoolController(IProblemPoolService problemPoolService
     }
 
     [HttpPost("{poolKey}/problems/bulk")]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -146,7 +146,7 @@ public sealed class ProblemPoolController(IProblemPoolService problemPoolService
     }
 
     [HttpPut("{poolKey}/problems/reorder")]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -164,7 +164,7 @@ public sealed class ProblemPoolController(IProblemPoolService problemPoolService
     }
 
     [HttpDelete("{poolKey}/problems/{problemId:guid}")]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
