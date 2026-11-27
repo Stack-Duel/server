@@ -23,8 +23,7 @@ internal sealed partial class GameCompletedDomainEventHandler(
         }
         catch (Exception ex)
         {
-            // Push is purely a latency optimization over the client's own polling/re-fetch, so a
-            // failure here must never fault the command that finalized the game.
+
             LogNotifyFailed(ex, e.GameId);
         }
     }

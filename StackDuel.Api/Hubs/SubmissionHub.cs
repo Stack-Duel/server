@@ -5,16 +5,6 @@ using System.Security.Claims;
 
 namespace StackDuel.Api.Hubs;
 
-/// <summary>
-/// Pushes submission lifecycle events to the submitting user.
-/// On connect each authenticated user is automatically added to a personal
-/// <c>user:{userId}</c> group; the server-side broadcast
-/// (<see cref="Notifications.SignalRSubmissionNotificationService"/>) targets that group
-/// whenever any of the user's submissions reach a terminal state.
-///
-/// Kept separate from <see cref="GameHub"/> so submission notifications work on any page
-/// (standalone problem editor, game workspace, etc.) without coupling to game logic.
-/// </summary>
 [Authorize]
 public sealed partial class SubmissionHub(IUserService userService, ILogger<SubmissionHub> logger) : Hub
 {

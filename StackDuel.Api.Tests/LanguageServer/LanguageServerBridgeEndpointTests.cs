@@ -38,7 +38,7 @@ public class LanguageServerBridgeEndpointTests
         public Task<WebSocket> AcceptAsync(WebSocketAcceptContext context) => Task.FromResult(socket);
     }
 
-    private static HttpContext CreateContext(
+    private static DefaultHttpContext CreateContext(
         WebSocket? socket,
         string? sessionId,
         string? sub = "auth0|abc",
@@ -84,7 +84,7 @@ public class LanguageServerBridgeEndpointTests
     [Fact]
     public async Task HandleAsync_RejectsARequestThatIsNotAWebSocketUpgrade()
     {
-        HttpContext context = CreateContext(null, Guid.NewGuid().ToString(), isWebSocketRequest: false);
+        DefaultHttpContext context = CreateContext(null, Guid.NewGuid().ToString(), isWebSocketRequest: false);
 
         await HandleAsync(context);
 
@@ -94,7 +94,7 @@ public class LanguageServerBridgeEndpointTests
     [Fact]
     public async Task HandleAsync_RejectsAMissingSessionId()
     {
-        HttpContext context = CreateContext(null, sessionId: null);
+        DefaultHttpContext context = CreateContext(null, sessionId: null);
 
         await HandleAsync(context);
 
@@ -104,7 +104,7 @@ public class LanguageServerBridgeEndpointTests
     [Fact]
     public async Task HandleAsync_RejectsAMalformedSessionId()
     {
-        HttpContext context = CreateContext(null, "not-a-guid");
+        DefaultHttpContext context = CreateContext(null, "not-a-guid");
 
         await HandleAsync(context);
 
@@ -114,7 +114,7 @@ public class LanguageServerBridgeEndpointTests
     [Fact]
     public async Task HandleAsync_RejectsACallerWithNoSubjectClaim()
     {
-        HttpContext context = CreateContext(null, Guid.NewGuid().ToString(), sub: null);
+        DefaultHttpContext context = CreateContext(null, Guid.NewGuid().ToString(), sub: null);
 
         await HandleAsync(context);
 
@@ -127,7 +127,7 @@ public class LanguageServerBridgeEndpointTests
         _userService
             .Setup(x => x.GetBySubAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<UserDto>.NotFound());
-        HttpContext context = CreateContext(null, Guid.NewGuid().ToString());
+        DefaultHttpContext context = CreateContext(null, Guid.NewGuid().ToString());
 
         await HandleAsync(context);
 
@@ -138,7 +138,7 @@ public class LanguageServerBridgeEndpointTests
     public async Task HandleAsync_ReturnsConflictWhenTheSessionCannotBeAttached()
     {
         _sessions.Setup(x => x.TryAttach(It.IsAny<Guid>(), It.IsAny<Guid>())).Returns((ILanguageServerProcess?)null);
-        HttpContext context = CreateContext(null, _sessionId.ToString());
+        DefaultHttpContext context = CreateContext(null, _sessionId.ToString());
 
         await HandleAsync(context);
 

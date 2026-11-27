@@ -42,7 +42,7 @@ public class GlobalExceptionHandlerTests
         HttpResponseMessage response = await client.GetAsync("/boom");
         string body = await response.Content.ReadAsStringAsync();
 
-        string? message = JsonDocument.Parse(body).RootElement.TryGetProperty("message", out JsonElement value)
+        string? message = JsonElement.Parse(body).TryGetProperty("message", out JsonElement value)
             ? value.GetString()
             : null;
 

@@ -13,26 +13,32 @@ public class GameNotificationDomainEventHandlerTests
     private readonly Mock<IGameNotificationService> _notifications = new();
     private readonly Guid _gameId = Guid.NewGuid();
 
+    private GameCompletedDomainEventHandler CompletedHandler() =>
+        new(_notifications.Object, NullLogger<GameCompletedDomainEventHandler>.Instance);
+
+    private GameLobbyUpdatedDomainEventHandler LobbyHandler() =>
+        new(_notifications.Object, NullLogger<GameLobbyUpdatedDomainEventHandler>.Instance);
+
+    private GameProgressUpdatedDomainEventHandler ProgressHandler() =>
+        new(_notifications.Object, NullLogger<GameProgressUpdatedDomainEventHandler>.Instance);
+
+    private static DomainEventNotification<GameCompletedDomainEvent> Completed(Guid gameId, DateTime endedAt) =>
+        new(new GameCompletedDomainEvent(gameId, GameStatus.Completed, endedAt));
+
+    private static DomainEventNotification<GameLobbyUpdatedDomainEvent> LobbyUpdated(Guid gameId) =>
+        new(new GameLobbyUpdatedDomainEvent(gameId));
+
+    private static DomainEventNotification<GameProgressUpdatedDomainEvent> ProgressUpdated(Guid gameId) =>
+        new(new GameProgressUpdatedDomainEvent(gameId));
+
     [Fact]
     public async Task GameCompletedHandler_PushesTheCompletionToWhoeverIsWatching()
     {
         DateTime endedAt = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        GameCompletedDomainEventHandler handler = new(
-            _notifications.Object,
-            NullLogger<GameCompletedDomainEventHandler>.Instance
-        );
 
-        await handler.Handle(
-            new DomainEventNotification<GameCompletedDomainEvent>(
-                new GameCompletedDomainEvent(_gameId, GameStatus.Completed, endedAt)
-            ),
-            CancellationToken.None
-        );
+        await CompletedHandler().Handle(Completed(_gameId, endedAt), CancellationToken.None);
 
-        _notifications.Verify(
-            x => x.NotifyGameCompletedAsync(_gameId, GameStatus.Completed, endedAt),
-            Times.Once
-        );
+        _notifications.Verify(x => x.NotifyGameCompletedAsync(_gameId, GameStatus.Completed, endedAt), Times.Once);
     }
 
     [Fact]
@@ -41,31 +47,18 @@ public class GameNotificationDomainEventHandlerTests
         _notifications
             .Setup(x => x.NotifyGameCompletedAsync(It.IsAny<Guid>(), It.IsAny<GameStatus>(), It.IsAny<DateTime>()))
             .ThrowsAsync(new InvalidOperationException("transport down"));
-        GameCompletedDomainEventHandler handler = new(
-            _notifications.Object,
-            NullLogger<GameCompletedDomainEventHandler>.Instance
+
+        Exception? exception = await Record.ExceptionAsync(
+            () => CompletedHandler().Handle(Completed(_gameId, DateTime.UtcNow), CancellationToken.None)
         );
 
-        await handler.Handle(
-            new DomainEventNotification<GameCompletedDomainEvent>(
-                new GameCompletedDomainEvent(_gameId, GameStatus.Completed, DateTime.UtcNow)
-            ),
-            CancellationToken.None
-        );
+        Assert.Null(exception);
     }
 
     [Fact]
     public async Task GameLobbyUpdatedHandler_PushesTheLobbyUpdate()
     {
-        GameLobbyUpdatedDomainEventHandler handler = new(
-            _notifications.Object,
-            NullLogger<GameLobbyUpdatedDomainEventHandler>.Instance
-        );
-
-        await handler.Handle(
-            new DomainEventNotification<GameLobbyUpdatedDomainEvent>(new GameLobbyUpdatedDomainEvent(_gameId)),
-            CancellationToken.None
-        );
+        await LobbyHandler().Handle(LobbyUpdated(_gameId), CancellationToken.None);
 
         _notifications.Verify(x => x.NotifyGameLobbyUpdatedAsync(_gameId), Times.Once);
     }
@@ -76,29 +69,18 @@ public class GameNotificationDomainEventHandlerTests
         _notifications
             .Setup(x => x.NotifyGameLobbyUpdatedAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new InvalidOperationException("transport down"));
-        GameLobbyUpdatedDomainEventHandler handler = new(
-            _notifications.Object,
-            NullLogger<GameLobbyUpdatedDomainEventHandler>.Instance
+
+        Exception? exception = await Record.ExceptionAsync(
+            () => LobbyHandler().Handle(LobbyUpdated(_gameId), CancellationToken.None)
         );
 
-        await handler.Handle(
-            new DomainEventNotification<GameLobbyUpdatedDomainEvent>(new GameLobbyUpdatedDomainEvent(_gameId)),
-            CancellationToken.None
-        );
+        Assert.Null(exception);
     }
 
     [Fact]
     public async Task GameProgressUpdatedHandler_PushesTheProgressUpdate()
     {
-        GameProgressUpdatedDomainEventHandler handler = new(
-            _notifications.Object,
-            NullLogger<GameProgressUpdatedDomainEventHandler>.Instance
-        );
-
-        await handler.Handle(
-            new DomainEventNotification<GameProgressUpdatedDomainEvent>(new GameProgressUpdatedDomainEvent(_gameId)),
-            CancellationToken.None
-        );
+        await ProgressHandler().Handle(ProgressUpdated(_gameId), CancellationToken.None);
 
         _notifications.Verify(x => x.NotifyGameProgressUpdatedAsync(_gameId), Times.Once);
     }
@@ -109,14 +91,11 @@ public class GameNotificationDomainEventHandlerTests
         _notifications
             .Setup(x => x.NotifyGameProgressUpdatedAsync(It.IsAny<Guid>()))
             .ThrowsAsync(new InvalidOperationException("transport down"));
-        GameProgressUpdatedDomainEventHandler handler = new(
-            _notifications.Object,
-            NullLogger<GameProgressUpdatedDomainEventHandler>.Instance
+
+        Exception? exception = await Record.ExceptionAsync(
+            () => ProgressHandler().Handle(ProgressUpdated(_gameId), CancellationToken.None)
         );
 
-        await handler.Handle(
-            new DomainEventNotification<GameProgressUpdatedDomainEvent>(new GameProgressUpdatedDomainEvent(_gameId)),
-            CancellationToken.None
-        );
+        Assert.Null(exception);
     }
 }

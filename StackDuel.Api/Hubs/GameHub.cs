@@ -13,16 +13,6 @@ using System.Security.Claims;
 
 namespace StackDuel.Api.Hubs;
 
-/// <summary>
-/// Pushes game-lifecycle events (currently: completion, progress, quick reactions) to clients
-/// watching a specific game. Clients join a per-game group via <see cref="JoinGame"/> once
-/// connected; the server-side broadcast (<see cref="Notifications.SignalRGameNotificationService"/>)
-/// targets that group whenever something happens, regardless of which code path triggered it
-/// (message consumer, sweep-job backstop, forfeit, or — for reactions — this Hub directly).
-///
-/// This is purely a latency optimization / ephemeral live signal — nothing about game correctness
-/// depends on it, so failures here are logged, not thrown as fatal.
-/// </summary>
 [Authorize]
 public sealed partial class GameHub(
     IMediator mediator,
@@ -39,12 +29,6 @@ public sealed partial class GameHub(
 
     public static string GroupNameFor(Guid gameId) => $"game:{gameId}";
 
-    /// <summary>
-    /// Subscribes the caller's connection to updates for the given game. Reuses the same
-    /// GetGameStateQuery the REST endpoint uses so group membership requires the same
-    /// participant/permission check — a client can't listen in on a game it couldn't otherwise
-    /// fetch.
-    /// </summary>
     public async Task JoinGame(Guid gameId)
     {
         if (gameId == Guid.Empty)
@@ -78,12 +62,6 @@ public sealed partial class GameHub(
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNameFor(gameId), Context.ConnectionAborted);
     }
 
-    /// <summary>
-    /// Sends a quick emoji reaction to whoever's watching the game. Ephemeral and player-initiated
-    /// rather than a byproduct of persisted state — there's nothing to store or query back — so
-    /// this is a direct Hub method with its own inline authorization check, same reasoning as
-    /// <see cref="JoinGame"/>, rather than a MediatR command.
-    /// </summary>
     public async Task SendReaction(Guid gameId, string emoji)
     {
         if (gameId == Guid.Empty)

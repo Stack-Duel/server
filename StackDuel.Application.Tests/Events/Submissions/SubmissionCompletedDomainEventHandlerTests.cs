@@ -122,6 +122,10 @@ public class SubmissionCompletedDomainEventHandlerTests
             )
             .ThrowsAsync(new InvalidOperationException("transport down"));
 
-        await Handle(_gameId, SubmissionStatus.Accepted, SubmissionCompletionReason.Graded);
+        Exception? exception = await Record.ExceptionAsync(
+            () => Handle(_gameId, SubmissionStatus.Accepted, SubmissionCompletionReason.Graded)
+        );
+
+        Assert.Null(exception);
     }
 }
