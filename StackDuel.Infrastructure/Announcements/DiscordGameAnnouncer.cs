@@ -18,7 +18,6 @@ internal sealed partial class DiscordGameAnnouncer(
 ) : IGameAnnouncer
 {
     private const string UnknownHost = "someone";
-    private const string UnknownGameMode = "an unknown mode";
 
     public async Task AnnounceGameCreatedAsync(Guid gameId, CancellationToken cancellationToken = default)
     {
@@ -34,16 +33,30 @@ internal sealed partial class DiscordGameAnnouncer(
             cancellationToken
         );
 
+        if (gameMode is null)
+        {
+            LogGameModeMissing(gameId, game.GameModeId);
+            return;
+        }
+
+        if (!IsWorthAnnouncing(gameMode))
+        {
+            LogSinglePlayerModeSkipped(gameId, gameMode.Key);
+            return;
+        }
+
         string hostUsername = await ResolveHostUsernameAsync(game.HostUserId, cancellationToken);
 
-        Embed embed = BuildGameCreatedEmbed(hostUsername, gameMode?.Name, game.TimeLimitInSeconds, game.CreatedAt);
+        Embed embed = BuildGameCreatedEmbed(hostUsername, gameMode.Name, game.TimeLimitInSeconds, game.CreatedAt);
 
         await webhookClient.SendMessageAsync(text: null, embeds: [embed], allowedMentions: AllowedMentions.None);
     }
 
+    internal static bool IsWorthAnnouncing(GameMode gameMode) => gameMode.MaxPlayers > 1;
+
     internal static Embed BuildGameCreatedEmbed(
         string hostUsername,
-        string? gameModeName,
+        string gameModeName,
         int timeLimitInSeconds,
         DateTime createdAt
     ) =>
@@ -51,7 +64,7 @@ internal sealed partial class DiscordGameAnnouncer(
             .WithTitle("New game created")
             .WithColor(Color.Blue)
             .AddField("Host", hostUsername, inline: true)
-            .AddField("Mode", gameModeName ?? UnknownGameMode, inline: true)
+            .AddField("Mode", gameModeName, inline: true)
             .AddField("Time limit", FormatTimeLimit(timeLimitInSeconds), inline: true)
             .WithTimestamp(createdAt)
             .Build();
@@ -67,13 +80,20 @@ internal sealed partial class DiscordGameAnnouncer(
     }
 
     private static string FormatTimeLimit(int timeLimitInSeconds) =>
-        timeLimitInSeconds % 60 == 0
-            ? $"{timeLimitInSeconds / 60} min"
-            : $"{timeLimitInSeconds} sec";
+        timeLimitInSeconds % 60 == 0 ? $"{timeLimitInSeconds / 60} min" : $"{timeLimitInSeconds} sec";
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Cannot announce game {GameId}; it no longer exists.")]
+    private partial void LogGameMissing(Guid gameId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Cannot announce game {GameId}; it no longer exists."
+        Message = "Cannot announce game {GameId}; its game mode {GameModeId} no longer exists."
     )]
-    private partial void LogGameMissing(Guid gameId);
+    private partial void LogGameModeMissing(Guid gameId, Guid gameModeId);
+
+    [LoggerMessage(
+        Level = LogLevel.Debug,
+        Message = "Not announcing game {GameId}; mode {GameModeKey} is single-player."
+    )]
+    private partial void LogSinglePlayerModeSkipped(Guid gameId, string gameModeKey);
 }

@@ -1,4 +1,5 @@
 using Discord;
+using StackDuel.Domain.Games.Entities;
 using StackDuel.Infrastructure.Announcements;
 
 namespace StackDuel.Infrastructure.Tests.Announcements;
@@ -10,6 +11,27 @@ public class DiscordGameAnnouncerTests
     private static string FieldValue(Embed embed, string name) =>
         embed.Fields.Single(field => field.Name == name).Value;
 
+    private static GameMode Mode(string key, string name, int minPlayers, int maxPlayers) =>
+        new(key, name, "description", true, minPlayers, maxPlayers, Guid.NewGuid());
+
+    [Fact]
+    public void IsWorthAnnouncing_SoloRush_IsFalse()
+    {
+        Assert.False(DiscordGameAnnouncer.IsWorthAnnouncing(Mode("solo_rush", "Solo Rush", 1, 1)));
+    }
+
+    [Fact]
+    public void IsWorthAnnouncing_Duel_IsTrue()
+    {
+        Assert.True(DiscordGameAnnouncer.IsWorthAnnouncing(Mode("duel", "Duel", 2, 2)));
+    }
+
+    [Fact]
+    public void IsWorthAnnouncing_FreeForAll_IsTrue()
+    {
+        Assert.True(DiscordGameAnnouncer.IsWorthAnnouncing(Mode("ffa", "FFA", 2, 10)));
+    }
+
     [Fact]
     public void BuildGameCreatedEmbed_IncludesTheHostModeAndTimeLimit()
     {
@@ -20,14 +42,6 @@ public class DiscordGameAnnouncerTests
         Assert.Equal("Duel", FieldValue(embed, "Mode"));
         Assert.Equal("10 min", FieldValue(embed, "Time limit"));
         Assert.Equal(CreatedAt, embed.Timestamp!.Value.UtcDateTime);
-    }
-
-    [Fact]
-    public void BuildGameCreatedEmbed_UnknownGameMode_FallsBackRatherThanShowingNothing()
-    {
-        Embed embed = DiscordGameAnnouncer.BuildGameCreatedEmbed("alice", null, 600, CreatedAt);
-
-        Assert.Equal("an unknown mode", FieldValue(embed, "Mode"));
     }
 
     [Fact]
