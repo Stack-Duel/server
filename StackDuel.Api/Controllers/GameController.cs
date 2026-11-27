@@ -3,7 +3,6 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Game;
 using StackDuel.Application;
@@ -13,6 +12,7 @@ using StackDuel.Application.Games.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Games;
 using StackDuel.Application.Tracks.Dtos;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -300,7 +300,7 @@ public sealed class GameController(IGameService gameService, UserContext userCon
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminGames)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminGamesPermission)]
     [ProducesResponseType(typeof(PageResult<AdminGameListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PageResult<AdminGameListItemDto>>> GetAdminGames(
@@ -324,7 +324,7 @@ public sealed class GameController(IGameService gameService, UserContext userCon
 
     [HttpGet("admin/{gameId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminGames)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminGamesPermission)]
     [ProducesResponseType(typeof(GameStateDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -335,7 +335,7 @@ public sealed class GameController(IGameService gameService, UserContext userCon
 
     [HttpGet("admin/{gameId:guid}/history")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminGames)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminGamesPermission)]
     [ProducesResponseType(typeof(IReadOnlyList<AdminGamePlayerHistoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -3,13 +3,13 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Feedback;
 using StackDuel.Application;
 using StackDuel.Application.Feedback.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Feedback;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -20,7 +20,7 @@ public sealed class FeedbackController(IFeedbackService feedbackService, UserCon
 {
     [HttpPost]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateFeedback)]
+    [RequirePermission(WellKnownAuthorization.CreateFeedbackPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -54,7 +54,7 @@ public sealed class FeedbackController(IFeedbackService feedbackService, UserCon
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminFeedback)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminFeedbackPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PageResult<AdminFeedbackListItemDto>>> GetAdminFeedback(
@@ -79,7 +79,7 @@ public sealed class FeedbackController(IFeedbackService feedbackService, UserCon
 
     [HttpGet("admin/{feedbackId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminFeedback)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminFeedbackPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -93,7 +93,7 @@ public sealed class FeedbackController(IFeedbackService feedbackService, UserCon
 
     [HttpPatch("admin/{feedbackId:guid}/status")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.UpdateAdminFeedback)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminFeedbackPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
