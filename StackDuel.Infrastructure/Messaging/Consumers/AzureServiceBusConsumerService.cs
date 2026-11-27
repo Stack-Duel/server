@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using StackDuel.Application.Announcements;
 using StackDuel.Application.Commands.Games.CompleteExpiredGame;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Messaging;
@@ -37,6 +38,7 @@ internal sealed partial class AzureServiceBusConsumerService(
         ServiceBusProcessor testCaseGenerationContinuationProcessor;
         ServiceBusProcessor testCaseGenerationCompletedProcessor;
         ServiceBusProcessor gameExpiryProcessor;
+        ServiceBusProcessor gameCreatedProcessor;
 
         try
         {
@@ -67,6 +69,11 @@ internal sealed partial class AzureServiceBusConsumerService(
                 processorOptions
             );
             createdProcessors.Add(gameExpiryProcessor);
+            gameCreatedProcessor = client.CreateProcessor(
+                QueueNames.ForType<GameCreatedMessage>(),
+                processorOptions
+            );
+            createdProcessors.Add(gameCreatedProcessor);
 
             WireUp<SubmissionCreatedMessage>(
                 createdProcessor,
@@ -98,6 +105,11 @@ internal sealed partial class AzureServiceBusConsumerService(
                     sp.GetRequiredService<ProblemValidationJobProcessorService>().RunAwaitingGenerationPassAsync(ct)
             );
 
+            WireUp<GameCreatedMessage>(
+                gameCreatedProcessor,
+                (sp, m, ct) => sp.GetRequiredService<IGameAnnouncer>().AnnounceGameCreatedAsync(m.GameId, ct)
+            );
+
             WireUpGameExpiry(gameExpiryProcessor);
 
             await Task.WhenAll(
@@ -106,7 +118,8 @@ internal sealed partial class AzureServiceBusConsumerService(
                 problemValidationProcessor.StartProcessingAsync(stoppingToken),
                 testCaseGenerationContinuationProcessor.StartProcessingAsync(stoppingToken),
                 testCaseGenerationCompletedProcessor.StartProcessingAsync(stoppingToken),
-                gameExpiryProcessor.StartProcessingAsync(stoppingToken)
+                gameExpiryProcessor.StartProcessingAsync(stoppingToken),
+                gameCreatedProcessor.StartProcessingAsync(stoppingToken)
             );
         }
         catch (Exception ex)

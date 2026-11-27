@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using RabbitMQ.Client;
+using StackDuel.Application.Announcements;
 using StackDuel.Application.Audit;
 using StackDuel.Application.Campaigns;
 using StackDuel.Application.Configuration;
@@ -48,6 +49,7 @@ using StackDuel.Domain.Submissions;
 using StackDuel.Domain.TestCaseGeneration;
 using StackDuel.Domain.TestSuites;
 using StackDuel.Domain.Users;
+using StackDuel.Infrastructure.Announcements;
 using StackDuel.Infrastructure.ExecutionEngine;
 using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
@@ -173,6 +175,8 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<ICodeTemplateStrategy, JavaCodeTemplateStrategy>();
         services.AddScoped<ICodeTemplateStrategy, CppCodeTemplateStrategy>();
         services.AddSingleton(opts.JsxTranspiler);
+        services.AddScoped<IGameAnnouncer, LoggingGameAnnouncer>();
+
         services.AddScoped<IJsxTranspiler, EsbuildJsxTranspiler>();
         services.AddScoped<ICodeTemplateStrategy, ReactCodeTemplateStrategy>();
         services.AddScoped<ICodeTemplateStrategy, VanillaJsCodeTemplateStrategy>();

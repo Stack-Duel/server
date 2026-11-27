@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using StackDuel.Application.Announcements;
 using StackDuel.Application.Commands.Games.CompleteExpiredGame;
 using StackDuel.Application.Configuration;
 using StackDuel.Application.Messaging;
@@ -67,6 +68,13 @@ internal sealed partial class RabbitMqConsumerService(
                 channels,
                 (sp, _, ct) =>
                     sp.GetRequiredService<ProblemValidationJobProcessorService>().RunAwaitingGenerationPassAsync(ct),
+                consumerConcurrency,
+                stoppingToken
+            );
+
+            Subscribe<GameCreatedMessage>(
+                channels,
+                (sp, m, ct) => sp.GetRequiredService<IGameAnnouncer>().AnnounceGameCreatedAsync(m.GameId, ct),
                 consumerConcurrency,
                 stoppingToken
             );
