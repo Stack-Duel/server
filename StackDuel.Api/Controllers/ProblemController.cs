@@ -74,7 +74,7 @@ public sealed class ProblemController(
 
     [HttpGet("mine")]
     [RequireUser]
-    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
+    [RequirePermission(WellKnownAuthorization.ReadStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -102,7 +102,7 @@ public sealed class ProblemController(
 
     [HttpGet("mine/metadata")]
     [RequireUser]
-    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
+    [RequirePermission(WellKnownAuthorization.ReadStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

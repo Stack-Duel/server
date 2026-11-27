@@ -34,7 +34,9 @@ public sealed class GetMyProblemsMetadataApiTests(IntegrationTestEnvironment env
             ownerSub,
             permissions,
             WellKnownAuthorization.CreateAdminProblemsPermission,
-            WellKnownAuthorization.ReadAdminProblemsPermission
+            WellKnownAuthorization.ReadAdminProblemsPermission,
+            WellKnownAuthorization.ReadStudioProblemsPermission,
+            WellKnownAuthorization.UpdateStudioProblemsPermission
         );
 
         Guid problemId = await CreateProblemAsync(ownerSub, "Metadata Problem");
@@ -87,7 +89,9 @@ public sealed class GetMyProblemsMetadataApiTests(IntegrationTestEnvironment env
             ownerSub,
             permissions,
             WellKnownAuthorization.CreateAdminProblemsPermission,
-            WellKnownAuthorization.ReadAdminProblemsPermission
+            WellKnownAuthorization.ReadAdminProblemsPermission,
+            WellKnownAuthorization.ReadStudioProblemsPermission,
+            WellKnownAuthorization.UpdateStudioProblemsPermission
         );
         await GrantPermissionsToNewGroupAsync(
             otherSub,
