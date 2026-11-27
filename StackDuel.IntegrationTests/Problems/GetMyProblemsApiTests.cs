@@ -36,7 +36,9 @@ public sealed class GetMyProblemsApiTests(IntegrationTestEnvironment environment
             ownerSub,
             permissions,
             WellKnownAuthorization.CreateAdminProblemsPermission,
-            WellKnownAuthorization.ReadAdminProblemsPermission
+            WellKnownAuthorization.ReadAdminProblemsPermission,
+            WellKnownAuthorization.ReadStudioProblemsPermission,
+            WellKnownAuthorization.UpdateStudioProblemsPermission
         );
         await GrantPermissionsToNewGroupAsync(
             otherSub,
