@@ -2,7 +2,6 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Application;
@@ -10,6 +9,7 @@ using StackDuel.Application.Commands.Problems.DeleteProblem;
 using StackDuel.Application.Commands.Problems.SetProblemSampleTestCases;
 using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.StudioProblems.Dtos;
+using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 
 namespace StackDuel.Api.Controllers;
@@ -18,7 +18,7 @@ namespace StackDuel.Api.Controllers;
 [Route("api/v{version:apiVersion}/studio/problems")]
 [EnableRateLimiting(WellKnownPolicies.General)]
 [RequireUser]
-[RequirePermission(WellKnownPermissions.ReadStudioProblems)]
+[RequirePermission(WellKnownAuthorization.ReadStudioProblemsPermission)]
 public sealed class StudioProblemController(IStudioProblemService studioProblemService, UserContext userContext)
     : ControllerBase
 {
@@ -61,7 +61,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPut("{id:guid}")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -91,7 +91,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPost("{id:guid}/setups")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -114,7 +114,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpDelete("{id:guid}/setups/{languageVersionId:guid}")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -137,7 +137,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPut("{id:guid}/setups/reference-solution")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -165,7 +165,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPut("{id:guid}/generation-parameters")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -206,7 +206,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPut("{id:guid}/sample-test-cases")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -238,7 +238,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPost("{id:guid}/submit-for-validation")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -256,7 +256,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPost("{id:guid}/cancel-validation")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -274,7 +274,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpPost]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.CreateAdminProblemsPermission)]
     [EnableRateLimiting(WellKnownPolicies.ProblemCreation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -302,7 +302,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpGet("{id:guid}/deletion-impact")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -322,7 +322,7 @@ public sealed class StudioProblemController(IStudioProblemService studioProblemS
     }
 
     [HttpDelete("{id:guid}")]
-    [RequirePermission(WellKnownPermissions.UpdateStudioProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateStudioProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

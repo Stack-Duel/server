@@ -17,16 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource
-      Include="ExecutionEngine\CodeTemplates\Assets\VanillaJs\harness.js"
-      LogicalName="VanillaJsRuntime/harness.js"
-    />
+    <EmbeddedResource Include="ExecutionEngine\CodeTemplates\Assets\VanillaJs\harness.js" LogicalName="VanillaJsRuntime/harness.js" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.ServiceBus" />
     <PackageReference Include="Discord.Net.Webhook" />
     <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Discord.Net.Core" />
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />

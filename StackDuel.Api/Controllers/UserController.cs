@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.User;
 using StackDuel.Api.Responses.User;
@@ -13,6 +12,7 @@ using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Users;
 using StackDuel.Application.Users.Dtos;
 using StackDuel.Application.Users.Dtos.Admin;
+using StackDuel.Domain.Authorization.Rbac;
 using System.Security.Claims;
 
 namespace StackDuel.Api.Controllers;
@@ -155,7 +155,7 @@ public sealed class UserController(IUserService userService, UserContext userCon
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminUsers)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminUsersPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PageResult<AdminUserDto>>> GetAdminUsers(
@@ -179,7 +179,7 @@ public sealed class UserController(IUserService userService, UserContext userCon
 
     [HttpGet("admin/{id:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminUsers)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminUsersPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -190,7 +190,7 @@ public sealed class UserController(IUserService userService, UserContext userCon
 
     [HttpPut("{id:guid}/groups")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.UpdateAdminUserGroups)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminUserGroupsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

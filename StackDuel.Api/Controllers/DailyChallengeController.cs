@@ -4,12 +4,12 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.DailyChallenge;
 using StackDuel.Application;
 using StackDuel.Application.DailyChallenges.Dtos;
 using StackDuel.Application.Services.DailyChallenges;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -36,7 +36,7 @@ public sealed class DailyChallengeController(IDailyChallengeService dailyChallen
 
     [HttpGet("admin/upcoming")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -49,7 +49,7 @@ public sealed class DailyChallengeController(IDailyChallengeService dailyChallen
 
     [HttpPut("admin/{date}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
