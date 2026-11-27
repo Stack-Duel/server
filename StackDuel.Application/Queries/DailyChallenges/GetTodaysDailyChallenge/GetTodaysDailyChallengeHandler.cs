@@ -29,24 +29,13 @@ internal sealed class GetTodaysDailyChallengeHandler(
         if (problem is null)
             return Result<TodaysDailyChallengeDto>.NotFound();
 
-        IReadOnlyList<DailyChallenge> challengesNewestFirst =
-        [
-            .. (await dailyChallengeRepository.GetAllOrderedByDateDescendingAsync(cancellationToken)).Where(c =>
-                c.ChallengeDate <= today
-            ),
-        ];
-
-        IReadOnlyList<Guid> problemIds = [.. challengesNewestFirst.Select(c => c.ProblemId).Distinct()];
-        IReadOnlyList<Guid> acceptedProblemIds = await submissionReadRepository.GetAcceptedProblemIdsForUserAsync(
+        DailyChallengeStreakResult streaks = await DailyChallengeStreakBuilder.BuildAsync(
+            dailyChallengeRepository,
+            submissionReadRepository,
             request.UserId,
-            problemIds,
+            today,
             cancellationToken
         );
-        HashSet<Guid> solved = [.. acceptedProblemIds];
-
-        bool solvedToday = solved.Contains(todaysChallenge.ProblemId);
-        int currentStreak = CalculateCurrentStreak(challengesNewestFirst, solved, today);
-        int longestStreak = CalculateLongestStreak(challengesNewestFirst, solved);
 
         return Result.Success(
             new TodaysDailyChallengeDto(
@@ -54,59 +43,10 @@ internal sealed class GetTodaysDailyChallengeHandler(
                 problem.Slug.Value,
                 problem.Title.Value,
                 problem.Difficulty.Tier,
-                solvedToday,
-                currentStreak,
-                longestStreak
+                streaks.SolvedProblemIds.Contains(todaysChallenge.ProblemId),
+                streaks.CurrentStreak,
+                streaks.LongestStreak
             )
         );
-    }
-
-    private static int CalculateCurrentStreak(
-        IReadOnlyList<DailyChallenge> challengesNewestFirst,
-        HashSet<Guid> solvedProblemIds,
-        DateOnly today
-    )
-    {
-        int startIndex = 0;
-        if (
-            challengesNewestFirst.Count > 0
-            && challengesNewestFirst[0].ChallengeDate == today
-            && !solvedProblemIds.Contains(challengesNewestFirst[0].ProblemId)
-        )
-        {
-            startIndex = 1;
-        }
-
-        int streak = 0;
-        for (int i = startIndex; i < challengesNewestFirst.Count; i++)
-        {
-            if (!solvedProblemIds.Contains(challengesNewestFirst[i].ProblemId))
-                break;
-
-            streak++;
-        }
-
-        return streak;
-    }
-
-    private static int CalculateLongestStreak(IReadOnlyList<DailyChallenge> challenges, HashSet<Guid> solvedProblemIds)
-    {
-        int longest = 0;
-        int current = 0;
-
-        foreach (DailyChallenge challenge in challenges)
-        {
-            if (solvedProblemIds.Contains(challenge.ProblemId))
-            {
-                current++;
-                longest = Math.Max(longest, current);
-            }
-            else
-            {
-                current = 0;
-            }
-        }
-
-        return longest;
     }
 }
