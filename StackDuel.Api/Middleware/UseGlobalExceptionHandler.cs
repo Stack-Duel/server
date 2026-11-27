@@ -38,7 +38,7 @@ public static class ExceptionMiddlewareExtensions
                     AppLog.RejectedDomainInvariant(
                         logger,
                         context.Request.Method,
-                        context.Request.Path,
+                        context.Request.Path.Value ?? string.Empty,
                         domainException
                     );
 

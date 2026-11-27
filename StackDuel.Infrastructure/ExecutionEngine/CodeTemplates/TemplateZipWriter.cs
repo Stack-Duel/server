@@ -4,7 +4,9 @@ namespace StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 
 internal sealed class TemplateZipWriter(ZipArchive archive)
 {
-    private readonly HashSet<string> _takenNames = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly string[] RuntimeReservedNames = ["harness.js", "solution.js", "compile", "run"];
+
+    private readonly HashSet<string> _takenNames = new(RuntimeReservedNames, StringComparer.OrdinalIgnoreCase);
 
     public void AddRuntimeEntry(string name, byte[] content)
     {

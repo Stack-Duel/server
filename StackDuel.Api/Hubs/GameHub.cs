@@ -61,7 +61,7 @@ public sealed partial class GameHub(
 
         if (!result.IsSuccess)
         {
-            LogJoinDenied(gameId, userId, result.Status.ToString());
+            LogJoinDenied(gameId, userId, result.Status);
             throw new HubException("You don't have access to that game.");
         }
 
@@ -110,7 +110,7 @@ public sealed partial class GameHub(
 
         if (!result.IsSuccess)
         {
-            LogReactionDenied(gameId, userId, result.Status.ToString());
+            LogReactionDenied(gameId, userId, result.Status);
             throw new HubException("You don't have access to that game.");
         }
 
@@ -161,11 +161,11 @@ public sealed partial class GameHub(
         Level = LogLevel.Information,
         Message = "Connection denied join to game {GameId} group for user {UserId}: {Status}."
     )]
-    private partial void LogJoinDenied(Guid gameId, Guid userId, string status);
+    private partial void LogJoinDenied(Guid gameId, Guid userId, ResultStatus status);
 
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "Reaction denied for game {GameId} from user {UserId}: {Status}."
     )]
-    private partial void LogReactionDenied(Guid gameId, Guid userId, string status);
+    private partial void LogReactionDenied(Guid gameId, Guid userId, ResultStatus status);
 }

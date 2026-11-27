@@ -8,7 +8,7 @@ public class CommandValidationTests
 {
     private static readonly Assembly ApplicationAssembly = typeof(ICommand).Assembly;
 
-    private static readonly IReadOnlySet<string> CommandsAuthorizedWithoutAValidator = new HashSet<string>
+    private static readonly HashSet<string> CommandsAuthorizedWithoutAValidator = new()
     {
         "ReceiveJudge0CallbackCommand",
     };

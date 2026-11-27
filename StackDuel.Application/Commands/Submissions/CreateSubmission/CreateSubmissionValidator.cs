@@ -13,9 +13,7 @@ internal sealed partial class CreateSubmissionValidator : AbstractValidator<Crea
 
     public const int MaxCustomTestCaseInputLength = 4096;
 
-    private static readonly IReadOnlySet<string> ReservedFileNames = new HashSet<string>(
-        StringComparer.OrdinalIgnoreCase
-    )
+    private static readonly HashSet<string> ReservedFileNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "harness",
         "solution",
