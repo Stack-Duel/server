@@ -64,6 +64,8 @@ public sealed class Game : AggregateRoot
             _participants.Add(new GameParticipant(Id, userId, seatNo));
             seatNo++;
         }
+
+        AddDomainEvent(new GameCreatedDomainEvent(Id));
     }
 
     public void Join(Guid userId, int maxPlayers)
