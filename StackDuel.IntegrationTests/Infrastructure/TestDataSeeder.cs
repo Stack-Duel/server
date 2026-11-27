@@ -450,4 +450,80 @@ public sealed class TestDataSeeder(string connectionString)
             cancellationToken,
             ("problemId", problemId)
         );
+
+    public async Task<Guid> CreateProblemPoolAsync(string key, CancellationToken cancellationToken = default)
+    {
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            "INSERT INTO problem_pools (id, key, name, created_at) VALUES (@id, @key, @name, now())",
+            cancellationToken,
+            ("id", id),
+            ("key", key),
+            ("name", key)
+        );
+        return id;
+    }
+
+    public async Task<Guid> CreateGameModeAsync(
+        string key,
+        string name,
+        int minPlayers,
+        int maxPlayers,
+        Guid defaultPoolId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid id = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO game_modes
+                (id, key, name, description, is_built_in, is_active, min_players, max_players, created_at, default_pool_id)
+            VALUES
+                (@id, @key, @name, @name, true, true, @minPlayers, @maxPlayers, now(), @defaultPoolId)
+            """,
+            cancellationToken,
+            ("id", id),
+            ("key", key),
+            ("name", name),
+            ("minPlayers", minPlayers),
+            ("maxPlayers", maxPlayers),
+            ("defaultPoolId", defaultPoolId)
+        );
+        return id;
+    }
+
+    public async Task<Guid> CreatePendingGameAsync(
+        Guid gameModeId,
+        Guid poolId,
+        Guid hostUserId,
+        int timeLimitInSeconds = 600,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Guid gameId = Guid.NewGuid();
+        await ExecuteAsync(
+            """
+            INSERT INTO games
+                (id, game_mode_id, join_code, time_limit_in_seconds, skips_enabled, status, created_at, pool_id)
+            VALUES
+                (@id, @gameModeId, @joinCode, @timeLimitInSeconds, true, 0, now(), @poolId)
+            """,
+            cancellationToken,
+            ("id", gameId),
+            ("gameModeId", gameModeId),
+            ("joinCode", gameId.ToString("N")[..7].ToUpperInvariant()),
+            ("timeLimitInSeconds", timeLimitInSeconds),
+            ("poolId", poolId)
+        );
+
+        await ExecuteAsync(
+            "INSERT INTO game_participants (id, game_id, user_id, seat_no, joined_at) VALUES (@id, @gameId, @userId, 1, now())",
+            cancellationToken,
+            ("id", Guid.NewGuid()),
+            ("gameId", gameId),
+            ("userId", hostUserId)
+        );
+
+        return gameId;
+    }
 }

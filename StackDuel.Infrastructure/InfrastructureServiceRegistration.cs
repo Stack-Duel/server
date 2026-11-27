@@ -126,6 +126,7 @@ public static class InfrastructureServiceRegistration
         }
 
         services.AddSingleton(new DiscordWebhookClient(opts.WebhookUrl));
+        services.AddScoped<IDiscordWebhookSender, DiscordWebhookSender>();
         services.AddScoped<IGameAnnouncer, DiscordGameAnnouncer>();
 
         return services;

@@ -23,7 +23,6 @@ namespace StackDuel.Api.Controllers;
 public sealed class UserController(IUserService userService, UserContext userContext) : ControllerBase
 {
     [HttpGet]
-    [RequireUser]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<UserResponse> GetAccount()
@@ -35,7 +34,6 @@ public sealed class UserController(IUserService userService, UserContext userCon
     }
 
     [HttpPut]
-    [RequireUser]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

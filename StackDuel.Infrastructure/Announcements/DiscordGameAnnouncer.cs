@@ -1,5 +1,4 @@
 using Discord;
-using Discord.Webhook;
 using Microsoft.Extensions.Logging;
 using StackDuel.Application.Announcements;
 using StackDuel.Application.Games;
@@ -11,7 +10,7 @@ using GameEntity = StackDuel.Domain.Games.Entities.Game;
 namespace StackDuel.Infrastructure.Announcements;
 
 internal sealed partial class DiscordGameAnnouncer(
-    DiscordWebhookClient webhookClient,
+    IDiscordWebhookSender webhookSender,
     IGameReadRepository gameReadRepository,
     IUserReadRepository userReadRepository,
     ILogger<DiscordGameAnnouncer> logger
@@ -49,7 +48,7 @@ internal sealed partial class DiscordGameAnnouncer(
 
         Embed embed = BuildGameCreatedEmbed(hostUsername, gameMode.Name, game.TimeLimitInSeconds, game.CreatedAt);
 
-        await webhookClient.SendMessageAsync(text: null, embeds: [embed], allowedMentions: AllowedMentions.None);
+        await webhookSender.SendAsync(embed, cancellationToken);
     }
 
     internal static bool IsWorthAnnouncing(GameMode gameMode) => gameMode.MaxPlayers > 1;
