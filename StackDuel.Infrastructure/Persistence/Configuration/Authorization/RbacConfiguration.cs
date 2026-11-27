@@ -26,6 +26,8 @@ internal class RolesConfiguration : IEntityTypeConfiguration<Role>
             .HasMaxLength(Name.MaxLength)
             .IsRequired();
 
+        builder.HasIndex(x => x.Name).IsUnique();
+
         builder.Navigation(r => r.Permissions).HasField("_permissions").UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(r => r.Permissions).WithOne().HasForeignKey("role_id").OnDelete(DeleteBehavior.Cascade);
@@ -108,6 +110,8 @@ internal class GroupsConfiguration : IEntityTypeConfiguration<Group>
             .HasConversion(n => n.Value, v => new Name(v))
             .HasMaxLength(Name.MaxLength)
             .IsRequired();
+
+        builder.HasIndex(x => x.Name).IsUnique();
 
         builder
             .HasMany(g => g.RoleGrants)
