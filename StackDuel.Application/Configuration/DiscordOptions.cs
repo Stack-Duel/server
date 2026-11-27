@@ -8,5 +8,7 @@ public sealed class DiscordOptions : IOption
 
     public string WebhookUrl { get; init; } = string.Empty;
 
+    public bool IsEnabled { get; init; }
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(WebhookUrl);
 }

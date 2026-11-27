@@ -119,7 +119,7 @@ public static class InfrastructureServiceRegistration
 
         services.AddSingleton(opts);
 
-        if (!opts.IsConfigured)
+        if (!opts.IsConfigured || !opts.IsEnabled)
         {
             services.AddScoped<IGameAnnouncer, LoggingGameAnnouncer>();
             return services;
