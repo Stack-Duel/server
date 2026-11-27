@@ -1,5 +1,7 @@
 using StackDuel.Application.Messaging;
+using StackDuel.Application.Messaging.Messages;
 using StackDuel.Infrastructure.Messaging;
+using System.Text.Json;
 
 namespace StackDuel.Infrastructure.Tests.Messaging;
 
@@ -58,5 +60,29 @@ public class MessageSubscriptionsTests
     public void EverySubscription_HasANonEmptyQueueName()
     {
         Assert.All(MessageSubscriptions.All, subscription => Assert.False(string.IsNullOrWhiteSpace(subscription.QueueName)));
+    }
+
+    [Fact]
+    public void Deserialize_RoundTripsTheSerializedWireFormat()
+    {
+        MessageSubscription subscription = MessageSubscriptions.All.Single(s =>
+            s.MessageType == typeof(GameCreatedMessage)
+        );
+        GameCreatedMessage original = new(Guid.NewGuid());
+
+        object? deserialized = subscription.Deserialize(JsonSerializer.SerializeToUtf8Bytes(original));
+
+        Assert.Equal(original, deserialized);
+    }
+
+    [Fact]
+    public void OnlyTheScheduledMessage_UsesTheDelayedExchange()
+    {
+        IReadOnlyList<string> delayed =
+        [
+            .. MessageSubscriptions.All.Where(s => s.UsesDelayedExchange).Select(s => s.MessageType.Name),
+        ];
+
+        Assert.Equal([nameof(GameTimeExpiredMessage)], delayed);
     }
 }
