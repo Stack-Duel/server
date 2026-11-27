@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.ServiceBus" />
+    <PackageReference Include="Discord.Net.Webhook" />
     <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Discord.Net.Core" />
     <PackageReference Include="RabbitMQ.Client" />

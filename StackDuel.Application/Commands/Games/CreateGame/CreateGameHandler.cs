@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using FluentValidation;
+using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Tracks;
@@ -16,6 +17,7 @@ internal sealed class CreateGameHandler(
     ITrackReadRepository trackReadRepository,
     ILanguageReadRepository languageReadRepository,
     UserContext userContext,
+    IDomainEventDispatcher domainEventDispatcher,
     IValidator<CreateGameCommand> validator
 ) : AbstractCommandHandler<CreateGameCommand, Guid>(validator)
 {
@@ -105,6 +107,7 @@ internal sealed class CreateGameHandler(
         );
 
         await gameWriteRepository.AddAsync(game, cancellationToken);
+        await domainEventDispatcher.DispatchAsync(game.PopDomainEvents(), cancellationToken);
 
         return Result<Guid>.Success(game.Id);
     }

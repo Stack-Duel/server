@@ -1,13 +1,16 @@
 using Ardalis.Result;
 using Moq;
+using StackDuel.Application.Events;
 using StackDuel.Application.Games;
 using StackDuel.Application.Languages;
 using StackDuel.Application.Tracks;
 using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.Games;
 using StackDuel.Domain.Games.Entities;
+using StackDuel.Domain.Games.Events;
 using StackDuel.Domain.Languages.Entities;
 using StackDuel.Domain.Languages.ValueObjects;
+using StackDuel.Domain.SeedWork;
 using StackDuel.Domain.Tracks.Entities;
 using CreateGameCommand = StackDuel.Application.Commands.Games.CreateGame.CreateGameCommand;
 using CreateGameHandler = StackDuel.Application.Commands.Games.CreateGame.CreateGameHandler;
@@ -21,6 +24,7 @@ public class CreateGameHandlerTests
     private Mock<IGameWriteRepository> _gameWriteRepository = null!;
     private Mock<ITrackReadRepository> _trackReadRepository = null!;
     private Mock<ILanguageReadRepository> _languageReadRepository = null!;
+    private Mock<IDomainEventDispatcher> _domainEventDispatcher = null!;
     private UserContext _userContext = null!;
     private CreateGameHandler _handler = null!;
 
@@ -30,6 +34,7 @@ public class CreateGameHandlerTests
         _gameWriteRepository = new Mock<IGameWriteRepository>();
         _trackReadRepository = new Mock<ITrackReadRepository>();
         _languageReadRepository = new Mock<ILanguageReadRepository>();
+        _domainEventDispatcher = new Mock<IDomainEventDispatcher>();
         _userContext = new UserContext();
 
         _handler = new CreateGameHandler(
@@ -38,6 +43,7 @@ public class CreateGameHandlerTests
             _trackReadRepository.Object,
             _languageReadRepository.Object,
             _userContext,
+            _domainEventDispatcher.Object,
             new CreateGameValidator()
         );
     }
@@ -387,5 +393,38 @@ public class CreateGameHandlerTests
             addedGame!.Tracks.Select(t => t.TrackId),
             strict: true
         );
+    }
+
+    [Fact]
+    public async Task Handle_Success_DispatchesGameCreatedDomainEvent()
+    {
+        var mode = CreateDuelMode(600);
+        var track = CreateGeneralPurposeTrack();
+        var javascript = CreateLanguage("JavaScript", "javascript", track.Id);
+        var userId = Guid.NewGuid();
+        _gameReadRepository
+            .Setup(x => x.FindGameModeByKeyAsync("duel", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mode);
+        StubTracksFound(track);
+        StubLanguagesFound(javascript);
+        _userContext.Permissions = [WellKnownAuthorization.PlayDuelPermission];
+
+        IReadOnlyList<IDomainEvent> dispatched = [];
+        _domainEventDispatcher
+            .Setup(x => x.DispatchAsync(It.IsAny<IEnumerable<IDomainEvent>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<IDomainEvent>, CancellationToken>((events, _) => dispatched = [.. events])
+            .Returns(Task.CompletedTask);
+
+        var command = new CreateGameCommand(
+            "duel",
+            [new TrackLanguageSelection(track.Key, [javascript.Id])],
+            600,
+            userId
+        );
+        Result<Guid> result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        GameCreatedDomainEvent created = Assert.Single(dispatched.OfType<GameCreatedDomainEvent>());
+        Assert.Equal(result.Value, created.GameId);
     }
 }

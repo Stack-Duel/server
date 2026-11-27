@@ -1,11 +1,13 @@
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
+using Discord.Webhook;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using RabbitMQ.Client;
+using StackDuel.Application.Announcements;
 using StackDuel.Application.Audit;
 using StackDuel.Application.Campaigns;
 using StackDuel.Application.Configuration;
@@ -48,6 +50,7 @@ using StackDuel.Domain.Submissions;
 using StackDuel.Domain.TestCaseGeneration;
 using StackDuel.Domain.TestSuites;
 using StackDuel.Domain.Users;
+using StackDuel.Infrastructure.Announcements;
 using StackDuel.Infrastructure.ExecutionEngine;
 using StackDuel.Infrastructure.ExecutionEngine.CodeTemplates;
 using StackDuel.Infrastructure.ExecutionEngine.Judge0;
@@ -102,9 +105,29 @@ public static class InfrastructureServiceRegistration
         services.AddTestCaseGeneration();
         services.AddLanguageServer(configuration);
         services.AddAvatarStorage(configuration);
+        services.AddAnnouncements(configuration);
 
         services.AddMessageBus(configuration);
         services.AddJobs(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddAnnouncements(this IServiceCollection services, IConfiguration configuration)
+    {
+        var opts = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>() ?? new DiscordOptions();
+
+        services.AddSingleton(opts);
+
+        if (!opts.IsConfigured || !opts.IsEnabled)
+        {
+            services.AddScoped<IGameAnnouncer, LoggingGameAnnouncer>();
+            return services;
+        }
+
+        services.AddSingleton(new DiscordWebhookClient(opts.WebhookUrl));
+        services.AddScoped<IDiscordWebhookSender, DiscordWebhookSender>();
+        services.AddScoped<IGameAnnouncer, DiscordGameAnnouncer>();
 
         return services;
     }
@@ -173,6 +196,7 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<ICodeTemplateStrategy, JavaCodeTemplateStrategy>();
         services.AddScoped<ICodeTemplateStrategy, CppCodeTemplateStrategy>();
         services.AddSingleton(opts.JsxTranspiler);
+
         services.AddScoped<IJsxTranspiler, EsbuildJsxTranspiler>();
         services.AddScoped<ICodeTemplateStrategy, ReactCodeTemplateStrategy>();
         services.AddScoped<ICodeTemplateStrategy, VanillaJsCodeTemplateStrategy>();

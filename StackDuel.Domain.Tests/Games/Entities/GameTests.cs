@@ -27,6 +27,16 @@ public class GameTests
         new(GameModeId, Guid.NewGuid(), [TrackId], [hostId], timeLimitInSeconds: 300);
 
     [Fact]
+    public void Constructor_RaisesGameCreatedDomainEvent()
+    {
+        GameEntity game = CreatePendingLobby(HostId);
+
+        var domainEvent = game.PopDomainEvents().OfType<GameCreatedDomainEvent>().Single();
+
+        Assert.Equal(game.Id, domainEvent.GameId);
+    }
+
+    [Fact]
     public void Constructor_GeneratesASevenCharacterJoinCode()
     {
         GameEntity game = CreatePendingLobby(HostId);

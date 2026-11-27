@@ -267,7 +267,6 @@ public sealed class GameController(IGameService gameService, UserContext userCon
     }
 
     [HttpGet]
-    [RequireUser]
     [ProducesResponseType(typeof(PageResult<GameLobbySummaryDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PageResult<GameLobbySummaryDto>>> GetOpenGames(
         [FromQuery] GetOpenGamesRequest query,
