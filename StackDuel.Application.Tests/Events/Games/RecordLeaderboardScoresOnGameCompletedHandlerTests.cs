@@ -124,5 +124,10 @@ public class RecordLeaderboardScoresOnGameCompletedHandlerTests
             .ThrowsAsync(new InvalidOperationException("database is down"));
 
         await _handler.Handle(Completed(game.Id), CancellationToken.None);
+
+        _leaderboardWriteRepository.Verify(
+            x => x.AddAsync(It.IsAny<Leaderboard>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

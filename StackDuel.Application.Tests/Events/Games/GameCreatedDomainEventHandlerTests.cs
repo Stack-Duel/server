@@ -37,5 +37,10 @@ public class GameCreatedDomainEventHandlerTests
             .ThrowsAsync(new InvalidOperationException("broker is down"));
 
         await Handler().Handle(Created(), CancellationToken.None);
+
+        _messagePublisher.Verify(
+            x => x.PublishAsync(It.Is<GameCreatedMessage>(m => m.GameId == _gameId), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }
