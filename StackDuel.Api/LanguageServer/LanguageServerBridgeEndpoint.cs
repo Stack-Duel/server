@@ -8,20 +8,31 @@ namespace StackDuel.Api.LanguageServer;
 
 internal static class LanguageServerBridgeEndpoint
 {
+    private const int ReceiveBufferSize = 64 * 1024;
+
+    private const int MaxMessageBytes = 8 * 1024 * 1024;
+
+    private static readonly TimeSpan PumpDrainTimeout = TimeSpan.FromSeconds(5);
+
     public static async Task HandleAsync(
         HttpContext context,
         ILanguageServerSessionManager sessionManager,
-        IUserService userService
+        IUserService userService,
+        ILoggerFactory loggerFactory
     )
     {
+        ILogger logger = loggerFactory.CreateLogger(typeof(LanguageServerBridgeEndpoint));
+
         if (!context.WebSockets.IsWebSocketRequest)
         {
+            BridgeLog.RejectedRequest(logger, "the request was not a WebSocket upgrade");
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
 
         if (!Guid.TryParse(context.Request.Query["sessionId"], out Guid sessionId))
         {
+            BridgeLog.RejectedRequest(logger, "the sessionId query parameter was missing or malformed");
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
@@ -29,6 +40,7 @@ internal static class LanguageServerBridgeEndpoint
         string? sub = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(sub))
         {
+            BridgeLog.RejectedRequest(logger, "the caller had no subject claim");
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
         }
@@ -36,6 +48,7 @@ internal static class LanguageServerBridgeEndpoint
         var userResult = await userService.GetBySubAsync(sub, context.RequestAborted);
         if (!userResult.IsSuccess)
         {
+            BridgeLog.RejectedRequest(logger, "the caller's account could not be resolved");
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
         }
@@ -45,6 +58,7 @@ internal static class LanguageServerBridgeEndpoint
         ILanguageServerProcess? process = sessionManager.TryAttach(sessionId, userId);
         if (process is null)
         {
+            BridgeLog.AttachRejected(logger, sessionId, userId);
             context.Response.StatusCode = StatusCodes.Status409Conflict;
             return;
         }
@@ -53,7 +67,7 @@ internal static class LanguageServerBridgeEndpoint
 
         try
         {
-            await PumpAsync(socket, process, sessionManager, sessionId, context.RequestAborted);
+            await PumpAsync(socket, process, sessionManager, sessionId, logger, context.RequestAborted);
         }
         finally
         {
@@ -67,16 +81,19 @@ internal static class LanguageServerBridgeEndpoint
         ILanguageServerProcess process,
         ILanguageServerSessionManager sessionManager,
         Guid sessionId,
+        ILogger logger,
         CancellationToken requestAborted
     )
     {
         using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
 
         Task stdioToWs = PumpStdioToWebSocketAsync(process, socket, sessionManager, sessionId, cts.Token);
-        Task wsToStdio = PumpWebSocketToStdioAsync(socket, process, sessionManager, sessionId, cts.Token);
+        Task wsToStdio = PumpWebSocketToStdioAsync(socket, process, sessionManager, sessionId, logger, cts.Token);
 
         await Task.WhenAny(stdioToWs, wsToStdio, process.Completion);
         await cts.CancelAsync();
+
+        await DrainPumpsAsync(stdioToWs, wsToStdio, sessionId, logger);
 
         if (socket.State == WebSocketState.Open)
         {
@@ -85,6 +102,23 @@ internal static class LanguageServerBridgeEndpoint
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
             }
             catch (WebSocketException) { }
+        }
+    }
+
+    private static async Task DrainPumpsAsync(Task stdioToWs, Task wsToStdio, Guid sessionId, ILogger logger)
+    {
+        try
+        {
+            await Task.WhenAll(stdioToWs, wsToStdio).WaitAsync(PumpDrainTimeout);
+        }
+        catch (TimeoutException)
+        {
+            BridgeLog.PumpDrainTimedOut(logger, sessionId);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            BridgeLog.PumpFaulted(logger, sessionId, ex);
         }
     }
 
@@ -114,12 +148,20 @@ internal static class LanguageServerBridgeEndpoint
             sessionManager.Touch(sessionId);
             byte[] bytes = Encoding.UTF8.GetBytes(message);
 
-            await socket.SendAsync(
-                new ArraySegment<byte>(bytes),
-                WebSocketMessageType.Text,
-                endOfMessage: true,
-                cancellationToken
-            );
+            try
+            {
+                await socket.SendAsync(
+                    new ArraySegment<byte>(bytes),
+                    WebSocketMessageType.Text,
+                    endOfMessage: true,
+                    cancellationToken
+                );
+            }
+            catch (Exception ex)
+                when (ex is WebSocketException or ObjectDisposedException or OperationCanceledException)
+            {
+                return;
+            }
         }
     }
 
@@ -128,10 +170,11 @@ internal static class LanguageServerBridgeEndpoint
         ILanguageServerProcess process,
         ILanguageServerSessionManager sessionManager,
         Guid sessionId,
+        ILogger logger,
         CancellationToken cancellationToken
     )
     {
-        byte[] buffer = new byte[64 * 1024];
+        byte[] buffer = new byte[ReceiveBufferSize];
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -140,9 +183,25 @@ internal static class LanguageServerBridgeEndpoint
 
             do
             {
-                result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                try
+                {
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                }
+                catch (Exception ex)
+                    when (ex is WebSocketException or ObjectDisposedException or OperationCanceledException)
+                {
+                    return;
+                }
+
                 if (result.MessageType == WebSocketMessageType.Close)
                     return;
+
+                if (messageBuffer.Length + result.Count > MaxMessageBytes)
+                {
+                    BridgeLog.MessageTooLarge(logger, sessionId, MaxMessageBytes);
+                    await CloseForOversizedMessageAsync(socket);
+                    return;
+                }
 
                 messageBuffer.Write(buffer, 0, result.Count);
             } while (!result.EndOfMessage);
@@ -154,10 +213,53 @@ internal static class LanguageServerBridgeEndpoint
             {
                 await LspFraming.WriteMessageAsync(process.Input, message, cancellationToken);
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
             {
                 return;
             }
         }
     }
+
+    private static async Task CloseForOversizedMessageAsync(WebSocket socket)
+    {
+        if (socket.State != WebSocketState.Open)
+            return;
+
+        try
+        {
+            await socket.CloseAsync(
+                WebSocketCloseStatus.MessageTooBig,
+                "message too large",
+                CancellationToken.None
+            );
+        }
+        catch (WebSocketException) { }
+    }
+}
+
+internal static partial class BridgeLog
+{
+    [LoggerMessage(Level = LogLevel.Information, Message = "Rejected language server bridge request: {Reason}.")]
+    public static partial void RejectedRequest(ILogger logger, string reason);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Language server session {SessionId} could not be attached for user {UserId}."
+    )]
+    public static partial void AttachRejected(ILogger logger, Guid sessionId, Guid userId);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Language server session {SessionId} sent a message larger than {MaxMessageBytes} bytes; closing the socket."
+    )]
+    public static partial void MessageTooLarge(ILogger logger, Guid sessionId, int maxMessageBytes);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Language server session {SessionId} pumps did not drain before the timeout."
+    )]
+    public static partial void PumpDrainTimedOut(ILogger logger, Guid sessionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Language server session {SessionId} pump faulted.")]
+    public static partial void PumpFaulted(ILogger logger, Guid sessionId, Exception exception);
 }

@@ -44,7 +44,7 @@ public sealed class Submission : AggregateRoot
             ? SubmissionStatus.Accepted
             : SubmissionStatus.WrongAnswer;
 
-        AddDomainEvent(new SubmissionCompletedDomainEvent(UserId, Id, Status, GameId));
+        AddDomainEvent(new SubmissionCompletedDomainEvent(UserId, Id, Status, GameId, SubmissionCompletionReason.Graded));
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ public sealed class Submission : AggregateRoot
 
         Status = SubmissionStatus.WrongAnswer;
 
-        AddDomainEvent(new SubmissionCompletedDomainEvent(UserId, Id, Status, GameId));
+        AddDomainEvent(new SubmissionCompletedDomainEvent(UserId, Id, Status, GameId, SubmissionCompletionReason.ExecutionFailed));
     }
 
     public void StartRunning()

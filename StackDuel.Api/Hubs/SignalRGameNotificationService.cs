@@ -16,62 +16,59 @@ internal sealed class SignalRGameNotificationService(IHubContext<GameHub> hubCon
     public Task NotifyGameCompletedAsync(
         Guid gameId,
         GameStatus status,
-        DateTime endedAt,
-        CancellationToken cancellationToken = default
+        DateTime endedAt
     )
     {
         var payload = new GameCompletedNotification(gameId, status, endedAt);
 
         return hubContext
             .Clients.Group(GameHub.GroupNameFor(gameId))
-            .SendAsync(GameCompletedMethod, payload, cancellationToken);
+            .SendAsync(GameCompletedMethod, payload);
     }
 
-    public Task NotifyGameLobbyUpdatedAsync(Guid gameId, CancellationToken cancellationToken = default)
+    public Task NotifyGameLobbyUpdatedAsync(Guid gameId)
     {
         var payload = new GameLobbyUpdatedNotification(gameId);
 
         return hubContext
             .Clients.Group(GameHub.GroupNameFor(gameId))
-            .SendAsync(GameLobbyUpdatedMethod, payload, cancellationToken);
+            .SendAsync(GameLobbyUpdatedMethod, payload);
     }
 
-    public Task NotifyGameProgressUpdatedAsync(Guid gameId, CancellationToken cancellationToken = default)
+    public Task NotifyGameProgressUpdatedAsync(Guid gameId)
     {
         var payload = new GameProgressUpdatedNotification(gameId);
 
         return hubContext
             .Clients.Group(GameHub.GroupNameFor(gameId))
-            .SendAsync(GameProgressUpdatedMethod, payload, cancellationToken);
+            .SendAsync(GameProgressUpdatedMethod, payload);
     }
 
     public Task NotifyGameParticipantAttemptedAsync(
         Guid gameId,
         Guid userId,
         SubmissionStatus status,
-        DateTime attemptedAt,
-        CancellationToken cancellationToken = default
+        DateTime attemptedAt
     )
     {
         var payload = new GameParticipantAttemptedNotification(gameId, userId, status, attemptedAt);
 
         return hubContext
             .Clients.Group(GameHub.GroupNameFor(gameId))
-            .SendAsync(GameParticipantAttemptedMethod, payload, cancellationToken);
+            .SendAsync(GameParticipantAttemptedMethod, payload);
     }
 
     public Task NotifyGameParticipantReactedAsync(
         Guid gameId,
         Guid userId,
         string emoji,
-        DateTime sentAt,
-        CancellationToken cancellationToken = default
+        DateTime sentAt
     )
     {
         var payload = new GameParticipantReactedNotification(gameId, userId, emoji, sentAt);
 
         return hubContext
             .Clients.Group(GameHub.GroupNameFor(gameId))
-            .SendAsync(GameParticipantReactedMethod, payload, cancellationToken);
+            .SendAsync(GameParticipantReactedMethod, payload);
     }
 }

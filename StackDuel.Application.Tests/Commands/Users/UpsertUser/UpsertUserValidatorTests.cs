@@ -93,4 +93,59 @@ public class UpsertUserValidatorTests
 
         Assert.True(result.IsValid);
     }
+
+    [Theory]
+    [InlineData("has space")]
+    [InlineData("has.dot")]
+    [InlineData("<script>")]
+    [InlineData("a@b")]
+    [InlineData("emoji❤")]
+    public void Validate_UsernameOutsideTheAllowedCharacterSet_IsInvalid(string username)
+    {
+        var command = new UpsertUserCommand("auth0|abc", username, null, null);
+
+        ValidationResult result = _validator.Validate(command);
+
+        Assert.False(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("alice")]
+    [InlineData("alice-2")]
+    [InlineData("alice_2")]
+    [InlineData("a")]
+    public void Validate_UsernameWithinTheAllowedCharacterSet_IsValid(string username)
+    {
+        var command = new UpsertUserCommand("auth0|abc", username, null, null);
+
+        ValidationResult result = _validator.Validate(command);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("ftp://example.com/a.png")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("/relative/a.png")]
+    [InlineData("not a url")]
+    public void Validate_ImageUrlThatIsNotAbsoluteHttp_IsInvalid(string imageUrl)
+    {
+        var command = new UpsertUserCommand("auth0|abc", "alice", imageUrl, null);
+
+        ValidationResult result = _validator.Validate(command);
+
+        Assert.False(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("http://example.com/a.png")]
+    [InlineData("https://example.com/a.png")]
+    public void Validate_AbsoluteHttpImageUrl_IsValid(string imageUrl)
+    {
+        var command = new UpsertUserCommand("auth0|abc", "alice", imageUrl, null);
+
+        ValidationResult result = _validator.Validate(command);
+
+        Assert.True(result.IsValid);
+    }
 }

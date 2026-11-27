@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
+using StackDuel.Domain.SeedWork;
 using System.Text.Json;
 
 namespace StackDuel.Api.Middleware;
@@ -27,6 +28,23 @@ public static class ExceptionMiddlewareExtensions
                     AppLog.UnhandledExceptionWithPath(logger, context.Request.Method, context.Request.Path, ex);
 
                     await context.Response.WriteAsync(JsonSerializer.Serialize(new { message = "Validation failed" }));
+                    return;
+                }
+
+                if (ex is DomainException domainException)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+                    AppLog.RejectedDomainInvariant(
+                        logger,
+                        context.Request.Method,
+                        context.Request.Path.Value ?? string.Empty,
+                        domainException
+                    );
+
+                    await context.Response.WriteAsync(
+                        JsonSerializer.Serialize(new { message = domainException.Message })
+                    );
                     return;
                 }
 
@@ -60,6 +78,18 @@ public static partial class AppLog
         Message = "Unhandled exception for {Method} {Path}."
     )]
     public static partial void UnhandledExceptionWithPath(
+        ILogger logger,
+        string method,
+        string path,
+        Exception exception
+    );
+
+    [LoggerMessage(
+        EventId = LoggingEventIds.Exceptions.RejectedDomainInvariant,
+        Level = LogLevel.Information,
+        Message = "Rejected {Method} {Path}: request violated a domain invariant."
+    )]
+    public static partial void RejectedDomainInvariant(
         ILogger logger,
         string method,
         string path,

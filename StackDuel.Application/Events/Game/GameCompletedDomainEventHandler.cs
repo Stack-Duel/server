@@ -19,12 +19,11 @@ internal sealed partial class GameCompletedDomainEventHandler(
 
         try
         {
-            await gameNotificationService.NotifyGameCompletedAsync(e.GameId, e.Status, e.EndedAt, cancellationToken);
+            await gameNotificationService.NotifyGameCompletedAsync(e.GameId, e.Status, e.EndedAt);
         }
         catch (Exception ex)
         {
-            // Push is purely a latency optimization over the client's own polling/re-fetch, so a
-            // failure here must never fault the command that finalized the game.
+
             LogNotifyFailed(ex, e.GameId);
         }
     }

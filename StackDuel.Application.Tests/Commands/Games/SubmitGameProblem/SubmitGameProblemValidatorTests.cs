@@ -1,4 +1,5 @@
 using FluentValidation.Results;
+using StackDuel.Domain.Submissions.ValueObjects;
 using SubmitGameProblemCommand = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemCommand;
 using SubmitGameProblemValidator = StackDuel.Application.Commands.Games.SubmitGameProblem.SubmitGameProblemValidator;
 
@@ -68,6 +69,26 @@ public class SubmitGameProblemValidatorTests
     public void Validate_EmptyRequestedByUserId_IsInvalid()
     {
         var command = ValidCommand() with { RequestedByUserId = Guid.Empty };
+
+        ValidationResult result = _validator.Validate(command);
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void Validate_CodeAtSourceCodeMaxLength_IsValid()
+    {
+        var command = ValidCommand() with { Code = new string('x', SourceCode.MaxLength) };
+
+        ValidationResult result = _validator.Validate(command);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void Validate_CodeLongerThanSourceCodeMaxLength_IsInvalid()
+    {
+        var command = ValidCommand() with { Code = new string('x', SourceCode.MaxLength + 1) };
 
         ValidationResult result = _validator.Validate(command);
 
