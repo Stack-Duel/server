@@ -3,7 +3,6 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Problem;
 using StackDuel.Application;
@@ -13,6 +12,7 @@ using StackDuel.Application.Problems.Dtos;
 using StackDuel.Application.Services.Problems;
 using StackDuel.Application.Services.Submissions;
 using StackDuel.Application.Submissions.Dtos;
+using StackDuel.Domain.Authorization.Rbac;
 using StackDuel.Domain.TestCaseGeneration.ValueObjects;
 
 namespace StackDuel.Api.Controllers;
@@ -74,7 +74,7 @@ public sealed class ProblemController(
 
     [HttpGet("mine")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -102,7 +102,7 @@ public sealed class ProblemController(
 
     [HttpGet("mine/metadata")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -127,7 +127,7 @@ public sealed class ProblemController(
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -152,7 +152,7 @@ public sealed class ProblemController(
 
     [HttpGet("admin/{problemId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -167,7 +167,7 @@ public sealed class ProblemController(
 
     [HttpPut("admin/{problemId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.UpdateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.UpdateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -196,7 +196,7 @@ public sealed class ProblemController(
 
     [HttpPost]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.CreateAdminProblemsPermission)]
     [EnableRateLimiting(WellKnownPolicies.ProblemCreation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -225,7 +225,7 @@ public sealed class ProblemController(
 
     [HttpPost("admin/{problemId:guid}/setups")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.CreateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -244,7 +244,7 @@ public sealed class ProblemController(
 
     [HttpPut("admin/{problemId:guid}/setups/reference-solution")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.CreateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -270,7 +270,7 @@ public sealed class ProblemController(
 
     [HttpPut("admin/{problemId:guid}/generation-parameters")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.CreateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -309,7 +309,7 @@ public sealed class ProblemController(
 
     [HttpPut("admin/{problemId:guid}/sample-test-cases")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.CreateAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.CreateAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -338,7 +338,7 @@ public sealed class ProblemController(
 
     [HttpPost("admin/{problemId:guid}/submit-for-validation")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.SubmitAdminProblems)]
+    [RequirePermission(WellKnownAuthorization.SubmitAdminProblemsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -388,7 +388,7 @@ public sealed class ProblemController(
 
     [HttpGet("{slug}/submissions")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ViewSubmission)]
+    [RequirePermission(WellKnownAuthorization.ViewSubmissionPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

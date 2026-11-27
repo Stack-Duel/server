@@ -3,12 +3,12 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.FeatureFlags;
 using StackDuel.Application;
 using StackDuel.Application.FeatureFlags.Dtos;
 using StackDuel.Application.Services.FeatureFlags;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -24,7 +24,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<FeatureFlagAdminDto>>> GetAdminFlags(
@@ -33,7 +33,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpGet("admin/{key}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +44,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpPost("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -64,7 +64,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpPut("admin/{id:guid}/default")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -77,7 +77,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpPut("admin/{id:guid}/rollout")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -90,7 +90,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpPut("admin/{id:guid}/user-overrides/{userId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -104,7 +104,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpDelete("admin/{id:guid}/user-overrides/{userId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -113,7 +113,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpPut("admin/{id:guid}/group-overrides/{groupId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -127,7 +127,7 @@ public sealed class FeatureFlagController(UserContext userContext, IFeatureFlagA
 
     [HttpDelete("admin/{id:guid}/group-overrides/{groupId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageFeatureFlags)]
+    [RequirePermission(WellKnownAuthorization.ManageFeatureFlagsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

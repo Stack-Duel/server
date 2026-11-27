@@ -11,6 +11,7 @@ using StackDuel.Application;
 using StackDuel.Application.Campaigns.Dtos;
 using StackDuel.Application.Pagination;
 using StackDuel.Application.Services.Campaigns;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -116,7 +117,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -141,7 +142,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpGet("admin/{campaignId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ReadAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ReadAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -156,7 +157,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPost("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -178,7 +179,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPut("admin/{campaignId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -204,7 +205,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPost("admin/{campaignId:guid}/publish")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -217,7 +218,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPost("admin/{campaignId:guid}/archive")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -230,7 +231,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPut("admin/{campaignId:guid}/prerequisites")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -253,7 +254,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPost("admin/{campaignId:guid}/modules")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -277,7 +278,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPut("admin/{campaignId:guid}/modules/{moduleId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -303,7 +304,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPost("admin/{campaignId:guid}/modules/{moduleId:guid}/units")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -331,7 +332,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPut("admin/{campaignId:guid}/modules/{moduleId:guid}/units/{unitId:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -361,7 +362,7 @@ public sealed class CampaignController(ICampaignService campaignService, UserCon
 
     [HttpPut("admin/{campaignId:guid}/modules/{moduleId:guid}/units/{unitId:guid}/problems")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageAdminCampaigns)]
+    [RequirePermission(WellKnownAuthorization.ManageAdminCampaignsPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

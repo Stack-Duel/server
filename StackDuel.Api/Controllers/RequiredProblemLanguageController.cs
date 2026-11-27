@@ -3,11 +3,11 @@ using Ardalis.Result.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StackDuel.Api.Attributes;
-using StackDuel.Api.Authorization;
 using StackDuel.Api.RateLimiting;
 using StackDuel.Api.Requests.Problem.RequiredLanguages;
 using StackDuel.Application.Problems.RequiredLanguages.Dtos;
 using StackDuel.Application.Services.Problems;
+using StackDuel.Domain.Authorization.Rbac;
 
 namespace StackDuel.Api.Controllers;
 
@@ -19,7 +19,7 @@ public sealed class RequiredProblemLanguageController(IRequiredProblemLanguageAd
 {
     [HttpGet("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageRequiredProblemLanguages)]
+    [RequirePermission(WellKnownAuthorization.ManageRequiredProblemLanguagesPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<RequiredProblemLanguageAdminDto>>> GetAll(
@@ -28,7 +28,7 @@ public sealed class RequiredProblemLanguageController(IRequiredProblemLanguageAd
 
     [HttpPost("admin")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageRequiredProblemLanguages)]
+    [RequirePermission(WellKnownAuthorization.ManageRequiredProblemLanguagesPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -39,7 +39,7 @@ public sealed class RequiredProblemLanguageController(IRequiredProblemLanguageAd
 
     [HttpDelete("admin/{id:guid}")]
     [RequireUser]
-    [RequirePermission(WellKnownPermissions.ManageRequiredProblemLanguages)]
+    [RequirePermission(WellKnownAuthorization.ManageRequiredProblemLanguagesPermission)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

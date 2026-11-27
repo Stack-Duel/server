@@ -32,4 +32,7 @@ public static class WellKnownAuthorization
 
     public const string AdminRole = "admin";
     public const string AdminGroup = "admin";
+
+    public const string ProblemAuthorRole = "problem-author";
+    public const string ProblemAuthorGroup = "problem-author";
 }
